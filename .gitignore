@@ -1,0 +1,17 @@
+ Archivos de caché y compilados de Python
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Archivos de la configuración de VS Code
+.vscode/
+
+# Archivos del sistema operativo
+.DS_Store
+
+# Logs y otros archivos de salida
+*.log
