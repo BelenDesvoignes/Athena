@@ -1,0 +1,68 @@
+# Archivos de caché y compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos de configuración de VS Code
+.vscode/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs y otros archivos de salida
+*.log
+
+# Archivos de configuración de PyCharm
+.idea/
+
+# Archivos de pruebas y cobertura
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Archivos de distribución
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Archivos de pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Archivos de configuración de pytest
+.pytest_cache/
+
+# Archivos de configuración de mypy
+.mypy_cache/
+.dmypy.json
+
+# Archivos de configuración de celery
+celerybeat-schedule
+
+# Archivos de configuración de dotenv
+.env
+.env.*
+
+# Archivos de configuración de SQLite
+*.sqlite3
+
+# Archivos de configuración de Jupyter Notebook
+.ipynb_checkpoints
+
+# Archivos de configuración de Spyder
