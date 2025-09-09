@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"error": "No se encontro    el recurso"}), 404
+    return jsonify({"error": "No se encontro el recurso"}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
