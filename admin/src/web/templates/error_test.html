@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block title %}ERROR TEST{% endblock %}
+
+{% block content %}
+<button onclick="location.href='/not_found'">Trigger 404 Error</button>
+<button onclick="location.href='/internal_error'">Trigger 500 Error</button>
+<button onclick="location.href='/protected'">Trigger 401 Error</button
+>{% endblock %}
