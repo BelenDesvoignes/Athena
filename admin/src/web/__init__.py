@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from flask import Flask, jsonify
 
 app = Flask(__name__)
@@ -13,3 +14,15 @@ def internal_error(error):
 @app.errorhandler(401)
 def unauthorized(error):
     return jsonify({"error": "No tiene autorizacion"}), 401
+=======
+from flask import Flask, render_template
+
+def create_app(env="development", static_folder=""):
+    app = Flask(__name__, static_folder=static_folder)
+
+    @app.route('/')
+    def home():
+        return render_template("home.html")
+    
+    return app
+>>>>>>> feature/primer-controlador
