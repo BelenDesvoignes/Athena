@@ -3,8 +3,7 @@
 from flask import Flask
 from flask import render_template
 from src.web.controllers import db as main_db
-
-
+from os import environ
 
 
 class Config:
@@ -13,10 +12,21 @@ class Config:
     SESSION_TYPE = "filesystem"
 
 class ProductionConfig(Config):
-    pass
+    SQLALCHEMY_ENGINE = {"default": environ.get("DATABASE_URL")}
+
 
 class DevelopmentConfig(Config):
-    pass
+    SECRET_KEY = "your_dev_secret_key"
+    DB_USER = "postgres"
+    DB_PASSWORD = "admin"
+    DB_HOST = "localhost"
+    DB_PORT = "5432"
+    DB_NAME = "grupo19"
+    DB_SCHEME = "postgresql+psycopg2"
+
+    SQLALCHEMY_ENGINE = {
+        "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    }
 
 class TestingConfig(Config):
     TESTING = True
@@ -26,7 +36,3 @@ config = {
     'production': ProductionConfig,
     'testing': TestingConfig
 } 
-
-    
-
-
