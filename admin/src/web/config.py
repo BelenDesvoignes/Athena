@@ -24,7 +24,7 @@ class DevelopmentConfig(Config):
     DB_NAME = "grupo19"
     DB_SCHEME = "postgresql+psycopg2"
 
-    SQLALCHEMY_ENGINE = {
+    SQLALCHEMY_ENGINES = {
         "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
 
