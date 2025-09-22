@@ -38,28 +38,36 @@ def home():
 @admin_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Obtener los datos del formulario
+        email = request.form.get('email')
+        password = request.form.get('password')
+        nombre = request.form.get('nombre')
+        apellido = request.form.get('apellido')
+
+        # 1. Validación de campos requeridos
+        if not all([email, password, nombre, apellido]):
+            return render_template('register.html', error="Todos los campos son obligatorios.")
+
+        # 2. Verificar si el email ya existe
+        existing_user = get_user_by_email(email)
+        if existing_user:
+            return render_template('register.html', error="El email ya está registrado.")
+        
+        # 3. Datos para la creación del usuario
         data = {
-            'nombre': request.form['nombre'],
-            'apellido': request.form['apellido'],
-            'email': request.form['email'],
-            'password': request.form['password'],
-            'rol': 'Usuario público',
+            'nombre': nombre,
+            'apellido': apellido,
+            'email': email,
+            'password': password,
+            'rol': 'Usuario público', # Rol por defecto
             'activo': True
         }
         
-        # Llama a la función de servicio para crear el usuario
-        new_user = create_user(data)
+        # 4. Llamar a la función de servicio para crear el usuario
+        # Asegúrate de que create_user maneje el hashing de la contraseña
+        create_user(data)
         
-        if new_user:
-            return redirect(url_for('admin.login'))
-        else:
-            return render_template('register.html', error="El email ya está registrado.")
+        # 5. Redirigir al login
+        return redirect(url_for('admin.login'))
     
+    # 6. Mostrar el formulario de registro en una solicitud GET
     return render_template('register.html')
-
-
-
-#/admin/home  muestra pagina principal 
-#/admin muestra el login 
-#admin/register muestra el registro 
