@@ -11,7 +11,7 @@ header {
     color: white;
     padding: 1rem;
     text-align: center;
-    border-bottom: 3px solid #388E3C;
+    border-bottom: 3px solid #cccccc; /* linea horizontal gris claro */
 }
 
 main {
@@ -31,16 +31,16 @@ p {
 
 
 :root {
-   --bs-body-color: #F5F5DC; /* Color beige para el texto */
-  --bs-body-bg: #000000;   /* Color negro para el fondo */
+   --bs-body-color: #F5F5DC; /* beige para el texto */
+ --bs-body-bg: #000000;   /* negro para el fondo */
 }
 
 body {
-  background-color: var(--bs-body-bg);
-  color: var(--bs-body-color);
+ background-color: var(--bs-body-bg);
+ color: var(--bs-body-color);
 }
 
-/* Cambia el color de los enlaces y botones para que se vean bien en el fondo oscuro */
+/* cambia el color de los enlaces y botones para que se vean bien en el fondo oscuro */
 .navbar-brand,
 .nav-link,
 .dropdown-toggle,
@@ -49,5 +49,5 @@ body {
 }
 
 .nav-link.active {
-    background-color: #4a4a4a !important; /* Un gris más claro para resaltar el enlace activo */
+    background-color: #4a4a4a !important; /* Un gris más claro */
 }

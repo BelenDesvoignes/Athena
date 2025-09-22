@@ -2,7 +2,7 @@
 
 from flask import Flask
 from flask import render_template
-from src.web.controllers import db as main_db
+from src.core.database import db as main_db
 from os import environ
 
 
