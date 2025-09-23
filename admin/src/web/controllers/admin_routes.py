@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from src.core.user_service import get_user_by_email, create_user
 
-# Crea una instancia del blueprint
+#crea una instancia del blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='../templates')
 
-# Ruta de Login
+#ruta de Login
 # Esta ruta manejará la URL /admin/
 @admin_bp.route('/', methods=['GET', 'POST'])
 def login():
@@ -15,26 +15,25 @@ def login():
         user = get_user_by_email(email)
         
         if user and user.check_password(password):
-            # Autenticación exitosa
+            #autenticación exitosa
             session['user_id'] = user.id
             session['user_role'] = user.rol
             
-            # Redirige a la página de inicio (home.html)
+            #redirige a la página de inicio (home.html)
             return redirect(url_for('admin.home'))
         else:
-            # Autenticación fallida
+            #autenticación fallida
             return render_template('login.html', error="Credenciales inválidas o cuenta inactiva.")
 
     return render_template('login.html')
 
-# Define la ruta de la página de inicio del admin (probablemente para un dashboard)
-# Esta ruta manejará la URL /admin/home
+#define la ruta de la página de inicio del admin 
+#esta ruta manejará la URL /admin/home
 @admin_bp.route('/home')
 def home():
-    # En un escenario real, esta ruta debería estar protegida
     return render_template('home.html')
 
-# Ruta de Registro
+#ruta de Registro
 @admin_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -43,16 +42,16 @@ def register():
         nombre = request.form.get('nombre')
         apellido = request.form.get('apellido')
 
-        # 1. Validación de campos requeridos
+        # validación de campos requeridos
         if not all([email, password, nombre, apellido]):
             return render_template('register.html', error="Todos los campos son obligatorios.")
 
-        # 2. Verificar si el email ya existe
+        # verificar si el email ya existe
         existing_user = get_user_by_email(email)
         if existing_user:
             return render_template('register.html', error="El email ya está registrado.")
         
-        # 3. Datos para la creación del usuario
+        # datos para la creación del usuario
         data = {
             'nombre': nombre,
             'apellido': apellido,
@@ -62,12 +61,12 @@ def register():
             'activo': True
         }
         
-        # 4. Llamar a la función de servicio para crear el usuario
-        # Asegúrate de que create_user maneje el hashing de la contraseña
+        # Llamar a la función de servicio para crear el usuario
+        # hacer que create_user maneje el hashing de la clave
         create_user(data)
         
-        # 5. Redirigir al login
+        # redirigir al login
         return redirect(url_for('admin.login'))
     
-    # 6. Mostrar el formulario de registro en una solicitud GET
+    # mostrar el formulario de registro en una solicitud GET
     return render_template('register.html')

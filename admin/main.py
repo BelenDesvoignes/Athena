@@ -25,6 +25,7 @@ def create_app(env='development'):
     
     return app
 
+
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
