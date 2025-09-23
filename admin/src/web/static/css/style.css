@@ -1,0 +1,53 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 3px solid #cccccc; /* linea horizontal gris claro */
+}
+
+main {
+    padding: 2rem;
+    max-width: 900px;
+    margin: auto;
+}
+
+h1, h2 {
+    margin-bottom: 1rem;
+}
+
+p {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+
+:root {
+   --bs-body-color: #F5F5DC; /* beige para el texto */
+ --bs-body-bg: #000000;   /* negro para el fondo */
+}
+
+body {
+ background-color: var(--bs-body-bg);
+ color: var(--bs-body-color);
+}
+
+/* cambia el color de los enlaces y botones para que se vean bien en el fondo oscuro */
+.navbar-brand,
+.nav-link,
+.dropdown-toggle,
+.text-beige {
+    color: #F5F5DC !important;
+}
+
+.nav-link.active {
+    background-color: #4a4a4a !important; /* Un gris más claro */
+}

@@ -1,9 +1,17 @@
 from flask import Flask, jsonify,render_template,abort
+from src.core import database 
+from src.web.config import config
 
 app = Flask(__name__)
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
+    
+    app.config.from_object(config[env]) 
+    #carga la configuracion segun el entorno
+
+    database.init_app(app) 
+    #inicializa la bd
 
     @app.route('/')
     def home():
@@ -34,10 +42,5 @@ def create_app(env="development", static_folder="../../static"):
     def unauthorized(error):
         return render_template("error_401.html"), 401
     #return jsonify({"error": "No tiene autorizacion"}), 401
-
-
-
-
-
 
     return app
