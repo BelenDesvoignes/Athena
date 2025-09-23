@@ -5,7 +5,7 @@ stages:
 lint-backend:
   stage: test
   script:
-    - cd admin
+    - cd code/admin
     - poetry install --with dev
     - poetry run ruff check .
 
@@ -19,7 +19,7 @@ test-backend:
 deploy-backend:
   stage: deploy
   script:
-    - cd admin
+    - cd code/admin
     # Aquí irían los comandos de despliegue, como por ejemplo una conexión SSH o un comando de Heroku
     # Pega aquí el comando que tu equipo usa para desplegar.
     # Si no lo sabes, pregúntale a un compañero.
