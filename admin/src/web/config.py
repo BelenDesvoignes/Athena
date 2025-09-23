@@ -1,4 +1,6 @@
 # archivo para manejar distintos ambientes de prueba 
+# le dice  database.py a que bd conectarse
+
 
 from flask import Flask
 from flask import render_template
@@ -12,7 +14,7 @@ class Config:
     SESSION_TYPE = "filesystem"
 
 class ProductionConfig(Config):
-    SQLALCHEMY_ENGINE = {"default": environ.get("DATABASE_URL")}
+    SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL")
 
 
 class DevelopmentConfig(Config):
@@ -24,9 +26,8 @@ class DevelopmentConfig(Config):
     DB_NAME = "grupo19"
     DB_SCHEME = "postgresql+psycopg2"
 
-    SQLALCHEMY_ENGINES = {
-        "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    }
+    SQLALCHEMY_DATABASE_URI = f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 
 class TestingConfig(Config):
     TESTING = True
@@ -35,4 +36,4 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig
-} 
+}
