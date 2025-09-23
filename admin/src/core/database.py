@@ -1,4 +1,4 @@
-#este archivo define como interactua la app con la bd 
+# este archivo define como interactua la app con la bd
 
 
 from flask_sqlalchemy import SQLAlchemy
@@ -13,9 +13,12 @@ class Base(DeclarativeBase):
     aplicación. Al heredar de ella, los modelos obtienen automáticamente la
     funcionalidad de mapeo objeto-relacional necesaria.
     """
+
     pass
 
+
 db = SQLAlchemy(model_class=Base)
+
 
 def init_db(app):
     """
