@@ -11,7 +11,7 @@ def create_app(env="development", static_folder="../../static"):
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
 
-    database.init_app(app)
+    database.init_db(app)
     # inicializa la bd
 
     @app.route("/")
