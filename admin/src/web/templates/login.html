@@ -1,0 +1,35 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card bg-dark text-white">
+                    <div class="card-header text-center">
+                        <h2>Iniciar sesión</h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ url_for('admin.login') }}">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            {% if error %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary w-100">Acceder</button>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <p class="mb-0">¿No tienes una cuenta?</p>
+                        <a href="{{ url_for('admin.register') }}">Regístrate aquí</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
