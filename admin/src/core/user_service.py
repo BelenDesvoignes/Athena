@@ -1,9 +1,6 @@
-# admin/src/core/user_service.py
-
 from src.core.database import db
 from src.core.models.user import User 
-from werkzeug.security import generate_password_hash
-import re
+from src.core.bcrypt import hash_password, check_password
 
 
 def get_user_by_email(email):
@@ -53,20 +50,18 @@ def validate_user_update(nombre, apellido, email, password, rol, activo):
 
 
 
-def create_user(nombre, apellido, email, password, rol="Usuario público", activo=True):
+def create_user(data:dict)-> User:
     """ Crea un nuevo usuario. """
-    validate_user_data(nombre, apellido, email, password, rol, activo)
-
-    if get_user_by_email(email):
-        raise ValueError(f"Email {email} ya registrado")
-
-    hashed_password = generate_password_hash(password)
+    #Hashea la contrasena usadno bcypt
+    hashed_pass = hash_password(data["password"])
     
-    user = User(nombre=nombre, apellido=apellido, email=email, password=hashed_password, rol=rol, activo=activo)
-    
-    db.session.add(user)
+    #Asegura que el formato sea string (UTF-8) para la DB
+    data["password"] = hashed_pass.decode('utf-8') 
+
+    new_user = User(**data)
+    db.session.add(new_user)
     db.session.commit()
-    return user
+    return new_user
 
 
 def update_user(user_id, nombre=None, apellido=None, email=None, password=None, rol=None, activo=None):
@@ -143,3 +138,22 @@ def get_users_by_rol(rol):
 
 def get_users_by_activo(activo):
     return db.session.query(User).filter_by(activo=activo).all()
+
+
+#Autenticacion (login)
+def authenticate_user(email: str, password: str) -> User | None:
+    """
+    Autentica un usuario: verifica email, contrasena y estado activo.
+    """
+    user = get_user_by_email(email)
+
+    if user and user.activo:
+        # Asegura que el hash almacenado sea bytes
+        stored_hash = user.password.encode('utf-8') if isinstance(user.password, str) else user.password
+        
+        #  Usa función de bcrypt para la verificación
+        if check_password(password, stored_hash):
+            return user
+    
+    return None
+
