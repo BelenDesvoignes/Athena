@@ -1,6 +1,4 @@
 # este archivo define como interactua la app con la bd
-
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 

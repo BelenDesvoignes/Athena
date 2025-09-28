@@ -5,7 +5,6 @@
 from src.core.database import db, Base
 from sqlalchemy import String, Integer, Boolean, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-from werkzeug.security import check_password_hash
 from datetime import datetime
 
 
@@ -25,5 +24,18 @@ class User(Base):
         DateTime, server_default=func.now()
     )
 
-    def check_password(self, password):
-        return check_password_hash(self.password, password)
+
+
+
+    
+
+def __init__(self, nombre, apellido, email, password, rol="Usuario público", activo=True):
+#encripta la clave antes de guardarla 
+        self.nombre = nombre
+        self.apellido = apellido
+        self.email = email
+        # self.password = generate_password_hash(password)
+        self.rol = rol
+        self.activo = activo
+
+
