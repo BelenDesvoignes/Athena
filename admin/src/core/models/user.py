@@ -5,7 +5,7 @@
 from src.core.database import db, Base
 from sqlalchemy import String, Integer, Boolean, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class User(Base):
@@ -21,7 +21,10 @@ class User(Base):
     )
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     fecha_creacion: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now()
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
     )
 
 
