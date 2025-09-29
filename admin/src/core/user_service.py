@@ -131,29 +131,27 @@ def delete_user(user_id):
         db.session.rollback()
         raise ValueError(f"Error al eliminar usuario en DB: {e}")
 
-
 def list_users(page, per_page, search_email=None, search_enabled=None, search_role_id=None, order_by='fecha_creacion', order_dir='desc'):
+    # Usamos SQLAlchemy puro
+    query = db.session.query(User)
+
   
-    query = User.query
-    
-    #por Email 
     if search_email:
         query = query.filter(User.email.ilike(f"%{search_email}%"))
 
-    #Filtrado por estado 
     if search_enabled in ('True', 'False'):
-        is_enabled = search_enabled == 'False'
+        is_enabled = search_enabled == 'True'
         query = query.filter_by(enabled=is_enabled)
 
-    # por Rol
+
     if search_role_id:
         try:
             role_id_int = int(search_role_id)
             query = query.filter_by(role_id=role_id_int)
         except ValueError:
-            pass 
+            pass
 
-    # Ordenamiento fecha de creación
+    
     if hasattr(User, order_by):
         column = getattr(User, order_by)
         if order_dir == 'desc':
@@ -161,9 +159,20 @@ def list_users(page, per_page, search_email=None, search_enabled=None, search_ro
         else:
             query = query.order_by(column.asc())
 
-    # 5. paginacion 
-    return query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
 
+  
+    class Pagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+
+    return Pagination(users, page, per_page, total)
 
 
 def get_user_credentials(email, password):
