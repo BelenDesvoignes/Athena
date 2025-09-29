@@ -1,12 +1,10 @@
 # admin/src/core/user_service.py
 from src.core.database import db
 from src.core.models.user import User 
-from werkzeug.security import generate_password_hash,check_password_hash
 import re
+from src.core.bcrypt import hash_password, check_password
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.core.models.role_permission import Role
+from src.core.models.role_permission import Role
 
 
 def get_user_by_email(email):
@@ -22,13 +20,10 @@ def get_user_by_id(user_id):
 
 
 
-def check_email_unique(email, current_user_id=None):
-    query = User.query.filter_by(email=email)
-    if current_user_id:
-        query = query.filter(User.id != current_user_id)
-    
-    if query.first():
-        raise ValueError(f"El email '{email}' ya está registrado.")
+def check_email_unique(email):
+    existing = db.session.query(User).filter_by(email=email).first()
+    if existing:
+        raise ValueError("El email ya está registrado.")
     
 
  
@@ -41,7 +36,7 @@ def validate_data(data, is_new=True):
     role_id = data.get('role_id')
 
     if not nombre or not apellido or not email or not role_id:
-        raise ValueError("Nombre, apellido, email y rol son obligatorios.")
+        raise ValueError("Nombre, apellido, email son obligatorios.")
 
     if is_new and not password:
         raise ValueError("La clave es obligatoria para nuevos usuarios.")
@@ -53,15 +48,13 @@ def validate_data(data, is_new=True):
         raise ValueError(f"La clave debe tener al menos 8 caracteres.")
     
 
-    if not db.session.get(Role, int(role_id)):
-        raise ValueError("El ID de rol proporcionado es inválido.")
-
 
 def create_user(data):
     validate_data(data, is_new=True)
     check_email_unique(data['email'])
 
-    hashed_password = generate_password_hash(data['password'])
+    hashed_password = hash_password(data['password'])
+    data["password"] = hashed_password.decode('utf-8') 
     activo = data.get('enabled') == 'False' if data.get('enabled') is not None else False
     
     try:
@@ -71,7 +64,7 @@ def create_user(data):
             email=data['email'],
             password=hashed_password,
             role_id=int(data['role_id']),
-            enbled=activo
+            enabled=activo
         )
         db.session.add(user)
         db.session.commit()
@@ -108,7 +101,7 @@ def update_user(user_id, data):
         if data.get('password'):
             if len(data['password']) < 8:
                 raise ValueError(f"La nueva clave debe tener al menos 8 caracteres.")
-            user.password = generate_password_hash(data['password'])
+            user.password = hash_password(data['password'])
         
         db.session.commit()
         return user
@@ -183,7 +176,27 @@ def get_user_credentials(email, password):
     if not user.activo:
         return 'BLOCKED' 
 
-    if check_password_hash(user.password, password):
+    if check_password(user.password, password):
         return user 
     else:
         return None
+    
+def authenticate_user(email, password):
+    user = db.session.query(User).filter_by(email=email).first()
+    if user and check_password(password, user.password):
+        return user
+    return None
+
+def get_role_by_name(role_name: str):
+    role_obj = (
+        db.session.execute(
+            db.select(Role).filter_by(name=role_name)
+        )
+        .unique()  
+        .scalar_one_or_none()
+    )
+
+    if role_obj is None:
+        raise ValueError(f"El rol '{role_name}' no existe en la base de datos.")
+    
+    return role_obj
