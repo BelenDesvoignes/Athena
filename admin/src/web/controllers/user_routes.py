@@ -2,10 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from src.core.user_service import list_users, create_user, update_user, delete_user, get_user_by_id
 from src.web.handlers.auth import login_required, permission_required
 
-user_bp = Blueprint("user", __name__, url_prefix="/admin/users", template_folder="../templates/admin/users")
+user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
 
-@user_bp.route("/", methods=["GET"])
+@user_admin_bp.route("/", methods=["GET"])
 @login_required
 @permission_required("user_index")
 def index():
@@ -26,11 +26,11 @@ def index():
         order_dir=order_dir
     )
     users = pagination.items
-    return render_template("index.html", users=users, pagination=pagination)
+    return render_template("list.html", users=users, pagination=pagination)
 
 
 # Crear usuario
-@user_bp.route("/new", methods=["GET", "POST"])
+@user_admin_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @permission_required("user_new")
 def new():
@@ -46,21 +46,34 @@ def new():
         try:
             create_user(data)
             flash("Usuario creado correctamente.", "success")
-            return redirect(url_for("user.index"))
+            return redirect(url_for("user_admin.index"))
         except ValueError as e:
             flash(str(e), "danger")
     return render_template("form.html", user=None)
 
 
+
+#detalle de usuario 
+@user_admin_bp.route("/<int:user_id>", methods=["GET"]) 
+@login_required 
+@permission_required("user_show") 
+def show(user_id): 
+    user = get_user_by_id(user_id) 
+    if not user: 
+        flash("Usuario no encontrado.", "danger") 
+        return redirect(url_for("user_admin.index")) 
+    return render_template("show.html", user=user)
+
+
 # Editar usuario
-@user_bp.route("/<int:user_id>/edit", methods=["GET", "POST"])
+@user_admin_bp.route("/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
 @permission_required("user_update")
 def edit(user_id):
     user = get_user_by_id(user_id)
     if not user:
         flash("Usuario no encontrado.", "danger")
-        return redirect(url_for("user.index"))
+        return redirect(url_for("user_admin.index"))
 
     if request.method == "POST":
         data = {
@@ -74,20 +87,29 @@ def edit(user_id):
         try:
             update_user(user_id, data)
             flash("Usuario actualizado correctamente.", "success")
-            return redirect(url_for("user.index"))
+            return redirect(url_for("user_admin.index"))
         except ValueError as e:
             flash(str(e), "danger")
     return render_template("form.html", user=user)
 
 
 # Eliminar usuario
-@user_bp.route("/<int:user_id>/delete", methods=["POST"])
+@user_admin_bp.route("/<int:user_id>/delete", methods=["POST"])
 @login_required
 @permission_required("user_destroy")
 def delete(user_id):
+    user = get_user_by_id(user_id)  
+    if not user:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for("user_admin.index"))
+
+
+    if user.role.name == "Administrador":
+        flash("No se puede eliminar un usuario Administrador.", "danger")
+        return redirect(url_for("user_admin.index"))
     try:
         delete_user(user_id)
         flash("Usuario eliminado correctamente.", "success")
     except ValueError as e:
         flash(str(e), "danger")
-    return redirect(url_for("user.index"))
+    return redirect(url_for("user_admin.index"))

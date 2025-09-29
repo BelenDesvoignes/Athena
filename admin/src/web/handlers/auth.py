@@ -1,4 +1,5 @@
 from functools import wraps
+from src.core.database import db
 from flask import session, redirect, url_for, flash
 
 
@@ -34,7 +35,7 @@ def permission_required(permission_name: str):
 
             if permission_name not in role_permissions:
                 flash('No tienes permisos para realizar esta acción.', 'warning')
-                return redirect(url_for('home'))
+                return redirect(url_for('admin.home'))
 
             return f(*args, **kwargs)
         return decorated_function
