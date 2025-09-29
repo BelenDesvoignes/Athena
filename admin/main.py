@@ -1,7 +1,9 @@
 from flask import Flask, render_template
 from src.web.controllers.admin_routes import admin_bp
 from src.web.config import config
-from src.core.database import db
+from src.core.database import db, reset_db
+from src.web.controllers.auth import auth_bp
+from src.web.controllers.user_routes import user_bp
 
 
 def create_app(env="development"):
@@ -17,14 +19,24 @@ def create_app(env="development"):
     db.init_app(app)
 
     # registra el blueprint de las rutas de administración.
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(user_bp)
 
     # define la ruta para la página principal.
     @app.route("/")
     def index():
         return render_template("home.html")
+    
+
+
+
+    @app.cli.command("reset-db")
+    def reset_db_command():
+        reset_db()
 
     return app
+
 
 
 if __name__ == "__main__":

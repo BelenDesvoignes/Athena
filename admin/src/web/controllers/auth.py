@@ -3,9 +3,9 @@
 # de credenciales, gestionar cierre de sesion
 # sujeto a modificaciones
 # src/web/controllers/auth.py
-
+from src.core.models.role_permission import Role
 from flask import Blueprint, render_template, request, redirect, session, flash, url_for
-from src.core.user_service import authenticate_user, create_user
+from src.core.user_service import authenticate_user, create_user, get_role_by_name
 from src.web.handlers.auth import login_required 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -14,7 +14,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 def login():
     if 'user_id' in session:
         return redirect(url_for("home"))
-    return render_template("auth/login.html")
+    return render_template("login.html")
 
 @auth_bp.route("/authenticate", methods=['POST'])
 def authenticate():
@@ -51,7 +51,9 @@ def register():
         apellido = request.form.get("apellido")
         email = request.form.get("email")
         password = request.form.get("password")
-        
+        role_obj = get_role_by_name("Usuario público") 
+        role_id = role_obj.id 
+        print(role_id)
         try:
             # Chequeo de que el email no exista y creación del usuario.
             # La función create_user se encarga de hashear la contraseña.
@@ -60,8 +62,8 @@ def register():
                 "apellido": apellido,
                 "email": email,
                 "password": password,
-                "rol": "Usuario público", # Asignación de rol por defecto
-                "activo": True
+                "role_id": role_id, # Asignación de rol por defecto
+                "enabled": False
             })
             
             flash("Registro exitoso. ¡Inicia sesión!", "success")
@@ -70,12 +72,12 @@ def register():
         except ValueError as e:
             # Captura errores como 'Email ya registrado' o validaciones internas
             flash(str(e), "danger") 
-            return render_template("auth/register.html")
+            return render_template("register.html")
         except Exception:
             flash("Ocurrió un error al intentar registrar el usuario.", "danger")
-            return render_template("auth/register.html")
+            return render_template("register.html")
 
-    return render_template("auth/register.html")
+    return render_template("register.html")
 
 
 @auth_bp.route("/logout")
