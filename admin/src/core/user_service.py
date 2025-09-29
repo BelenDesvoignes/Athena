@@ -4,7 +4,9 @@ from src.core.models.user import User
 import re
 from src.core.bcrypt import hash_password, check_password
 from typing import TYPE_CHECKING
-from src.core.models.role_permission import Role
+
+if TYPE_CHECKING:
+    from src.core.models.role_permission import Role
 
 
 def get_user_by_email(email):
@@ -196,16 +198,4 @@ def authenticate_user(email, password):
         return user
     return None
 
-def get_role_by_name(role_name: str):
-    role_obj = (
-        db.session.execute(
-            db.select(Role).filter_by(name=role_name)
-        )
-        .unique()  
-        .scalar_one_or_none()
-    )
 
-    if role_obj is None:
-        raise ValueError(f"El rol '{role_name}' no existe en la base de datos.")
-    
-    return role_obj

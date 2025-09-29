@@ -1,9 +1,11 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from src.web.controllers.admin_routes import admin_bp
 from src.web.config import config
 from src.core.database import db, reset_db
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
+from src.core.permissions_service import get_permissions_for_user
+from src.core.user_service import get_user_by_id
 
 
 
@@ -28,7 +30,15 @@ def create_app(env="development"):
     def index():
         return render_template("home.html")
     
-
+    @app.context_processor
+    def inject_permissions():
+        permisos = []
+        if 'user_id' in session:
+            user = get_user_by_id(session['user_id'])
+            if user:
+                permisos = get_permissions_for_user(user)
+        return dict(user_permisos=permisos)
+    
 
 
     @app.cli.command("reset-db")
@@ -37,11 +47,10 @@ def create_app(env="development"):
 
     return app
 
-
+  
 
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
-        # crea todas las tablas en la base de datos.
         db.create_all()
     app.run(debug=True)

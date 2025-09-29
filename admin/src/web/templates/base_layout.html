@@ -109,6 +109,13 @@
                         <li class="nav-item"><a class="nav-link text-light" href="#">Validación de propuestas</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="#">Moderación de reseñas</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user.index') }}">Gestión de usuarios</a></li>
+                        {% if 'user_index' in user_permisos %}
+                            <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.index') }}">Gestión de usuarios</a></li>
+                        {% endif %}
+
+                        {% if 'user_new' in user_permisos %}
+                            <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.new') }}">Crear Usuario</a></li>
+                        {% endif %}
 
                     </ul>
                 </div>
