@@ -17,6 +17,7 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 
+import src.core.models
 
 def init_db(app):
     """
@@ -31,3 +32,10 @@ def init_db(app):
     # inicializa la aplicación con la instancia de db
     db.init_app(app)
     return db
+
+
+def reset_db():
+    print("Reseteando base de datos...")
+    Base.metadata.drop_all(bind=db.engine)
+    Base.metadata.create_all(bind=db.engine)
+    print("Hecho!")

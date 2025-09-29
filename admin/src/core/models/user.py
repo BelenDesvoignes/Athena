@@ -1,11 +1,12 @@
-# definicion del modelo
-# plano de tabla de usuarios en la db. Describe los campos y como
-# manejar los datos a bajo nivel
-
-from src.core.database import db, Base
-from sqlalchemy import String, Integer, Boolean, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from src.core.database import Base
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.models.role_permission import Role
+
 
 
 class User(Base):
@@ -16,10 +17,14 @@ class User(Base):
     apellido: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
-    rol: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="Usuario público"
-    )
-    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
+
+    # ADICIONAL para proteger al admin principal
+    system_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # corresponde a SI NO y Bloqueado Desbloqueado)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
     fecha_creacion: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -27,18 +32,10 @@ class User(Base):
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
 
+    role: Mapped["Role"] = relationship(back_populates="users", lazy="joined")
 
 
-
-    
-
-def __init__(self, nombre, apellido, email, password, rol="Usuario público", activo=True):
-#encripta la clave antes de guardarla 
-        self.nombre = nombre
-        self.apellido = apellido
-        self.email = email
-        # self.password = generate_password_hash(password)
-        self.rol = rol
-        self.activo = activo
+    def __repr__(self):
+        return f"<User {self.email}>"
 
 

@@ -28,8 +28,8 @@ def create_app(env="development"):
 
 
     @app.cli.command("reset-db")
-    def reset_db():
-        db.reset_db()
+    def reset_db_command():
+        reset_db()
 
     return app
 
