@@ -20,9 +20,11 @@
         /* ============================== */
         /* Estilos generales para el layout */
         /* ============================== */
+        /* ============================== */
         body {
             background-color: transparent !important; display: flex; flex-direction: column; min-height: 100vh; color: #fff;
         }
+        
         main {
             flex-grow: 1; background-color: rgba(33, 37, 41, 0.7);
         }
@@ -51,6 +53,13 @@
         }
     </style>
 </head>
+<body>
+    
+    <div id="spline-background">
+        <iframe src='https://my.spline.design/glowingplanetparticles-y1lGkqJARNxH1k0XN7xYtNWY/' frameborder='0' width='100%' height='100%'></iframe>
+    </div>
+    
+    <header class="navbar navbar-dark">
 <body>
     
     <div id="spline-background">
@@ -95,8 +104,7 @@
             {% endif %}
             
         </div>
-    </header>
-    
+    </header>   
     <div class="divider horizontal"></div>
     
     <div class="container-fluid main-container">
@@ -111,9 +119,11 @@
                         <li class="nav-item"><a class="nav-link text-light" href="#">Validación de propuestas</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="#">Moderación de reseñas</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.login') }}">Gestión de usuarios</a></li>
-                        <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.list') }}">Lista de usuarios</a></li>
 
-                        {% if 'user_new' in user_permisos %}
+                        {% if 'user_index' in current_user_permissions() %}
+                            <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.list') }}">Lista de Usuarios</a></li>
+                        {% endif %}
+                        {% if 'user_new' in current_user_permissions() %}
                             <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.new') }}">Crear Usuario</a></li>
                         {% endif %}
                     </ul>
@@ -131,6 +141,7 @@
         </div>
     </div>
     
+    <footer class="py-3">
     <footer class="py-3">
         <div class="container text-center">
             <span class="text-light footer-text">&copy; 2025 Proyecto de Software 2025</span>

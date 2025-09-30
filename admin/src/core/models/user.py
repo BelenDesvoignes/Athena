@@ -33,7 +33,7 @@ class User(Base):
     )
 
     role: Mapped["Role"] = relationship(back_populates="users", lazy="joined")
-
+    eliminado: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def __repr__(self):
         return f"<User {self.email}>"

@@ -9,25 +9,21 @@ from src.core.models.role_permission import Role
 if TYPE_CHECKING:
     from src.core.models.role_permission import Role
 
-
 def get_user_by_email(email):
-    """ Busca y retorna un usuario por su dirección de correo electrónico. """
-    return db.session.query(User).filter_by(email=email).first()
-
+    """Retorna un usuario activo (no eliminado) por email."""
+    return db.session.query(User).filter_by(email=email, eliminado=False).first()
 
 
 def get_user_by_id(user_id):
-    """ Busca y retorna un usuario por su ID. """
-    # Usa la sintaxis moderna de SQLAlchemy
-    return db.session.get(User, user_id) 
-
+    """Busca y retorna un usuario activo por su ID."""
+    return db.session.query(User).filter_by(id=user_id, eliminado=False).first()
 
 
 def check_email_unique(email):
-    existing = db.session.query(User).filter_by(email=email).first()
+    """Verifica que no exista un usuario activo con el mismo email."""
+    existing = db.session.query(User).filter_by(email=email, eliminado=False).first()
     if existing:
         raise ValueError("El email ya está registrado.")
-    
 
  
 def validate_data(data, is_new=True):
@@ -56,104 +52,80 @@ def create_user(data):
     validate_data(data, is_new=True)
     check_email_unique(data['email'])
 
-    #  BÚSQUEDA Y ASIGNACIÓN DEL ROL
-    role_name = data.get('rol') # Obtiene 'Usuario público'
-    
-    # Busca el objeto Role. Si no existe, lanza un error (aunque el seeder lo previene)
-    role_obj = get_role_by_name(role_name)
+    role_obj = get_role_by_name(data['rol'])
     if not role_obj:
-        raise ValueError(f"El rol '{role_name}' no existe en la base de datos.")
+        raise ValueError(f"El rol '{data['rol']}' no existe.")
 
-    # HASHEO DE CONTRASEÑA
-    hashed_password = hash_password(data['password'])
-    
-    # Por defecto, NO bloqueado (ENABLED=True)
-    # Tu controller envía 'activo': True. Si viniera 'bloqueado', lo manejaríamos.
-    # Para el registro público, asumiremos enabled=True.
-    enabled_status = data.get('activo', True)
-    
+    hashed_password = hash_password(data['password']).decode('utf-8')
+
     try:
         user = User(
             nombre=data['nombre'],
             apellido=data['apellido'],
             email=data['email'],
-            # Asigna la variable con el hash, no una lista.
-            password=hashed_password.decode('utf-8'), 
-            
-            #  Usa el ID del objeto Role encontrado.
-            role_id=role_obj.id, 
-            
-            #  Estado de activación (lo más seguro es usar True para el registro)
-            enabled=True
-            
-            # Nota: system_admin=False por defecto en el modelo si no se pasa.
+            password=hashed_password,
+            role_id=role_obj.id,
+            enabled=True  # siempre activo
         )
         db.session.add(user)
         db.session.commit()
         return user
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        #  Muestra el error de SQLAlchemy para debugging, pero retorna un mensaje genérico.
-        # print(f"Error detallado de SQLAlchemy: {e}") 
-        raise ValueError("Error al crear usuario en la base de datos. Intente más tarde.")
+        raise ValueError("Error al crear usuario en la base de datos.")
+
+
+
+
+
+
+
+
+
 
 def update_user(user_id, data):
     user = get_user_by_id(user_id)
     if not user:
         raise ValueError("Usuario no encontrado.")
 
-    validate_data(data, is_new=False)
-    
+    # Validación de email
     if data['email'] != user.email:
         check_email_unique(data['email'], current_user_id=user_id)
-    
-   
-    bloqueado_nuevo = data.get('bloqueado', False)  # por defecto no bloqueado
-
-
-   
-    if user.system_admin and bloqueado_nuevo == False:
-        raise ValueError("Error: Un usuario con rol de Administrador de Sistema no puede ser bloqueado.")
 
     try:
         user.nombre = data['nombre']
         user.apellido = data['apellido']
         user.email = data['email']
-        user.role_id = int(data['role_id'])
-        user.enabled = bloqueado_nuevo
+        user.enabled = data.get('enabled', True)
 
         if data.get('password'):
             if len(data['password']) < 8:
-                raise ValueError(f"La nueva clave debe tener al menos 8 caracteres.")
+                raise ValueError("La nueva clave debe tener al menos 8 caracteres.")
             user.password = hash_password(data['password'])
         
         db.session.commit()
         return user
-    except ValueError as ve:
-        db.session.rollback()
-        raise ve
     except Exception as e:
         db.session.rollback()
-        raise ValueError(f"Error al actualizar usuario en DB: {e}")
-
-
-
+        raise ValueError(f"Error al actualizar usuario: {e}")
+    
 
 def delete_user(user_id):
     user = get_user_by_id(user_id)
     if not user:
         raise ValueError("Usuario no encontrado.")
     
-    if user.system_admin:
-        raise ValueError("Error: Un usuario con rol de Administrador de Sistema no puede ser eliminado.")
+    if getattr(user, "system_admin", False):
+        raise ValueError("No se puede eliminar un usuario administrador del sistema.")
 
-    try:
-        db.session.delete(user)
-        db.session.commit()
-        return True
-    except Exception as e:
-        db.session.rollback()
-        raise ValueError(f"Error al eliminar usuario en DB: {e}")
+    user.eliminado = True
+    print(f"Antes de commit: {user.id=} {user.eliminado=}")
+    db.session.commit()
+    print(f"Después de commit: {user.id=} {user.eliminado=}")
+    
+    return user
+
+    
 
 def list_users(page, per_page, search_email=None, search_enabled=None, search_role_id=None, order_by='fecha_creacion', order_dir='desc'):
     # Usamos SQLAlchemy puro
