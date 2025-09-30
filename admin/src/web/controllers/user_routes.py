@@ -43,44 +43,52 @@ def home():
 @user_admin_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        # ... (código que obtiene datos y verifica email existente, sin cambios)
         email = request.form.get("email")
         password = request.form.get("password")
         nombre = request.form.get("nombre")
         apellido = request.form.get("apellido")
 
-        # validación de campos requeridos
+        # validación de campos requeridos (esta es la validación del controller, déjala)
         if not all([email, password, nombre, apellido]):
             return render_template(
                 "register.html", error="Todos los campos son obligatorios."
             )
 
-        # verificar si el email ya existe
+        # verificar si el email ya existe (déjala)
         existing_user = get_user_by_email(email)
         if existing_user:
             return render_template(
                 "register.html", error="El email ya está registrado."
             )
 
-        # datos para la creación del usuario
+        # datos para la creación del usuario (incluye 'password', está correcto)
         data = {
             "nombre": nombre,
             "apellido": apellido,
             "email": email,
-            "password": password,
-            "rol": "Usuario público",  # Rol por defecto
+            "password": password, 
+            "rol": "Usuario público", 
             "activo": True,
         }
 
-        # Llamar a la función de servicio para crear el usuario
-        # hacer que create_user maneje el hashing de la clave
-        create_user(data)
+        # ⬇️ ---------------------- CAMBIO CRÍTICO AQUÍ ---------------------- ⬇️
+        try:
+            # Llamar a la función de servicio para crear el usuario
+            create_user(data)
 
-        # redirigir al login
-        return redirect(url_for("user_admin.login"))
+            # redirigir al login si es exitoso
+            return redirect(url_for("user_admin.login"))
+        
+        except ValueError as e:
+            # Captura el error de validación de user_service.py y lo muestra al usuario
+            return render_template("register.html", error=str(e))
+        
+        # ⬆️ ------------------------------------------------------------------ ⬆️
+
 
     # mostrar el formulario de registro en una solicitud GET
     return render_template("register.html")
-
 
 
 @user_admin_bp.route("/list", methods=["GET"])

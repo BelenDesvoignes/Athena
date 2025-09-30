@@ -3,6 +3,7 @@ from src.web.config import config
 from src.core.database import db, reset_db
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
+from src.core.seeds import seed_roles_permissions, seed_admin_user 
 
 
 def create_app(env="development"):
@@ -36,6 +37,10 @@ def create_app(env="development"):
     @app.cli.command("reset-db")
     def reset_db_command():
         reset_db()
+        with app.app_context(): 
+            seed_roles_permissions() # <-- ¡CRÍTICO para insertar roles!
+            seed_admin_user()        # <-- ¡CRÍTICO para crear el admin!
+            print("Base de datos reseteada e inicializada con roles y admin.")
 
     return app
 

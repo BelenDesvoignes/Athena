@@ -2,9 +2,7 @@ from src.core.database import db
 from src.core.models.user import User
 from src.core.models.role_permission import Role, Permission, RolePermission
 from src.core.bcrypt import hash_password
-from main import create_app
 
-app = create_app()
 
 def seed_roles_permissions():
     # 1. Roles
@@ -60,7 +58,7 @@ def seed_admin_user():
         password=hashed_password.decode('utf-8'),
         role_id=admin_role.id,
         system_admin=True,
-        enabled=False
+        enabled=True
     )
 
     db.session.add(admin_user)
