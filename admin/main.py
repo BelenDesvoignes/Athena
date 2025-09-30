@@ -5,7 +5,6 @@ from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 
 
-
 def create_app(env="development"):
     # configura la carpeta de archivos estáticos y la de plantillas.
     app = Flask(
@@ -27,17 +26,12 @@ def create_app(env="development"):
     @app.route("/")
     def index():
         return render_template("home.html")
-    
-
-
 
     @app.cli.command("reset-db")
     def reset_db_command():
         reset_db()
 
     return app
-
-
 
 
 app = create_app()
