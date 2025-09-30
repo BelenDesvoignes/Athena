@@ -32,7 +32,7 @@ def create_app(env="development"):
 
     @app.route("/")
     def index():
-        return render_template("home.html")
+        return render_template("index.html")
 
     @app.cli.command("reset-db")
     def reset_db_command():
