@@ -20,4 +20,4 @@ def get_role_by_name(role_name: str):
 
 
 def get_permissions_for_user(user):
-    return [perm.name for perm in user.rol.permissions]
+    return [perm.name for perm in user.role.permissions]

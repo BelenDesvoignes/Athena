@@ -60,7 +60,7 @@ def seed_admin_user():
         password=hashed_password.decode('utf-8'),
         role_id=admin_role.id,
         system_admin=True,
-        enabled=False
+        enabled=True
     )
 
     db.session.add(admin_user)

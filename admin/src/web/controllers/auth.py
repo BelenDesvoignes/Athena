@@ -64,7 +64,7 @@ def register():
                 "email": email,
                 "password": password,
                 "role_id": role_id, # Asignación de rol por defecto
-                "enabled": False
+                "enabled": True
             })
             
             flash("Registro exitoso. ¡Inicia sesión!", "success")

@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash,  session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
 from src.core.user_service import list_users, create_user, update_user, delete_user, get_user_by_id, get_user_by_email
 from src.web.handlers.auth import login_required, permission_required
+from src.core.bcrypt import check_password
+from src.core.permissions_service import get_permissions_for_user
 
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
@@ -16,10 +18,10 @@ def login():
 
         user = get_user_by_email(email)
 
-        if user and user.password == password:
+        if user and user.enabled and check_password(password, user.password):
             # autenticación exitosa
             session["user_id"] = user.id
-            session["user_role"] = user.rol
+            session["user_role_id"] = user.role.id
 
             # redirige a la página de inicio (home.html)
             return redirect(url_for("user_admin.home"))
@@ -83,6 +85,7 @@ def register():
 
 
 
+
 @user_admin_bp.route("/list", methods=["GET"])
 @login_required
 @permission_required("user_index")
@@ -104,7 +107,7 @@ def list():
         order_dir=order_dir
     )
     users = pagination.items
-    
+  
     return render_template("list.html", users=users, pagination=pagination)
 
 
@@ -127,7 +130,7 @@ def new():
             flash("Usuario creado correctamente.", "success")
             return redirect(url_for("user_admin.index"))
         except ValueError as e:
-            flash(str(e), "danger")
+            flash(str(e), "danger")  
     return render_template("form.html", user=None)
 
 
@@ -140,8 +143,8 @@ def show(user_id):
     user = get_user_by_id(user_id) 
     if not user: 
         flash("Usuario no encontrado.", "danger") 
-        return redirect(url_for("user_admin.index")) 
-    return render_template("show.html", user=user)
+        return redirect(url_for("user_admin.index"))   
+    return render_template("show.html", user=user,)
 
 
 # Editar usuario
