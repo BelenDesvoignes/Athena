@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
 from src.core.user_service import list_users, create_user, update_user, delete_user, get_user_by_id, get_user_by_email
 from src.web.handlers.auth import login_required, permission_required
-from src.core.bcrypt import check_password
-from src.core.permissions_service import get_permissions_for_user
+from src.core.bcrypt import check_password       
 
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
@@ -18,15 +17,23 @@ def login():
 
         user = get_user_by_email(email)
 
+        # 1. 🔑 Verificación Completa:
+        #    - Que el usuario exista.
+        #    - Que el usuario esté ACTIVADO (enabled=True).
+        #    - Que la contraseña coincida con el hash almacenado.
         if user and user.enabled and check_password(password, user.password):
-            # autenticación exitosa
+            
+            # Autenticación exitosa
             session["user_id"] = user.id
-            session["user_role_id"] = user.role.id
+            
+            # 2. 🎯 Asignación de Rol a la sesión (usando la relación .name)
+            # Asumiendo que user.role es la relación al objeto Role
+            session["user_role"] = user.role.name 
 
             # redirige a la página de inicio (home.html)
             return redirect(url_for("user_admin.home"))
         else:
-            # autenticación fallida
+            # Autenticación fallida o usuario inactivo
             return render_template(
                 "login.html", error="Credenciales inválidas o cuenta inactiva."
             )
@@ -45,45 +52,52 @@ def home():
 @user_admin_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        # ... (código que obtiene datos y verifica email existente, sin cambios)
         email = request.form.get("email")
         password = request.form.get("password")
         nombre = request.form.get("nombre")
         apellido = request.form.get("apellido")
 
-        # validación de campos requeridos
+        # validación de campos requeridos (esta es la validación del controller, déjala)
         if not all([email, password, nombre, apellido]):
             return render_template(
                 "register.html", error="Todos los campos son obligatorios."
             )
 
-        # verificar si el email ya existe
+        # verificar si el email ya existe (déjala)
         existing_user = get_user_by_email(email)
         if existing_user:
             return render_template(
                 "register.html", error="El email ya está registrado."
             )
 
-        # datos para la creación del usuario
+        # datos para la creación del usuario (incluye 'password', está correcto)
         data = {
             "nombre": nombre,
             "apellido": apellido,
             "email": email,
-            "password": password,
-            "rol": "Usuario público",  # Rol por defecto
+            "password": password, 
+            "rol": "Usuario público", 
             "activo": True,
         }
 
-        # Llamar a la función de servicio para crear el usuario
-        # hacer que create_user maneje el hashing de la clave
-        create_user(data)
+        # ⬇️ ---------------------- CAMBIO CRÍTICO AQUÍ ---------------------- ⬇️
+        try:
+            # Llamar a la función de servicio para crear el usuario
+            create_user(data)
 
-        # redirigir al login
-        return redirect(url_for("user_admin.login"))
+            # redirigir al login si es exitoso
+            return redirect(url_for("user_admin.login"))
+        
+        except ValueError as e:
+            # Captura el error de validación de user_service.py y lo muestra al usuario
+            return render_template("register.html", error=str(e))
+        
+        # ⬆️ ------------------------------------------------------------------ ⬆️
+
 
     # mostrar el formulario de registro en una solicitud GET
     return render_template("register.html")
-
-
 
 
 @user_admin_bp.route("/list", methods=["GET"])

@@ -4,6 +4,7 @@ from src.core.models.user import User
 import re
 from src.core.bcrypt import hash_password, check_password
 from typing import TYPE_CHECKING
+from src.core.models.role_permission import Role
 
 if TYPE_CHECKING:
     from src.core.models.role_permission import Role
@@ -35,9 +36,9 @@ def validate_data(data, is_new=True):
     apellido = data.get('apellido')
     email = data.get('email')
     password = data.get('password')
-    role_id = data.get('role_id')
+    rol = data.get('rol')
 
-    if not nombre or not apellido or not email or not role_id:
+    if not nombre or not apellido or not email or not rol:
         raise ValueError("Nombre, apellido, email son obligatorios.")
 
     if is_new and not password:
@@ -55,27 +56,46 @@ def create_user(data):
     validate_data(data, is_new=True)
     check_email_unique(data['email'])
 
-    hashed_password = hash_password(data['password'])
-    data["password"] = hashed_password.decode('utf-8') 
-    # Por defecto no bloqueado
-    bloqueado = data.get('bloqueado') == 'True' if data.get('bloqueado') is not None else False
+    #  BÚSQUEDA Y ASIGNACIÓN DEL ROL
+    role_name = data.get('rol') # Obtiene 'Usuario público'
+    
+    # Busca el objeto Role. Si no existe, lanza un error (aunque el seeder lo previene)
+    role_obj = get_role_by_name(role_name)
+    if not role_obj:
+        raise ValueError(f"El rol '{role_name}' no existe en la base de datos.")
 
+    # HASHEO DE CONTRASEÑA
+    hashed_password = hash_password(data['password'])
+    
+    # Por defecto, NO bloqueado (ENABLED=True)
+    # Tu controller envía 'activo': True. Si viniera 'bloqueado', lo manejaríamos.
+    # Para el registro público, asumiremos enabled=True.
+    enabled_status = data.get('activo', True)
+    
     try:
         user = User(
             nombre=data['nombre'],
             apellido=data['apellido'],
             email=data['email'],
-            password=['password'],
-            role_id=int(data['role_id']),
-            enabled=bloqueado
+            # Asigna la variable con el hash, no una lista.
+            password=hashed_password.decode('utf-8'), 
+            
+            #  Usa el ID del objeto Role encontrado.
+            role_id=role_obj.id, 
+            
+            #  Estado de activación (lo más seguro es usar True para el registro)
+            enabled=True
+            
+            # Nota: system_admin=False por defecto en el modelo si no se pasa.
         )
         db.session.add(user)
         db.session.commit()
         return user
     except Exception as e:
         db.session.rollback()
-        raise ValueError(f"Error al crear usuario en DB: {e}")
-
+        #  Muestra el error de SQLAlchemy para debugging, pero retorna un mensaje genérico.
+        # print(f"Error detallado de SQLAlchemy: {e}") 
+        raise ValueError("Error al crear usuario en la base de datos. Intente más tarde.")
 
 def update_user(user_id, data):
     user = get_user_by_id(user_id)
@@ -200,4 +220,6 @@ def authenticate_user(email, password):
         return user
     return None
 
-
+def get_role_by_name(name):
+    """ Busca y retorna un objeto Role por su nombre. """
+    return db.session.query(Role).filter_by(name=name).first()
