@@ -4,7 +4,9 @@ from src.core.models.user import User
 import re
 from src.core.bcrypt import hash_password, check_password
 from typing import TYPE_CHECKING
-from src.core.models.role_permission import Role
+
+if TYPE_CHECKING:
+    from src.core.models.role_permission import Role
 
 
 def get_user_by_email(email):
@@ -55,16 +57,17 @@ def create_user(data):
 
     hashed_password = hash_password(data['password'])
     data["password"] = hashed_password.decode('utf-8') 
-    activo = data.get('enabled') == 'False' if data.get('enabled') is not None else False
-    
+    # Por defecto no bloqueado
+    bloqueado = data.get('bloqueado') == 'True' if data.get('bloqueado') is not None else False
+
     try:
         user = User(
             nombre=data['nombre'],
             apellido=data['apellido'],
             email=data['email'],
-            password=hashed_password,
+            password=['password'],
             role_id=int(data['role_id']),
-            enabled=activo
+            enabled=bloqueado
         )
         db.session.add(user)
         db.session.commit()
@@ -85,10 +88,11 @@ def update_user(user_id, data):
         check_email_unique(data['email'], current_user_id=user_id)
     
    
-    activo_nuevo = data.get('enabled') == 'False'
-    
+    bloqueado_nuevo = data.get('bloqueado', False)  # por defecto no bloqueado
+
+
    
-    if user.system_admin and activo_nuevo == False:
+    if user.system_admin and bloqueado_nuevo == False:
         raise ValueError("Error: Un usuario con rol de Administrador de Sistema no puede ser bloqueado.")
 
     try:
@@ -96,7 +100,7 @@ def update_user(user_id, data):
         user.apellido = data['apellido']
         user.email = data['email']
         user.role_id = int(data['role_id'])
-        user.activo = activo_nuevo
+        user.enabled = bloqueado_nuevo
 
         if data.get('password'):
             if len(data['password']) < 8:
@@ -182,7 +186,7 @@ def get_user_credentials(email, password):
     if not user:
         return None 
 
-    if not user.activo:
+    if not user.enabled:
         return 'BLOCKED' 
 
     if check_password(user.password, password):
@@ -196,16 +200,4 @@ def authenticate_user(email, password):
         return user
     return None
 
-def get_role_by_name(role_name: str):
-    role_obj = (
-        db.session.execute(
-            db.select(Role).filter_by(name=role_name)
-        )
-        .unique()  
-        .scalar_one_or_none()
-    )
 
-    if role_obj is None:
-        raise ValueError(f"El rol '{role_name}' no existe en la base de datos.")
-    
-    return role_obj

@@ -4,7 +4,7 @@ from src.web.config import config
 from flask_session import Session
 from src.web.handlers.auth import login_required
 from src.web.controllers.auth import auth_bp
-from src.web.controllers.admin_routes import admin_bp
+from src.web.controllers.user_routes import user_admin_bp
 
 app = Flask(__name__)
 
@@ -30,7 +30,8 @@ def create_app(env="development", static_folder="../../static"):
     
     #registro de blueprints
     app.register_blueprint(auth_bp)
-    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+
 
     #manejo de errores
     @app.route("/not_found")
