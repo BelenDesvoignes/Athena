@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash,  session
 from src.core.user_service import list_users, create_user, update_user, delete_user, get_user_by_id, get_user_by_email
 from src.web.handlers.auth import login_required, permission_required
+from src.core.bcrypt import check_password       
 
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
@@ -16,15 +17,23 @@ def login():
 
         user = get_user_by_email(email)
 
-        if user and user.password == password:
-            # autenticación exitosa
+        # 1. 🔑 Verificación Completa:
+        #    - Que el usuario exista.
+        #    - Que el usuario esté ACTIVADO (enabled=True).
+        #    - Que la contraseña coincida con el hash almacenado.
+        if user and user.enabled and check_password(password, user.password):
+            
+            # Autenticación exitosa
             session["user_id"] = user.id
-            session["user_role"] = user.rol
+            
+            # 2. 🎯 Asignación de Rol a la sesión (usando la relación .name)
+            # Asumiendo que user.role es la relación al objeto Role
+            session["user_role"] = user.role.name 
 
             # redirige a la página de inicio (home.html)
             return redirect(url_for("user_admin.home"))
         else:
-            # autenticación fallida
+            # Autenticación fallida o usuario inactivo
             return render_template(
                 "login.html", error="Credenciales inválidas o cuenta inactiva."
             )
