@@ -11,14 +11,8 @@
         /* Estilos del Spline (el Fondo) */
         /* ============================== */
         #spline-background {
-            position: fixed; /* Lo fija en la ventana de visualización */
-            top: 0;
-            left: 0;
-            width: 100vw; /* 100% del ancho de la vista */
-            height: 100vh; /* 100% del alto de la vista */
-            z-index: -2; /* CLAVE! Lo envía muy al fondo, detrás de todo (incluido el body) */
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; 
         }
-        
         #spline-background iframe {
             display: block;
         }
@@ -27,90 +21,33 @@
         /* Estilos generales para el layout */
         /* ============================== */
         body {
-            /* IMPORTANTE: Hacer el fondo del body transparente para que se vea el Spline */
-            background-color: transparent !important; 
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            color: #fff; /* Asegura que el texto sea blanco sobre el fondo oscuro */
+            background-color: transparent !important; display: flex; flex-direction: column; min-height: 100vh; color: #fff;
         }
-        
         main {
-            flex-grow: 1;
-            /* El main, header y footer necesitan fondos semi-transparentes para que el texto sea legible sobre el fondo animado */
-            background-color: rgba(33, 37, 41, 0.7); /* bg-dark semi-transparente */
+            flex-grow: 1; background-color: rgba(33, 37, 41, 0.7);
         }
         header, footer {
-            background-color: rgba(33, 37, 41, 0.8) !important; /* bg-dark semi-transparente */
-            position: relative; /* Asegura que header/footer estén encima del spline */
-            z-index: 1;
+            background-color: rgba(33, 37, 41, 0.8) !important; position: relative; z-index: 1;
         }
-
-        /* Ajustes para la barra lateral y su contenido */
         #sidebarMenu {
-            /* Hacemos la barra lateral oscura y semi-transparente */
-            background-color: rgba(33, 37, 41, 0.9) !important; 
-            z-index: 1;
+            background-color: rgba(33, 37, 41, 0.9) !important; z-index: 1;
         }
-        /* Esto asegura que la columna de contenido principal (donde se ubica main) también tenga el fondo oscuro */
-        .col-md-9 {
-             background-color: transparent !important; 
-        }
-
-        /* Estilo para los enlaces del menú lateral */
-        #sidebarMenu .nav-link {
-            color: #ccc !important; 
-        }
-        #sidebarMenu .nav-link:hover,
-        #sidebarMenu .nav-link:focus {
-            color: #fff !important; /* Blanco al pasar el mouse */
-            background-color: #333a3d;
-        }
-
-        /* Estilo para el logo y el nombre en la barra de navegación (YA NO SE USA LOGO) */
         .navbar-brand .athena-name {
             font-size: 2rem;
             font-weight: bold;
         }
-
-        /* Estilo unificado para las líneas (horizontal y vertical) */
+        /* ... (Resto de estilos CSS) ... */
         .divider {
-            border-color: #555 !important;
-            border-style: solid;
-            position: relative; /* Asegura que los divisores estén encima del spline */
-            z-index: 1; 
+            border-color: #555 !important; border-style: solid; position: relative; z-index: 1; 
         }
         .divider.horizontal {
             border-width: 2px 0 0 0;
         }
         .divider.vertical {
-            border-width: 0 1px 0 0;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            right: 0;
-            z-index: 1000;
+            border-width: 0 1px 0 0; height: 100%; position: absolute; top: 0; right: 0; z-index: 1000;
         }
-
-        /* Ajustes para el contenedor principal y la barra lateral */
         .main-container {
-            display: flex;
-            flex-grow: 1;
-        }
-        .sidebar {
-            position: relative;
-        }
-        .sidebar-content {
-            padding-right: 15px;
-        }
-
-        /* Footer */
-        footer {
-            margin-top: auto;
-            text-align: center;
-        }
-        .footer-text {
-            font-size: 0.8rem;
+            display: flex; flex-grow: 1;
         }
     </style>
 </head>
@@ -122,8 +59,22 @@
     
     <header class="navbar navbar-dark">
         <div class="container-fluid">
+            
+            {# BOTÓN DE HAMBURGUESA: Visible solo si hay sesión activa #}
+            {% if 'user_id' in session %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            {% endif %}
+
+            {# Nombre de la marca #}
             <a class="navbar-brand text-light" href="#">
                 <span class="athena-name">Athena Admin</span> </a>
+            
+            
+            {# CONDICIONAL PARA EL MENÚ DE USUARIO/LOGIN #}
+            {% if 'user_id' in session %}
+            {# Usuario LOGUEADO: Mostrar menú desplegable #}
             <div class="dropdown">
                 <button class="btn btn-dark dropdown-toggle text-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {% if g.user %}{{ g.user.nombre }}{% else %}Cuenta{% endif %}
@@ -131,9 +82,18 @@
                 <ul class="dropdown-menu dropdown-menu-dark">
                     <li><a class="dropdown-item text-light" href="#">Ver perfil</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-light" href="#">Cerrar sesión</a></li>
+                    <li><a class="dropdown-item text-light" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                 </ul>
             </div>
+            
+            {% else %}
+            {# Usuario NO LOGUEADO: Mostrar botones de acceso #}
+            <div class="d-flex">
+                <a class="btn btn-sm btn-outline-light me-2" href="{{ url_for('auth.login') }}">Iniciar Sesión</a>
+                <a class="btn btn-sm btn-outline-success" href="{{ url_for('auth.register') }}">Registrarse</a>
+            </div>
+            {% endif %}
+            
         </div>
     </header>
     
@@ -141,7 +101,10 @@
     
     <div class="container-fluid main-container">
         <div class="row w-100">
-            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar">
+            
+            {# 1. BARRA LATERAL: Solo se renderiza si hay sesión. (Clase 'd-lg-block' eliminada para que 'collapse' funcione) #}
+            {% if 'user_id' in session %}
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 sidebar collapse">
                 <div class="position-sticky pt-3 sidebar-content">
                     <ul class="nav flex-column">
                         <li class="nav-item"><a class="nav-link text-light" href="#">Gestión de sitios históricos</a></li>
@@ -157,10 +120,14 @@
                 </div>
                 <div class="divider vertical"></div>
             </nav>
-
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 text-light">
+            {% endif %}
+            
+            {# 2. MAIN CONTENT: El bloque 'content' se define UNA SOLA VEZ. 
+               El ancho se ajusta dinámicamente con las clases dentro del atributo 'class'. #}
+            <main class="{% if 'user_id' in session %}col-md-9 ms-sm-auto col-lg-10 px-md-4{% else %}col-12{% endif %} text-light">
                 {% block content %}{% endblock %}
             </main>
+            
         </div>
     </div>
     
