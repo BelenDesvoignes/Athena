@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, abort
+from flask import Flask, jsonify, render_template, abort, session, g
 from src.core import database
 from src.web.config import config
 from flask_session import Session
@@ -21,12 +21,7 @@ def create_app(env="development", static_folder="../../static"):
     database.init_db(app)
 
     
-
-
-    @app.route("/")
-    @login_required
-    def home():
-        return render_template("home.html")
+    
     
     #registro de blueprints
     app.register_blueprint(auth_bp)
@@ -57,5 +52,5 @@ def create_app(env="development", static_folder="../../static"):
     def unauthorized(error):
         return render_template("error_401.html"), 401
 
-
+    
     return app

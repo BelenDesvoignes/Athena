@@ -14,7 +14,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 @auth_bp.route("/", methods=['GET'])
 def login():
     if 'user_id' in session:
-        return redirect(url_for("admin.home"))
+        return redirect(url_for("user_admin.home"))
     return render_template("login.html")
 
 @auth_bp.route("/authenticate", methods=['POST'])
@@ -37,7 +37,7 @@ def authenticate():
     session['rol'] = user.rol
     
     flash(f"Bienvenido, {user.nombre}.", "success")
-    return redirect(url_for("admin.home")) 
+    return redirect(url_for("user_admin.home")) 
 
 
 
@@ -45,7 +45,7 @@ def authenticate():
 @auth_bp.route("/register", methods=['GET', 'POST'])
 def register():
     if 'user_id' in session:
-        return redirect(url_for("admin.home"))
+        return redirect(url_for("user_admin.home"))
         
     if request.method == 'POST':
         nombre = request.form.get("nombre")
@@ -64,7 +64,7 @@ def register():
                 "email": email,
                 "password": password,
                 "role_id": role_id, # Asignación de rol por defecto
-                "enabled": False
+                "enabled": True
             })
             
             flash("Registro exitoso. ¡Inicia sesión!", "success")
