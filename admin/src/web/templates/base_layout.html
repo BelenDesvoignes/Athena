@@ -7,34 +7,67 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* ============================== */
+        /* Estilos del Spline (el Fondo) */
+        /* ============================== */
+        #spline-background {
+            position: fixed; /* Lo fija en la ventana de visualización */
+            top: 0;
+            left: 0;
+            width: 100vw; /* 100% del ancho de la vista */
+            height: 100vh; /* 100% del alto de la vista */
+            z-index: -2; /* CLAVE! Lo envía muy al fondo, detrás de todo (incluido el body) */
+        }
+        
+        #spline-background iframe {
+            display: block;
+        }
+
+        /* ============================== */
         /* Estilos generales para el layout */
+        /* ============================== */
         body {
+            /* IMPORTANTE: Hacer el fondo del body transparente para que se vea el Spline */
+            background-color: transparent !important; 
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            color: #fff; /* Asegura que el texto sea blanco sobre el fondo oscuro */
         }
+        
         main {
             flex-grow: 1;
+            /* El main, header y footer necesitan fondos semi-transparentes para que el texto sea legible sobre el fondo animado */
+            background-color: rgba(33, 37, 41, 0.7); /* bg-dark semi-transparente */
+        }
+        header, footer {
+            background-color: rgba(33, 37, 41, 0.8) !important; /* bg-dark semi-transparente */
+            position: relative; /* Asegura que header/footer estén encima del spline */
+            z-index: 1;
+        }
+
+        /* Ajustes para la barra lateral y su contenido */
+        #sidebarMenu {
+            /* Hacemos la barra lateral oscura y semi-transparente */
+            background-color: rgba(33, 37, 41, 0.9) !important; 
+            z-index: 1;
+        }
+        /* Esto asegura que la columna de contenido principal (donde se ubica main) también tenga el fondo oscuro */
+        .col-md-9 {
+             background-color: transparent !important; 
         }
 
         /* Estilo para los enlaces del menú lateral */
         #sidebarMenu .nav-link {
-            color: #ccc !important; /* Gris claro */
+            color: #ccc !important; 
         }
         #sidebarMenu .nav-link:hover,
         #sidebarMenu .nav-link:focus {
-            color: #ccc !important;
-            background-color: #333a3d; /* Gris oscuro para el hover */
+            color: #fff !important; /* Blanco al pasar el mouse */
+            background-color: #333a3d;
         }
 
-        /* Estilo para el logo y el nombre en la barra de navegación */
-        .navbar-brand .logo {
-            height: 60px;
-            width: auto;
-            margin-right: 15px;
-            vertical-align: middle;
-            filter: invert(100%);
-        }
+        /* Estilo para el logo y el nombre en la barra de navegación (YA NO SE USA LOGO) */
         .navbar-brand .athena-name {
             font-size: 2rem;
             font-weight: bold;
@@ -42,8 +75,10 @@
 
         /* Estilo unificado para las líneas (horizontal y vertical) */
         .divider {
-            border-color: #555 !important; /* Un gris más claro para las líneas */
+            border-color: #555 !important;
             border-style: solid;
+            position: relative; /* Asegura que los divisores estén encima del spline */
+            z-index: 1; 
         }
         .divider.horizontal {
             border-width: 2px 0 0 0;
@@ -79,12 +114,16 @@
         }
     </style>
 </head>
-<body class="bg-dark text-light">
-    <header class="navbar navbar-dark bg-dark">
+<body>
+    
+    <div id="spline-background">
+        <iframe src='https://my.spline.design/glowingplanetparticles-y1lGkqJARNxH1k0XN7xYtNWY/' frameborder='0' width='100%' height='100%'></iframe>
+    </div>
+    
+    <header class="navbar navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand text-light" href="#">
-                <img src="{{ url_for('static', filename='images/athena_logo.png') }}" alt="Logo Athena" class="logo">
-            </a>
+                <span class="athena-name">Athena Admin</span> </a>
             <div class="dropdown">
                 <button class="btn btn-dark dropdown-toggle text-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {% if g.user %}{{ g.user.nombre }}{% else %}Cuenta{% endif %}
@@ -102,7 +141,7 @@
     
     <div class="container-fluid main-container">
         <div class="row w-100">
-            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-sidebar sidebar">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar">
                 <div class="position-sticky pt-3 sidebar-content">
                     <ul class="nav flex-column">
                         <li class="nav-item"><a class="nav-link text-light" href="#">Gestión de sitios históricos</a></li>
@@ -111,11 +150,9 @@
                         <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.login') }}">Gestión de usuarios</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.list') }}">Lista de usuarios</a></li>
 
-
                         {% if 'user_new' in user_permisos %}
                             <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.new') }}">Crear Usuario</a></li>
                         {% endif %}
-
                     </ul>
                 </div>
                 <div class="divider vertical"></div>
@@ -127,7 +164,7 @@
         </div>
     </div>
     
-    <footer class="bg-dark py-3">
+    <footer class="py-3">
         <div class="container text-center">
             <span class="text-light footer-text">&copy; 2025 Proyecto de Software 2025</span>
         </div>
