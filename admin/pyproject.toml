@@ -1,28 +1,23 @@
-[project]
-name = "web"
+[tool.poetry]
+name = "code"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Belen Desvoignes",email = "belendesvoignes@gmail.com"}
-]
+authors = ["Valentina Godoy <vgodoy.info@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "flask (>=3.1.2,<4.0.0)",
-    "psycopg2-binary (>=2.9.10,<3.0.0)",
-    "flask-sqlalchemy (>=3.1.1,<4.0.0)"
+packages = [
+    { include = "core", from = "src" },
+    { include = "web", from = "src" }
 ]
 
-[tool.poetry]
-packages = [{include = "web", from = "src"}]
-
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.4.2"
-
-
-[tool.poetry.group.dev.dependencies]
-black = "^25.9.0"
+[tool.poetry.dependencies]
+python = ">=3.10"
+flask = ">=3.1.2,<4.0.0"
+sqlalchemy = ">=2.0.43,<3.0.0"
+psycopg2-binary = ">=2.9.10,<3.0.0"
+flask-sqlalchemy-lite = ">=0.1.0,<0.2.0"
+flask-sqlalchemy = "^3.1.1"
+flask-session = "^0.8.0"
+bcrypt = "^5.0.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
