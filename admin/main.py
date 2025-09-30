@@ -5,7 +5,6 @@ from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 
 
-
 def create_app(env="development"):
     # configura la carpeta de archivos estáticos y la de plantillas.
     app = Flask(
@@ -19,17 +18,20 @@ def create_app(env="development"):
     db.init_app(app)
 
     # registra el blueprint de las rutas de administración.
+
     app.register_blueprint(auth_bp, url_prefix="/auth")
     #app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+
+    # app.register_blueprint(auth_bp, url_prefix="/auth")
+    # app.register_blueprint(admin_bp, url_prefix="/admin")
+    # app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+
     # define la ruta para la página principal.
 
     @app.route("/")
     def index():
         return render_template("home.html")
-    
-
-
 
     @app.cli.command("reset-db")
     def reset_db_command():
@@ -37,6 +39,11 @@ def create_app(env="development"):
 
     return app
 
+
+app = create_app()
+with app.app_context():
+    # crea todas las tablas en la base de datos.
+    db.create_all()
 
 
 
