@@ -1,6 +1,7 @@
 from src.core.database import db
 from src.core.models.user import User
 from src.core.models.role_permission import Role, Permission, RolePermission
+from src.core.models.feature_flags import FeatureFlag
 from src.core.bcrypt import hash_password
 
 
@@ -19,7 +20,8 @@ def seed_roles_permissions():
         Permission(name="user_update"),
         Permission(name="user_destroy"),
         Permission(name="user_show"),
-        Permission(name="tag_manage"),  # ejemplo adicional
+        Permission(name="tag_manage"),             # ejemplo adicional
+        Permission(name="feature_flags_manage")  
     ]
 
     db.session.add_all(roles + permisos)
@@ -27,7 +29,15 @@ def seed_roles_permissions():
 
     # 3. Asociar roles con permisos
     role_perm_map = {
-        "Administrador": ["user_index", "user_new", "user_update", "user_destroy", "user_show", "tag_manage"],
+        "Administrador": [
+            "user_index",
+            "user_new",
+            "user_update",
+            "user_destroy",
+            "user_show",
+            "tag_manage",
+            "feature_flags_manage"
+        ],
         "Editor": ["tag_manage"],
         "Usuario público": []
     }
@@ -41,6 +51,7 @@ def seed_roles_permissions():
 
     db.session.commit()
     print("Roles y permisos iniciales creados.")
+
 
 
 def seed_admin_user():
@@ -67,7 +78,18 @@ def seed_admin_user():
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
 
 
-if __name__ == "__main__":
-    with app.app_context():  # esto “activa” la app para poder usar db.session
-        seed_roles_permissions()
-        seed_admin_user()
+def seed_feature_flags():
+    flags = [
+        FeatureFlag(name="app_enabled", description="Activa o desactiva toda la aplicación", is_enabled=True),
+        FeatureFlag(name="beta_ui", description="Habilita la interfaz beta", is_enabled=False),
+        FeatureFlag(name="user_moderation", description="Permite moderar usuarios desde el panel", is_enabled=True),
+    ]
+
+    db.session.add_all(flags)
+    db.session.commit()
+    print("Feature flags iniciales creados.")
+
+#if __name__ == "__main__":
+#    with app.app_context():  # esto “activa” la app para poder usar db.session
+#        seed_roles_permissions()
+#        seed_admin_user()

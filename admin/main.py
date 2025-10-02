@@ -2,9 +2,11 @@ from flask import Flask, render_template, session
 from src.web.config import config
 from src.core.database import db, reset_db
 from src.core.permissions_service import current_user_permissions
+from src.core.flags import is_flag_enabled
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
-from src.core.seeds import seed_roles_permissions, seed_admin_user 
+from src.web.controllers.feature_flags import feature_flags_bp
+from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags
 
 
 def create_app(env="development"):
@@ -18,13 +20,13 @@ def create_app(env="development"):
     # inicializa la base de datos con la aplicación.
     db.init_app(app)
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
-
+    app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
     # registra el blueprint de las rutas de administración.
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     #app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
-
+    app.register_blueprint(feature_flags_bp)
     # app.register_blueprint(auth_bp, url_prefix="/auth")
     # app.register_blueprint(admin_bp, url_prefix="/admin")
     # app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
@@ -42,6 +44,7 @@ def create_app(env="development"):
         with app.app_context(): 
             seed_roles_permissions() # <-- ¡CRÍTICO para insertar roles!
             seed_admin_user()        # <-- ¡CRÍTICO para crear el admin!
+            seed_feature_flags()   
             print("Base de datos reseteada e inicializada con roles y admin.")
 
     @app.route("/limpiar_sesion")
@@ -59,4 +62,5 @@ with app.app_context():
 
 
 if __name__ == "__main__":
+    
     app.run(debug=True)
