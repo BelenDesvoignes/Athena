@@ -35,7 +35,7 @@ def permission_required(permission_name: str):
 
             if permission_name not in role_permissions:
                 flash('No tienes permisos para realizar esta acción.', 'warning')
-                return redirect(url_for('admin.home'))
+                return redirect(url_for('user_admin.home'))
 
             return f(*args, **kwargs)
         return decorated_function

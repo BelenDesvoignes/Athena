@@ -19,6 +19,7 @@ db = SQLAlchemy(model_class=Base)
 
 import src.core.models
 
+
 def init_db(app):
     """
     Inicializa la extensión de SQLAlchemy con la aplicación Flask.

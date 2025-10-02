@@ -1,0 +1,32 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Editar Usuario</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.nombre }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="apellido" class="form-label">Apellido</label>
+            <input type="text" class="form-control" id="apellido" name="apellido" value="{{ user.apellido }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Contraseña (solo si quieres cambiarla)</label>
+            <input type="password" class="form-control" id="password" name="password">
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="activo" name="activo" {% if not user.enabled %}checked{% endif %}>
+            <label class="form-check-label" for="activo">Activo</label>
+        </div>
+        <input type="hidden" name="role_id" value="{{ user.role_id }}">
+        <button type="submit" class="btn btn-success">Guardar cambios</button>
+        <a href="{{ url_for('user_admin.list') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
