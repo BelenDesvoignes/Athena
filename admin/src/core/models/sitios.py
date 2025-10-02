@@ -21,7 +21,7 @@ class Sitio(Base):
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Relación con etiquetas (muchos a muchos)
     etiquetas = relationship("Etiqueta", secondary="sitio_etiqueta", back_populates="sitios")
-
+    
     def __repr__(self):
         return f"<Sitio(id={self.id}, nombre={self.nombre})>"
 
