@@ -24,15 +24,8 @@
             <input type="text" class="form-control" id="nombre" name="nombre">
         </div>
 
-        {% if error %}
-            <div class="alert alert-danger">{{ error }}</div>
-        {% endif %}
-
         <button id="add" type="submit" class="btn btn-success w-100">Crear tag</button>
 
-        {% if success %}
-            <div class="alert alert-success">{{ success }}</div>
-        {% endif %}
     </form>
     <br>
     <h2>Listado de Tags</h2>
@@ -44,6 +37,7 @@
                     <th>Nombre</th>
                     <th>Slug</th>
                     <th>Gestion</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -51,27 +45,21 @@
                 <tr>
                     <td>{{ tag.nombre }}</td>
                     <td>{{ tag.slug }}</td>
-
-                    <!-- Botón Desplegable de Acciones -->
                     <td>
-                    <div class="btn-group">
-                        <button id="actions" type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Acciones
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item text-warning" href="#">
-                                    Editar
-                                </a>
-                            </li>
-                            <li>
-                                <form id="delTag" method="post" action="{{ url_for('tag.del_tag', tag_id=tag.id) }}" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a {{ tag.nombre }}?');" style="display:inline;">
-                                    <button id="delete" type="submit" class="dropdown-item text-danger">Eliminar</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                </td>
+                        <!--SECCION EDITAR-->
+                        <form id="addTag" method="post" action="{{ url_for('tag.edit_tag', tag_id=tag.id) }}">
+                            <div class="mb-3 d-flex">
+                                <input type="text" class="form-control me-2" id="nombre" name="nombre" style="height: 35px">
+                                <button id="edit" type="submit" class="btn btn-warning" style="height: 35px" >Editar nombre</button>
+                            </div>
+                        </form>
+                    </td>    
+                    <td>  
+                        <!--BOTON ELIMINAR-->
+                        <form id="delTag" method="post" action="{{ url_for('tag.del_tag', tag_id=tag.id) }}" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a {{ tag.nombre }}?');" style="display:inline;">
+                            <button id="delete" type="submit"  class="btn btn-danger" style="height: 35px">Eliminar</button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

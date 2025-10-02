@@ -8,6 +8,10 @@ def get_tag_by_slug(slug):
 def get_tag_by_id(tag_id):
     return db.session.get(Tag, tag_id)
 
+def get_tag_by_name(nombre):
+    slug = generate_slug(nombre)
+    return db.session.query(Tag).filter_by(slug=slug).first()
+
 def generate_slug(nombre):
     #pongo todo en minusculas
     nombre = nombre.lower()
@@ -23,17 +27,12 @@ def create_tag(data):
     db.session.commit()
     return new_tag
 
-def update_tag(tag_id, data):
+def update_tag(tag_id, nombre):
     tag = get_tag_by_id(tag_id)
     if tag:
-        for key, value in data.items():
-            if key == 'nombre':
-                #cambio el nombre y el slug
-                setattr(tag, key, value)
-                setattr(tag, 'slug', generate_slug(value))
-            else:
-                setattr(tag, key, value)
-        db.session.commit()
+        setattr(tag, 'nombre', nombre)
+        setattr(tag, 'slug', generate_slug(nombre))
+    db.session.commit()
     return tag
 
 def delete_tag(tag_id):
