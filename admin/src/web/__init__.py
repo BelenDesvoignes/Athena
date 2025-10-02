@@ -5,7 +5,7 @@ from flask_session import Session
 from src.web.handlers.auth import login_required
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
-from src.web.controllers.tag import tag_bp
+from src.web.controllers.tag_routes import tag_bp
 
 app = Flask(__name__)
 

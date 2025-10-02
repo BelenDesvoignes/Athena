@@ -1,20 +1,34 @@
 {% extends 'base_layout.html' %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
 <div class="container mt-5">
     <h2>Crear nuevo tag</h2>
 
-    <form method="post" action="{{ url_for('tag.add_tag') }}">
+    <form id="addTag" method="post" action="{{ url_for('tag.add_tag') }}">
         <div class="mb-3">
             <label for="nombre" class="form-label">Nombre</label>
-            <input type="text" class="form-control" id="nombre" name="nombre" required>
+            <input type="text" class="form-control" id="nombre" name="nombre">
         </div>
 
         {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
 
-        <button type="submit" class="btn btn-success w-100">Crear tag</button>
+        <button id="add" type="submit" class="btn btn-success w-100">Crear tag</button>
 
         {% if success %}
             <div class="alert alert-success">{{ success }}</div>
@@ -29,6 +43,7 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Slug</th>
+                    <th>Gestion</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +51,27 @@
                 <tr>
                     <td>{{ tag.nombre }}</td>
                     <td>{{ tag.slug }}</td>
+
+                    <!-- Botón Desplegable de Acciones -->
+                    <td>
+                    <div class="btn-group">
+                        <button id="actions" type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            Acciones
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item text-warning" href="#">
+                                    Editar
+                                </a>
+                            </li>
+                            <li>
+                                <form id="delTag" method="post" action="{{ url_for('tag.del_tag', tag_id=tag.id) }}" onsubmit="return confirm('¿Estás seguro de que quieres eliminar a {{ tag.nombre }}?');" style="display:inline;">
+                                    <button id="delete" type="submit" class="dropdown-item text-danger">Eliminar</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
                 </tr>
                 {% endfor %}
             </tbody>

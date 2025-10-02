@@ -4,7 +4,7 @@ from src.core.database import db, reset_db
 from src.core.permissions_service import current_user_permissions
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
-from src.web.controllers.tag import tag_bp
+from src.web.controllers.tag_routes import tag_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
 
 
