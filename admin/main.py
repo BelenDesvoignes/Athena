@@ -4,6 +4,7 @@ from src.core.database import db, reset_db
 from src.core.permissions_service import current_user_permissions
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
+from src.web.controllers.tag import tag_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
 
 
@@ -24,6 +25,8 @@ def create_app(env="development"):
     app.register_blueprint(auth_bp, url_prefix="/auth")
     #app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+
+    app.register_blueprint(tag_bp, url_prefix="/tags")
 
     # app.register_blueprint(auth_bp, url_prefix="/auth")
     # app.register_blueprint(admin_bp, url_prefix="/admin")
@@ -56,7 +59,6 @@ app = create_app()
 with app.app_context():
     # crea todas las tablas en la base de datos.
     db.create_all()
-
 
 if __name__ == "__main__":
     app.run(debug=True)
