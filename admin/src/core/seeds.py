@@ -21,7 +21,8 @@ def seed_roles_permissions():
         Permission(name="user_destroy"),
         Permission(name="user_show"),
         Permission(name="tag_manage"),             # ejemplo adicional
-        Permission(name="feature_flags_manage")  
+        Permission(name="feature_flags_manage"),
+        Permission(name="export_csv"),             # permiso extra agregado
     ]
 
     db.session.add_all(roles + permisos)
@@ -36,9 +37,10 @@ def seed_roles_permissions():
             "user_destroy",
             "user_show",
             "tag_manage",
-            "feature_flags_manage"
+            "feature_flags_manage",
+            "export_csv"
         ],
-        "Editor": ["tag_manage"],
+        "Editor": ["tag_manage", "export_csv"],
         "Usuario público": []
     }
 
@@ -77,12 +79,28 @@ def seed_admin_user():
     db.session.commit()
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
 
-
 def seed_feature_flags():
     flags = [
-        FeatureFlag(name="app_enabled", description="Activa o desactiva toda la aplicación", is_enabled=True),
-        FeatureFlag(name="beta_ui", description="Habilita la interfaz beta", is_enabled=False),
-        FeatureFlag(name="user_moderation", description="Permite moderar usuarios desde el panel", is_enabled=True),
+        FeatureFlag(
+            key="admin_maintenance_mode",
+            display_name="Modo mantenimiento de administración",
+            description="Deshabilita temporalmente el sitio de administración.",
+            is_enabled=False,
+            maintenance_message=None
+        ),
+        FeatureFlag(
+            key="portal_maintenance_mode",
+            display_name="Modo mantenimiento del portal web",
+            description="Pone el portal en modo mantenimiento.",
+            is_enabled=False,
+            maintenance_message=None
+        ),
+        FeatureFlag(
+            key="reviews_enabled",
+            display_name="Permitir nuevas reseñas",
+            description="Habilita o deshabilita la creación y visualización de reseñas en el portal.",
+            is_enabled=True
+        )
     ]
 
     db.session.add_all(flags)

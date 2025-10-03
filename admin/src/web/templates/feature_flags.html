@@ -22,18 +22,54 @@
                     <th>Nombre</th>
                     <th>Descripción</th>
                     <th class="text-center">Estado</th>
+                    <th>Mensaje de mantenimiento</th>
+                    <th>Última modificación</th>
                 </tr>
             </thead>
             <tbody>
                 {% for flag in flags %}
                 <tr>
-                    <td>{{ flag.name }}</td>
+                    <td>{{ flag.display_name }}</td>
                     <td>{{ flag.description or 'Sin descripción' }}</td>
+                    
+                    
                     <td class="text-center">
                         <select name="flag_{{ flag.id }}" class="form-select form-select-sm w-auto d-inline">
                             <option value="true" {% if flag.is_enabled %}selected{% endif %}>ON</option>
                             <option value="false" {% if not flag.is_enabled %}selected{% endif %}>OFF</option>
                         </select>
+                    </td>
+
+                    <td>
+                        {% if flag.key in ["admin_maintenance_mode", "portal_maintenance_mode"] %}
+                            
+                            <textarea name="message_{{ flag.id }}"
+                                    class="form-control form-control-sm"
+                                    rows=""
+                                    placeholder="Mensaje de mantenimiento">{{ '' }}</textarea>
+
+                            
+                            <button class="btn btn-outline-light btn-sm mt-1" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#prevMsg{{ flag.id }}"
+                                    aria-expanded="false" aria-controls="prevMsg{{ flag.id }}">
+                                Mensaje de mantenimiento anterior
+                            </button>
+                            <div class="collapse mt-1" id="prevMsg{{ flag.id }}">
+                                <div class="card card-body bg-secondary text-white p-2">
+                                    {{ flag.maintenance_message or 'No hay mensaje anterior' }}
+                                </div>
+                            </div>
+                        {% else %}
+                            <em>No aplica</em>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if flag.last_modified_at %}
+                            {{ flag.last_modified_at.strftime('%d/%m/%Y %H:%M') }}<br>
+                            <small>por {{ flag.last_modified_by_user.nombre if flag.last_modified_by_user else 'Desconocido' }}</small>
+                        {% else %}
+                            <em>Nunca modificado</em>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -41,7 +77,10 @@
         </table>
 
         <div class="text-center mt-3">
-            <button type="submit" class="btn btn-success">Guardar todos</button>
+            <button type="submit" class="btn btn-success"
+                onclick="return confirm('¿Estás seguro que deseas guardar los cambios en los flags?');">
+                Guardar cambios
+            </button>
         </div>
     </form>
 </div>

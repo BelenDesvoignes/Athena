@@ -1,48 +1,71 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from src.web.handlers.auth import permission_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from datetime import datetime
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
-from src.core.flags import get_flag_by_name
+from src.web.handlers.auth import login_required, permission_required
+from src.core.models.user import User
 
 feature_flags_bp = Blueprint("feature_flags", __name__, url_prefix="/admin/feature-flags")
 
-
-# 📌 Página principal: lista todos los feature flags
 @feature_flags_bp.route("/", methods=["GET"])
 @permission_required("feature_flags_manage")
 def index():
-    flags = db.session.execute(db.select(FeatureFlag)).scalars().all()
+    flags = db.session.execute(
+            db.select(FeatureFlag).order_by(FeatureFlag.id)
+            ).scalars().all()   
+    db.session.commit()  
+    db.session.expire_all()  
     return render_template("feature_flags.html", flags=flags)
 
 
-# 📌 Alternar un flag (activar/desactivar)
-@feature_flags_bp.route("/toggle/<string:flag_name>", methods=["POST"])
-@permission_required("feature_flags_manage")
-def toggle(flag_name):
-    try:
-        flag = get_flag_by_name(flag_name)
-        new_value = request.form.get("value") == "true"
-        flag.is_enabled = new_value
-        db.session.commit()
-        flash(f"El flag '{flag_name}' fue actualizado a {'ON' if new_value else 'OFF'}.", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error al actualizar el flag '{flag_name}': {e}", "danger")
-    
-    return redirect(url_for("feature_flags.index"))
+def _has_changes(flag, new_value, new_message):
+    """Devuelve True si hubo cambios en estado o mensaje del flag."""
+    current_message = flag.maintenance_message or ""
+    return flag.is_enabled != new_value or current_message != (new_message or "")
 
-@feature_flags_bp.route("/update_all", methods=["POST"])
+def _validate_message(flag, new_value, new_message):
+    """Valida el mensaje solo si se habilita un modo de mantenimiento."""
+    if flag.key in ["admin_maintenance_mode", "portal_maintenance_mode"]:
+        if new_value and not new_message:
+            flash(f"El flag '{flag.display_name}' requiere un mensaje de mantenimiento.", "danger")
+            return False
+        if new_message and len(new_message) > 255:
+            flash("El mensaje de mantenimiento no puede superar los 255 caracteres.", "danger")
+            return False
+    return True
+
+@feature_flags_bp.route("/update-all", methods=["POST"])
+@login_required
 @permission_required("feature_flags_manage")
 def update_all():
     try:
-        flags = db.session.execute(db.select(FeatureFlag)).scalars().all()
+        flags = db.session.execute(db.select(FeatureFlag).order_by(FeatureFlag.id)).scalars().all()
+        user_id = session.get("user_id")
+        user = db.session.get(User, user_id)
+
+        any_changes = False
 
         for flag in flags:
-            checkbox_name = f"flag_{flag.id}"
-            flag.is_enabled = checkbox_name in request.form  # marcado → True, no marcado → False
+            new_value = request.form.get(f"flag_{flag.id}") == "true"
+            new_message = request.form.get(f"message_{flag.id}", "").strip() if flag.key in ["admin_maintenance_mode", "portal_maintenance_mode"] else None
+
+            if _has_changes(flag, new_value, new_message):
+                if not _validate_message(flag, new_value, new_message):
+                    return redirect(url_for("feature_flags.index"))
+
+                flag.is_enabled = new_value
+                flag.maintenance_message = new_message if new_message else None
+                flag.last_modified_at = datetime.utcnow()
+                flag.last_modified_by = user.id if user else None
+                any_changes = True
+
+        if not any_changes:
+            flash("No se realizaron cambios en los feature flags.", "info")
+            return redirect(url_for("feature_flags.index"))
 
         db.session.commit()
-        flash("Todos los feature flags fueron actualizados correctamente.", "success")
+        flash("Los cambios en los feature flags fueron guardados correctamente.", "success")
+
     except Exception as e:
         db.session.rollback()
         flash(f"Error al actualizar los feature flags: {e}", "danger")
