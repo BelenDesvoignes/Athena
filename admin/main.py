@@ -7,7 +7,7 @@ from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.feature_flags import feature_flags_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags
-
+from src.web.controllers.tag_routes import tag_bp
 
 def create_app(env="development"):
     # configura la carpeta de archivos estáticos y la de plantillas.
@@ -27,6 +27,9 @@ def create_app(env="development"):
     #app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
     app.register_blueprint(feature_flags_bp)
+
+    app.register_blueprint(tag_bp, url_prefix="/tags")
+
     # app.register_blueprint(auth_bp, url_prefix="/auth")
     # app.register_blueprint(admin_bp, url_prefix="/admin")
     # app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
@@ -59,7 +62,6 @@ app = create_app()
 with app.app_context():
     # crea todas las tablas en la base de datos.
     db.create_all()
-
 
 if __name__ == "__main__":
     
