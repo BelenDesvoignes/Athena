@@ -1,0 +1,10 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Portal en mantenimiento{% endblock %}
+
+{% block content %}
+    <h1>Portal en mantenimiento</h1>
+    <p class="lead">
+        {{ message if message else "El portal está temporalmente en mantenimiento." }}
+    </p>
+{% endblock %}

@@ -32,7 +32,6 @@
                     <td>{{ flag.display_name }}</td>
                     <td>{{ flag.description or 'Sin descripción' }}</td>
                     
-                    
                     <td class="text-center">
                         <select name="flag_{{ flag.id }}" class="form-select form-select-sm w-auto d-inline">
                             <option value="true" {% if flag.is_enabled %}selected{% endif %}>ON</option>
@@ -42,13 +41,11 @@
 
                     <td>
                         {% if flag.key in ["admin_maintenance_mode", "portal_maintenance_mode"] %}
-                            
                             <textarea name="message_{{ flag.id }}"
                                     class="form-control form-control-sm"
                                     rows=""
                                     placeholder="Mensaje de mantenimiento">{{ '' }}</textarea>
 
-                            
                             <button class="btn btn-outline-light btn-sm mt-1" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#prevMsg{{ flag.id }}"
                                     aria-expanded="false" aria-controls="prevMsg{{ flag.id }}">

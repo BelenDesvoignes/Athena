@@ -8,12 +8,13 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from src.core.tag_service import generate_slug, get_tag_by_slug, create_tag, list_tags, delete_tag, update_tag, get_tag_by_name
 from src.core.models import Tag
 from src.web.handlers.auth import login_required, permission_required
-
+from src.web.handlers.maintenance import maintenance_protected
 tag_bp = Blueprint('tag', __name__, url_prefix='/tags', template_folder='../templates')
 
 @tag_bp.route("/list", methods=["GET"])
 @login_required
 @permission_required("user_index")
+@maintenance_protected("admin")
 def list():
     page = request.args.get("page", 1, type=int)
     search_nombre = request.args.get("nombre")
@@ -32,6 +33,7 @@ def list():
     tags = pagination.items
     return render_template("tags.html", tags=tags, pagination=pagination)
 
+@maintenance_protected("admin")
 @tag_bp.route('/add', methods=['POST'])
 def add_tag():
 
@@ -66,6 +68,7 @@ def add_tag():
     flash("El tag se creo correctamente.", "success")
     return redirect(url_for('tag.list'))
 
+@maintenance_protected("admin")
 @tag_bp.route("/<int:tag_id>/delete", methods=['POST'])
 def del_tag(tag_id):
 
@@ -76,6 +79,7 @@ def del_tag(tag_id):
     flash("El tag se elimino correctamente.", "success")
     return redirect(url_for('tag.list'))
 
+@maintenance_protected("admin")
 @tag_bp.route("/<int:tag_id>/edit", methods=['POST'])
 def edit_tag(tag_id):
 

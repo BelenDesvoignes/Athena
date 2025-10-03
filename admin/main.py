@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session
+from flask import Flask, render_template, g, session
 from src.web.config import config
 from src.core.database import db, reset_db
 from src.core.permissions_service import current_user_permissions
@@ -8,6 +8,8 @@ from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.feature_flags import feature_flags_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags
 from src.web.controllers.tag_routes import tag_bp
+from src.web.handlers.maintenance import maintenance_check
+from src.core.models.feature_flags import FeatureFlag
 
 def create_app(env="development"):
     # configura la carpeta de archivos estáticos y la de plantillas.
@@ -54,9 +56,34 @@ def create_app(env="development"):
     def limpiar_sesion():
         session.clear()
         return "Sesión borrada"
-    return app
-
     
+    @app.route("/maintenance/admin")
+    def maintenance_admin():
+        msg = g.feature_flags_msg.get("admin_maintenance_mode")
+        return render_template(
+            "maintenance_admin.html",
+            message=msg or "El área de administración está en mantenimiento."
+        )
+
+    @app.route("/maintenance/portal")
+    def maintenance_portal():
+        msg = g.feature_flags_msg.get("portal_maintenance_mode")
+        return render_template(
+            "maintenance_portal.html",
+            message=msg or "El portal está en mantenimiento."
+        )
+    maintenance_check(app)
+    
+    @app.context_processor
+    def inject_flags():
+        # Cargar flags de la BD
+        flags = db.session.query(FeatureFlag).all()
+        feature_flags = {f.key: f.is_enabled for f in flags}
+
+        return {
+            "feature_flags": feature_flags
+        }
+    return app
 
 app = create_app()
 with app.app_context():
@@ -65,4 +92,5 @@ with app.app_context():
 
 if __name__ == "__main__":
 
+    app.run(debug=True)
     app.run(debug=True)

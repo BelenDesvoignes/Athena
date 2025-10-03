@@ -10,7 +10,7 @@ def get_flag_by_name(flag_name: str) -> FeatureFlag:
     """
     flag = (
         db.session.execute(
-            db.select(FeatureFlag).filter_by(name=flag_name)
+            db.select(FeatureFlag).filter_by(key=flag_name)
         )
         .unique()
         .scalar_one_or_none()
