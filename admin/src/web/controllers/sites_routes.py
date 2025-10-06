@@ -12,6 +12,7 @@ from flask import (
 )
 import csv
 from io import StringIO
+from datetime import datetime
 from sqlalchemy import func
 from src.core.models.site import Sitio
 from src.core.models.user import User
@@ -190,7 +191,7 @@ def remove(id):
     db.session.delete(sitio)
     db.session.commit()
     flash("Sitio eliminado")
-    return redirect(url_for("sitios.listado"))
+    return redirect(url_for("sitios.list"))
 
 
 """ Logica para la exportacion de sitios a CSV """
@@ -241,10 +242,11 @@ def export():
             ]
         )
     output = si.getvalue()
+    filename = f"sitios_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     return Response(
         output,
         mimetype="text/csv",
-        headers={"Content-Disposition": "attachment;filename=sitios.csv"},
+        headers={"Content-Disposition": f"attachment;filename={filename}"},
     )
 
 
