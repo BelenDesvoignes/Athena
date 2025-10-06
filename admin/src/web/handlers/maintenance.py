@@ -40,6 +40,7 @@ def maintenance_protected(area: str):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
+            # Asegurarse de que los flags estén cargados
             if not hasattr(g, "feature_flags"):
                 return f(*args, **kwargs)
             
