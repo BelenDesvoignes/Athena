@@ -7,7 +7,8 @@ from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
 from src.web.config import config
-
+from src.core.models.role_permission import Role, Permission, RolePermission 
+from src.core.models.user import User 
 
 def create_app(env="development"):
     # configura la carpeta de archivos estáticos y la de plantillas.
@@ -60,6 +61,13 @@ app = create_app()
 with app.app_context():
     # crea todas las tablas en la base de datos.
     db.create_all()
+    admin_role = db.session.query(Role).filter_by(name="Administrador").first()
+    if not admin_role:
+        print("¡Base de datos vacía detectada! Inicializando roles y admin...")
+        seed_roles_permissions() # Inserta Roles y Permisos
+        seed_admin_user()        # Inserta el usuario Admin
+        print("Inicialización completa. BD lista para usar.")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
