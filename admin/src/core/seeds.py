@@ -3,8 +3,7 @@ from src.core.models.user import User
 from src.core.models.role_permission import Role, Permission, RolePermission
 from src.core.models.site import Sitio
 from src.core.bcrypt import hash_password
-from geoalchemy2.shape import from_shape
-from shapely import Point
+from geoalchemy2.elements import WKTElement
 
 
 def seed_roles_permissions():
@@ -64,7 +63,7 @@ def seed_admin_user():
     hashed_password = hash_password("admin123")  # contraseña inicial segura
 
     admin_user = User(
-        nombre="Admin",
+        nombre="Admin", 
         apellido="Principal",
         email="admin@example.com",
         password=hashed_password.decode("utf-8"),
@@ -87,13 +86,11 @@ def seed_sitios():
             descripcion_completa="El Cabildo fue sede del gobierno colonial y escenario de la Revolución de Mayo.",
             ciudad="Buenos Aires",
             provincia="Buenos Aires",
-            latitud=-34.6083,
-            longitud=-58.3702,
             estado_conservacion="Bueno",
             inauguracion=1810,
             categoria="Edificio público",
             visible=True,
-            geom=from_shape(Point(-58.3702, -34.6083), srid=4326),
+            ubicacion=WKTElement('Point(-58.3702 -34.6083)', srid=4326),
         ),
         Sitio(
             nombre="Ruinas de San Ignacio",
@@ -101,13 +98,11 @@ def seed_sitios():
             descripcion_completa="Las ruinas de San Ignacio son Patrimonio Mundial y muestran la historia de los jesuitas en Argentina.",
             ciudad="San Ignacio",
             provincia="Misiones",
-            latitud=-27.2556,
-            longitud=-55.5306,
             estado_conservacion="Regular",
             inauguracion=1632,
             categoria="Patrimonio Mundial",
             visible=True,
-            geom=from_shape(Point(-55.5306, -27.2556), srid=4326),
+            ubicacion=WKTElement('Point(-55.5306 -27.2556)', srid=4326),
         ),
         Sitio(
             nombre="Casa Histórica de Tucumán",
@@ -115,13 +110,11 @@ def seed_sitios():
             descripcion_completa="En esta casa se firmó la independencia argentina el 9 de julio de 1816.",
             ciudad="San Miguel de Tucumán",
             provincia="Tucumán",
-            latitud=-26.8241,
-            longitud=-65.2226,
             estado_conservacion="Bueno",
             inauguracion=1762,
             categoria="Museo",
             visible=True,
-            geom=from_shape(Point(-65.2226, -26.8241), srid=4326),
+            ubicacion=WKTElement('Point(-65.2226 -26.8241)', srid=4326),
         ),
     ]
     db.session.add_all(sitios)

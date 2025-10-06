@@ -17,7 +17,7 @@ class Sitio(Base):
    
     estado_conservacion: Mapped[str] = mapped_column(
         String(20), nullable=False
-    )  # Bueno, Regular, Malo
+    )  
     inauguracion: Mapped[int] = mapped_column(Integer, nullable=False)  # Año
     registrado: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), onupdate=func.now(), nullable=False
