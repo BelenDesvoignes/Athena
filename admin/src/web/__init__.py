@@ -5,6 +5,7 @@ from flask_session import Session
 from src.web.handlers.auth import login_required
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
+from src.web.controllers.tag_routes import tag_bp
 
 app = Flask(__name__)
 
@@ -26,6 +27,7 @@ def create_app(env="development", static_folder="../../static"):
     #registro de blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+    app.register_blueprint(tag_bp, url_prefix="/tags")
 
 
     #manejo de errores
