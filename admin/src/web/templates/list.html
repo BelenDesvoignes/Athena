@@ -1,6 +1,20 @@
 {% extends 'base_layout.html' %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
 <div class="container mt-5">
     <h2>Listado de Usuarios</h2>
     <table class="table table-striped table-hover mt-3">
@@ -34,6 +48,13 @@
                                 <a class="dropdown-item text-warning" href="{{ url_for('user_admin.edit', user_id=user.id) }}">
                                     Editar
                                 </a>
+                            </li>
+                            <li>
+                                <form method="POST" action="{{ url_for('user_admin.toggle_enabled', user_id=user.id) }}" style="display:inline;">
+                                    <button type="submit" class="dropdown-item {% if user.enabled %}text-danger{% else %}text-success{% endif %}">
+                                    {% if user.enabled %}Bloquear{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
                             </li>
                             {% endif %}
                             {% if 'user_destroy' in current_user_permissions() %}
