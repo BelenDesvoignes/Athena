@@ -45,8 +45,8 @@ def create_app(env="development"):
     def reset_db_command():
         reset_db()
         with app.app_context(): 
-            seed_roles_permissions() # <-- ¡CRÍTICO para insertar roles!
-            seed_admin_user()        # <-- ¡CRÍTICO para crear el admin!
+            seed_roles_permissions() 
+            seed_admin_user()      
             print("Base de datos reseteada e inicializada con roles y admin.")
 
     @app.route("/limpiar_sesion")
@@ -59,8 +59,9 @@ def create_app(env="development"):
 
 app = create_app()
 with app.app_context():
-    # crea todas las tablas en la base de datos.
+    # Crea todas las tablas en la base de datos.
     db.create_all()
+     # Lógica de siembra condicional: solo si no existe el rol principal
     admin_role = db.session.query(Role).filter_by(name="Administrador").first()
     if not admin_role:
         print("¡Base de datos vacía detectada! Inicializando roles y admin...")
