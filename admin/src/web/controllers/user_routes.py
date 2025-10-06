@@ -132,20 +132,14 @@ def register():
 @permission_required("user_index")
 def list():
     page = request.args.get("page", 1, type=int)
-    search_email = request.args.get("email")
-    search_enabled = request.args.get("enabled")
-    search_role_id = request.args.get("role_id")
-    order_by = request.args.get("order_by", "fecha_creacion")
-    order_dir = request.args.get("order_dir", "desc")
+    search_email = request.args.get("search_email")
+    search_enabled = request.args.get("search_enabled")
     
     pagination = list_users(
         page=page,
         per_page=25,
         search_email=search_email,
         search_enabled=search_enabled,
-        search_role_id=search_role_id,
-        order_by=order_by,
-        order_dir=order_dir
     )
     users = pagination.items
     return render_template("list.html", users=users, pagination=pagination)
