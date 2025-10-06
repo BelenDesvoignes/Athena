@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seleccionar punto</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; width: 100%; }
+        body { font-family: sans-serif; margin: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Seleccioná un punto</h2>
+    <form method="POST" action="/guardar">
+        <label>Nombre:</label>
+        <input type="text" name="nombre" required><br><br>
+        <div id="map"></div>
+        <input type="hidden" name="lat" id="lat">
+        <input type="hidden" name="lng" id="lng"><br>
+        <button type="submit">Guardar punto</button>
+    </form>
+
+    <script>
+        var map = L.map('map').setView([-34.6, -58.4], 10); // Buenos Aires
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18
+        }).addTo(map);
+
+        var marker;
+
+        map.on('click', function(e) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('lat').value = e.latlng.lat;
+            document.getElementById('lng').value = e.latlng.lng;
+        });
+    </script>
+</body>
+</html>

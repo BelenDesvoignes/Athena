@@ -1,0 +1,31 @@
+{% extends "base_layout.html" %}
+{% block title %}Sitios Históricos{% endblock %}
+{% block content %}
+<section>
+<h1>Sitios Nro{{ sitio.id }}</h1>
+
+    <h2>{{ sitio.nombre }}</h2>
+    <p><strong>Descripción breve:</strong> {{ sitio.descripcion_breve }}</p>
+    <p><strong>Descripción completa:</strong> {{ sitio.descripcion_completa }}</p>
+    <p><strong>Ciudad:</strong> {{ sitio.ciudad }}</p>
+    <p><strong>Provincia:</strong> {{ sitio.provincia }}</p>
+    <p><strong>Estado de conservación:</strong> {{ sitio.estado_conservacion }}</p>
+    <p><strong>Año de inauguración:</strong> {{ sitio.inauguracion }}</p>
+    <p><strong>Categoría:</strong> {{ sitio.categoria }}</p>
+    <p><strong>Visible:</strong> {{ sitio.visible and "Sí" or "No" }}</p>
+    <div style="display: inline-flex;">
+    <p><strong>Acciones:</strong></p>
+    <a href="{{ url_for('sitios.listado') }}"><button>Volver a la lista</button></a>
+    {% if current_user and current_user.role_id in [1, 2] %}
+      <a href="{{ url_for('sitios.editar', id=sitio.id) }}"><button>Editar</button></a>
+      {% if current_user.role_id == 1 %}
+      <form action="{{ url_for('sitios.eliminar', id=sitio.id) }}" method="post" style="display:inline;">
+        <button type="submit" onclick="return confirm('¿Seguro que desea eliminar este sitio?')">Eliminar</button>
+      </form>
+      {% endif %}
+    {% endif %}
+
+    </div>
+</section>
+      
+{% endblock %}

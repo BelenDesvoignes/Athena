@@ -1,0 +1,25 @@
+{% extends "base_layout.html" %}
+{% block title %}{{ sitio and "Editar Sitio" or "Nuevo Sitio" }}{% endblock %}
+{% block content %}
+<h2>{{ sitio and "Editar Sitio" or "Nuevo Sitio" }}</h2>
+<form method="post">
+    <label>Nombre:</label>
+    <input type="text" name="nombre" value="{{ sitio.nombre if sitio else '' }}" required><br>
+
+    <label>Descripción breve:</label>
+    <input type="text" name="descripcion_breve" value="{{ sitio.descripcion_breve if sitio else '' }}" required><br>
+
+    <label>Descripción completa:</label>
+    <textarea name="descripcion_completa" required>{{ sitio.descripcion_completa if sitio else '' }}</textarea><br>
+
+    <label>Ciudad:</label>
+    <input type="text" name="ciudad" value="{{ sitio.ciudad if sitio else '' }}" required><br>
+
+    <label>Provincia:</label>
+    <input type="text" name="provincia" value="{{ sitio.provincia if sitio else '' }}" required><br>
+
+    <label>Latitud:</label>
+    <input type="number" step="any" name="latitud" value="{{ sitio.latitud if sitio else '' }}" required><br>
+
+    <label>Longitud:</label>
+    <input type="number" step="any" name="longitud" value="{{ sitio.longitud if sitio else '' }}" required><br>
