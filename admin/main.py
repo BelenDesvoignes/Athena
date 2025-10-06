@@ -9,10 +9,11 @@ from src.core.seeds import seed_roles_permissions, seed_admin_user
 from src.web.config import config
 
 
-def create_app(env="development"):
+def create_app(env="development", static_folder="../../static"):
     # configura la carpeta de archivos estáticos y la de plantillas.
+    
     app = Flask(
-        __name__, static_folder="src/web/static", template_folder="src/web/templates"
+        __name__, static_folder=static_folder, template_folder="src/web/templates"
     )
     # carga la configuración del ambiente.
     app.config.from_object(config[env])

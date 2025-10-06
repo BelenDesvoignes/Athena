@@ -22,7 +22,7 @@ class ProductionConfig(Config):
 class DevelopmentConfig(Config):
     SECRET_KEY = "your_dev_secret_key"
     DB_USER = "postgres"
-    DB_PASSWORD = "admin"
+    DB_PASSWORD = "Qwerty01"
     DB_HOST = "localhost"
     DB_PORT = "5432"
     DB_NAME = "grupo19"
