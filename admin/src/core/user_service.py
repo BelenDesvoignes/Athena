@@ -19,13 +19,16 @@ def get_user_by_id(user_id):
     return db.session.query(User).filter_by(id=user_id, eliminado=False).first()
 
 
-def check_email_unique(email):
+def check_email_unique(email, current_user_id=None):
     """Verifica que no exista un usuario activo con el mismo email."""
-    existing = db.session.query(User).filter_by(email=email, eliminado=False).first()
+    query = db.session.query(User).filter_by(email=email, eliminado=False)
+    if current_user_id:
+        query = query.filter(User.id != current_user_id)
+    existing = query.first()
     if existing:
         raise ValueError("El email ya está registrado.")
-
  
+
 def validate_data(data, is_new=True):
 
     nombre = data.get('nombre')

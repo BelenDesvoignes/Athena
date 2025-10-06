@@ -6,6 +6,7 @@ from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
+from src.web.config import config
 
 
 def create_app(env="development"):
@@ -33,7 +34,7 @@ def create_app(env="development"):
     # app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
 
     # define la ruta para la página principal.
-   
+    print("Conectando a:", config["production"].SQLALCHEMY_DATABASE_URI)
 
     @app.route("/")
     def index():
