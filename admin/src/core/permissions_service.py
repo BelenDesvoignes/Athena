@@ -8,6 +8,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def get_role_by_name(role_name: str):
+    """
+    Busca y retorna un objeto Role a partir de su nombre.
+
+    Args:
+        role_name (str): Nombre del rol a buscar.
+
+    Returns:
+        Role: Objeto Role correspondiente al nombre dado.
+
+    Raises:
+        ValueError: Si no existe un rol con el nombre proporcionado.
+    """
     role_obj = (
         db.session.execute(
             db.select(Role).filter_by(name=role_name)
@@ -25,6 +37,14 @@ def get_role_by_name(role_name: str):
 
 
 def current_user_permissions():
+    """
+    Obtiene la lista de nombres de permisos del usuario actualmente logueado.
+
+    Retorna una lista vacía si no hay usuario en sesión o si el usuario no tiene rol.
+
+    Returns:
+        list[str]: Lista de nombres de permisos del usuario.
+    """
     user_id = session.get("user_id")
     if not user_id:
         session.clear()

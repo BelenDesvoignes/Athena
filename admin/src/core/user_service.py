@@ -10,17 +10,42 @@ if TYPE_CHECKING:
     from src.core.models.role_permission import Role
 
 def get_user_by_email(email):
-    """Retorna un usuario activo (no eliminado) por email."""
+    """
+    Retorna un usuario activo no eliminado por email.
+
+    Args:
+        email (str): Email del usuario a buscar.
+
+    Returns:
+        User: Instancia del usuario si existe y está activo, sino None.
+    """
     return db.session.query(User).filter_by(email=email, eliminado=False).first()
 
 
 def get_user_by_id(user_id):
-    """Busca y retorna un usuario activo por su ID."""
+    """
+    Busca y retorna un usuario activo por su ID.
+
+    Args:
+        user_id (int): ID del usuario.
+
+    Returns:
+        User: Instancia del usuario si existe y está activo, sino None.
+    """
     return db.session.query(User).filter_by(id=user_id, eliminado=False).first()
 
 
 def check_email_unique(email, current_user_id=None):
-    """Verifica que no exista un usuario activo con el mismo email."""
+    """
+    Verifica que no exista un usuario activo con el mismo email.
+    
+    Args:
+        email (str): Email a validar.
+        current_user_id (int, optional): ID del usuario actual para ignorarlo en la verificación.
+
+    Raises:
+        ValueError: Si ya existe un usuario activo con el mismo email.
+    """
     query = db.session.query(User).filter_by(email=email, eliminado=False)
     if current_user_id:
         query = query.filter(User.id != current_user_id)
@@ -30,6 +55,16 @@ def check_email_unique(email, current_user_id=None):
  
 
 def validate_data(data, is_new=True):
+    """
+    Valida los datos de un usuario antes de crear o actualizar.
+
+    Args:
+        data (dict): Diccionario con los campos 'nombre', 'apellido', 'email', 'password', 'rol'.
+        is_new (bool): Indica si es un usuario nuevo.
+
+    Raises:
+        ValueError: Si faltan campos obligatorios o el formato de email/contraseña es inválido.
+    """
 
     nombre = data.get('nombre')
     apellido = data.get('apellido')
@@ -52,6 +87,18 @@ def validate_data(data, is_new=True):
 
 
 def create_user(data):
+    """
+    Crea un nuevo usuario en la base de datos.
+
+    Args:
+        data (dict): Diccionario con los campos 'nombre', 'apellido', 'email', 'password', 'rol'.
+
+    Returns:
+        User: Instancia del usuario creado.
+
+    Raises:
+        ValueError: Si los datos son inválidos o hubo error al guardar.
+    """
     validate_data(data, is_new=True)
     check_email_unique(data['email'])
 
@@ -79,14 +126,20 @@ def create_user(data):
 
 
 
-
-
-
-
-
-
-
 def update_user(user_id, data):
+    """
+    Actualiza los datos de un usuario existente.
+
+    Args:
+        user_id (int): ID del usuario a actualizar.
+        data (dict): Diccionario con los campos a actualizar.
+
+    Returns:
+        User: Usuario actualizado.
+
+    Raises:
+        ValueError: Si el usuario no existe, email duplicado, contraseña inválida o error en la DB.
+    """
     user = get_user_by_id(user_id)
     if not user:
         raise ValueError("Usuario no encontrado.")
@@ -111,9 +164,23 @@ def update_user(user_id, data):
     except Exception as e:
         db.session.rollback()
         raise ValueError(f"Error al actualizar usuario: {e}")
-    
+
+
+
 
 def delete_user(user_id):
+    """
+    Marca un usuario como eliminado.
+
+    Args:
+        user_id (int): ID del usuario a eliminar.
+
+    Returns:
+        User: Usuario eliminado (marcado).
+
+    Raises:
+        ValueError: Si el usuario no existe o es administrador del sistema.
+    """
     user = get_user_by_id(user_id)
     if not user:
         raise ValueError("Usuario no encontrado.")
@@ -131,7 +198,21 @@ def delete_user(user_id):
     
 
 def list_users(page, per_page, search_email=None, search_enabled=None, search_role_id=None, order_by='fecha_creacion', order_dir='desc'):
-    # Usamos SQLAlchemy puro
+    """
+    Lista usuarios con paginación y filtros opcionales.
+
+    Args:
+        page (int): Número de página.
+        per_page (int): Cantidad de usuarios por página.
+        search_email (str, optional): Filtra por email.
+        search_enabled (str, optional): Filtra por estado ('True' o 'False').
+        search_role_id (int, optional): Filtra por rol.
+        order_by (str): Columna para ordenar.
+        order_dir (str): Dirección del orden ('asc' o 'desc').
+
+    Returns:
+        Pagination: Objeto con atributos 'items', 'page', 'per_page', 'total', 'pages'.
+    """
     query = db.session.query(User)
 
   
@@ -174,7 +255,19 @@ def list_users(page, per_page, search_email=None, search_enabled=None, search_ro
     return Pagination(users, page, per_page, total)
 
 
+
+
 def get_user_credentials(email, password):
+    """
+    Verifica credenciales de usuario para login.
+
+    Args:
+        email (str): Email del usuario.
+        password (str): Contraseña a validar.
+
+    Returns:
+        User: Retorna la instancia del usuario si es válido, 'BLOCKED' si está bloqueado, o None si no coincide.
+    """
    
     user = User.query.filter_by(email=email).first()
     
@@ -188,13 +281,25 @@ def get_user_credentials(email, password):
         return user 
     else:
         return None
-    
+
+
+
 def authenticate_user(email, password):
     user = db.session.query(User).filter_by(email=email).first()
     if user and check_password(password, user.password):
         return user
     return None
 
+
+
 def get_role_by_name(name):
-    """ Busca y retorna un objeto Role por su nombre. """
+    """
+    Busca y retorna un objeto Role por su nombre.
+
+    Args:
+        name (str): Nombre del rol.
+
+    Returns:
+        Role: Instancia del rol si existe, sino None.
+    """
     return db.session.query(Role).filter_by(name=name).first()
