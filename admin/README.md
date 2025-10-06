@@ -30,8 +30,8 @@ Aplicación web para documentar y gestionar sitios históricos de distintas ciud
 
 1. Clonar repositorio:  
 ```bash
-git clone <URL_DEL_REPOSITORIO>
-cd <NOMBRE_DEL_REPOSITORIO>
+git clone https://gitlab.catedras.linti.unlp.edu.ar/proyecto-2025/proyectos/grupo19/code.git
+cd code
 
 2. Instalar dependencias:
 poetry install
