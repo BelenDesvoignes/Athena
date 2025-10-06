@@ -14,10 +14,8 @@ class Sitio(Base):
     descripcion_completa: Mapped[str] = mapped_column(String(1000), nullable=False)
     ciudad: Mapped[str] = mapped_column(String(100), nullable=False)
     provincia: Mapped[str] = mapped_column(String(100), nullable=False)
-   
-    estado_conservacion: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  
+
+    estado_conservacion: Mapped[str] = mapped_column(String(20), nullable=False)
     inauguracion: Mapped[int] = mapped_column(Integer, nullable=False)  # Año
     registrado: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), onupdate=func.now(), nullable=False

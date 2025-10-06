@@ -3,73 +3,75 @@
 {% block content %}
 <section class="container mt-5">
     <article>
-        <h2>Crear Nuevo Sitio Histórico</h2>
+        <h2>Editar Sitio Histórico</h2>
         <form method="post">
             <fieldset>
                 <legend>Datos del sitio</legend>
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre</label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    <input type="text" class="form-control" id="nombre" name="nombre" value="{{ sitio.nombre }}" required>
                 </div>
                 <div class="mb-3">
                     <label for="descripcion_breve" class="form-label">Descripción breve</label>
-                    <input type="text" class="form-control" id="descripcion_breve" name="descripcion_breve" required>
+                    <input type="text" class="form-control" id="descripcion_breve" name="descripcion_breve" value="{{ sitio.descripcion_breve }}" required>
                 </div>
                 <div class="mb-3">
                     <label for="descripcion_completa" class="form-label">Descripción completa</label>
-                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3" required></textarea>
+                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3" required>{{ sitio.descripcion_completa }}</textarea>
                 </div>
                 <div class="mb-3">
                     <label for="ciudad" class="form-label">Ciudad</label>
-                    <input type="text" class="form-control" id="ciudad" name="ciudad" required>
+                    <input type="text" class="form-control" id="ciudad" name="ciudad" value="{{ sitio.ciudad }}" required>
                 </div>
                 <div class="mb-3">
                     <label for="provincia" class="form-label">Provincia</label>
-                    <input type="text" class="form-control" id="provincia" name="provincia" required>
+                    <input type="text" class="form-control" id="provincia" name="provincia" value="{{ sitio.provincia }}" required>
                 </div>
                 <div class="mb-3">
                     <label for="estado_conservacion" class="form-label">Estado de conservación</label>
                     <select class="form-select" id="estado_conservacion" name="estado_conservacion" required>
-                        <option value="Bueno">Bueno</option>
-                        <option value="Regular">Regular</option>
-                        <option value="Malo">Malo</option>
+                        <option value="Bueno" {% if sitio.estado_conservacion == "Bueno" %}selected{% endif %}>Bueno</option>
+                        <option value="Regular" {% if sitio.estado_conservacion == "Regular" %}selected{% endif %}>Regular</option>
+                        <option value="Malo" {% if sitio.estado_conservacion == "Malo" %}selected{% endif %}>Malo</option>
                     </select>
                 </div>
                 <div class="mb-3">
                     <label for="inauguracion" class="form-label">Año de inauguración</label>
-                    <input type="number" class="form-control" id="inauguracion" name="inauguracion" required>
+                    <input type="number" class="form-control" id="inauguracion" name="inauguracion" value="{{ sitio.inauguracion }}" required>
                 </div>
                 <div class="mb-3">
                     <label for="categoria" class="form-label">Categoría</label>
-                    <input type="text" class="form-control" id="categoria" name="categoria" required>
+                    <input type="text" class="form-control" id="categoria" name="categoria" value="{{ sitio.categoria }}" required>
                 </div>
                 <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1">
+                    <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1" {% if sitio.visible %}checked{% endif %}>
                     <label class="form-check-label" for="visible">Visible</label>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Ubicación en el mapa</label>
                     <div id="map" style="height: 400px; width: 100%;"></div>
-                    <input type="hidden" name="latitud" id="latitud">
-                    <input type="hidden" name="longitud" id="longitud">
+                    <input type="hidden" name="latitud" id="latitud" value="{{ latitud }}">
+                    <input type="hidden" name="longitud" id="longitud" value="{{ longitud }}">
                 </div>
             </fieldset>
-            <button type="submit" class="btn btn-success">Guardar sitio</button>
-            <a href="{{ url_for('sitios.listado') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success">Guardar cambios</button>
+            <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </article>
 </section>
 
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script>
-    var map = L.map('map').setView([-34.6, -58.4], 5);
+    var lat = parseFloat("{{ latitud|default(sitio.latitud, true)|default(-34.6, true) }}");
+    var lng = parseFloat("{{ longitud|default(sitio.longitud, true)|default(-58.4, true) }}");
+    var map = L.map('map').setView([lat, lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18
     }).addTo(map);
 
-    var marker;
+    var marker = L.marker([lat, lng]).addTo(map);
+
     map.on('click', function(e) {
         if (marker) map.removeLayer(marker);
         marker = L.marker(e.latlng).addTo(map);
@@ -78,7 +80,3 @@
     });
 </script>
 {% endblock %}
-
-{% block title %}Crear Nuevo Sitio Histórico{% endblock %}
-
-{% block head %}
