@@ -1,3 +1,11 @@
+from src.web import create_app
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True)
+
+
+
+"""
 from flask import Flask, render_template, session
 from src.web.config import config
 from src.core.database import db, reset_db
@@ -7,7 +15,6 @@ from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
 from src.web.config import config
-
 
 def create_app(env="development", static_folder="../../static"):
     # configura la carpeta de archivos estáticos y la de plantillas.
@@ -64,3 +71,4 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(debug=True)
+"""

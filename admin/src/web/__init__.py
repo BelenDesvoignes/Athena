@@ -29,6 +29,9 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
     app.register_blueprint(tag_bp, url_prefix="/tags")
 
+    @app.route("/")
+    def index():
+        return render_template("index.html")
 
     #manejo de errores
     @app.route("/not_found")
