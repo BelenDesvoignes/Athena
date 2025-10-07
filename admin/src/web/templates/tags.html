@@ -4,31 +4,42 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div class="container mt-3">
+    <article class="container mt-3">
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        <article class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
           {{ message }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        </article>
       {% endfor %}
-    </div>
+    </article>
   {% endif %}
 {% endwith %}
 
-<div class="container mt-5">
+<article class="container mt-5">
     <h2>Crear nuevo tag</h2>
 
     <form id="addTag" method="post" action="{{ url_for('tag.add_tag') }}">
-        <div class="mb-3">
+        <article class="mb-3">
             <label for="nombre" class="form-label">Nombre</label>
             <input type="text" class="form-control" id="nombre" name="nombre">
-        </div>
+        </article>
 
         <button id="add" type="submit" class="btn btn-success w-100">Crear tag</button>
-
     </form>
+    
     <br>
     <h2>Listado de Tags</h2>
+
+    <form id="filterName" method="get" action="{{ url_for('tag.list') }}">
+        <article class="mb-3">
+            <input type="text" class="form-control" id="busqueda" name="busqueda" placeholder="Buscar por nombre...">
+        </article>
+        
+        <article class="d-flex gap-2 mt-3">
+            <button id="buscar" type="submit" class="btn btn-success flex-fill">Buscar</button>
+            <a href="{{ url_for('tag.list') }}" class="btn btn-secondary flex-fill">Reiniciar busqueda</a>
+        </article>
+    </form>
 
     {% if pagination.items %}
         <table class="table table-striped table-hover mt-3">
@@ -48,10 +59,10 @@
                     <td>
                         <!--SECCION EDITAR-->
                         <form id="addTag" method="post" action="{{ url_for('tag.edit_tag', tag_id=tag.id) }}">
-                            <div class="mb-3 d-flex">
+                            <article class="mb-3 d-flex">
                                 <input type="text" class="form-control me-2" id="nombre" name="nombre" style="height: 35px">
-                                <button id="edit" type="submit" class="btn btn-warning" style="height: 35px" >Editar nombre</button>
-                            </div>
+                                <button id="edit" type="submit" class="btn btn-warning" style="height: 35px" >Editar</button>
+                            </article>
                         </form>
                     </td>    
                     <td>  
@@ -65,9 +76,9 @@
             </tbody>
         </table>
     {% else %}
-        <div class="alert alert-info mt-3" role="alert">
+        <article class="alert alert-info mt-3" role="alert">
             No hay tags registrados.
-        </div>
+        </article>
     {% endif %}
 
     <nav aria-label="Page navigation">
@@ -79,7 +90,7 @@
             {% endfor %}
         </ul>
     </nav>
-</div>
+</article>
 
 <style>
     /* Datos de la tabla en gris claro */

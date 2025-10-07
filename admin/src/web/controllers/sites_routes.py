@@ -12,13 +12,15 @@ from flask import (
 )
 import csv
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func
 from src.core.models.site import Sitio
+from src.core.models.tag import Tag
 from src.core.models.user import User
 from shapely.wkt import loads
 from src.core.database import db
 from src.web.handlers.auth import login_required, permission_required
+from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 
@@ -30,15 +32,57 @@ bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 """Listado de sitios turísticos con paginación y búsqueda avanzada"""
 
 
-@bp_sitios.route("/")
+@bp_sitios.route("/", methods=["GET"])
 @login_required
 def list():
 
     page = request.args.get("page", 1, type=int)
-    sitios = db.session.query(Sitio).paginate(page=page, per_page=25)
+
+    query = db.session.query(Sitio)
+
+    
+    ciudad = request.args.get('ciudad')
+    provincia = request.args.get('provincia')
+    #faltaria filtro de tags
+    conservacion = request.args.get('conservacion')
+    desde = request.args.get('desde')
+    hasta = request.args.get('hasta')
+    visibilidad = request.args.get('visibilidad')
+    busqueda = request.args.get('busqueda')
+
+    if ciudad:
+        query = query.filter(Sitio.ciudad == ciudad)
+    if provincia:
+        query = query.filter(Sitio.provincia == provincia)
+    #faltaria filtro de tags
+    if conservacion:
+        query = query.filter(Sitio.estado_conservacion == conservacion)
+    if desde:
+        desde_dt = datetime.strptime(desde, "%Y-%m-%d")
+        query = query.filter(Sitio.registrado >= desde_dt)
+    if hasta:
+        hasta_dt = datetime.strptime(hasta, "%Y-%m-%d") + timedelta(days=1)
+        query = query.filter(Sitio.registrado < hasta_dt)
+    if visibilidad:
+        query = query.filter(Sitio.visible == "true")
+    if busqueda:
+        query = query.filter(
+        or_(
+            Sitio.nombre.ilike(f"%{busqueda}%"),
+            Sitio.descripcion_breve.ilike(f"%{busqueda}%"),
+            Sitio.descripcion_completa.ilike(f"%{busqueda}%")
+        )
+    )
+
+    sitios = query.paginate(page=page, per_page=25)
+
+    """Paso las provincias, ciudades y tags guardados en la BD para poner en los select"""
+    provincias = [p[0] for p in db.session.query(Sitio.provincia).distinct().all()]
+    ciudades = [p[0] for p in db.session.query(Sitio.ciudad).distinct().all()]
+    tags = [p[0] for p in db.session.query(Tag.nombre).distinct().all()]
 
     current_user = get_current_user()
-    return render_template("sites_list.html", sitios=sitios, current_user=current_user)
+    return render_template("sites_list.html", sitios=sitios, current_user=current_user, provincias=provincias, ciudades=ciudades, tags=tags)
 
 
 """Procedimiento para crear un nuevo sitio turístico"""

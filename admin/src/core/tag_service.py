@@ -43,7 +43,7 @@ def delete_tag(tag_id):
         return True
     return False
 
-def list_tags(page, per_page, search_nombre=None, search_slug=None, order_by='fecha_creacion', order_dir='desc'):
+def list_tags(page, per_page, search_nombre=None, search_slug=None, busqueda=None, order_by='fecha_creacion', order_dir='desc'):
     # Usamos SQLAlchemy puro
     query = db.session.query(Tag)
 
@@ -53,6 +53,9 @@ def list_tags(page, per_page, search_nombre=None, search_slug=None, order_by='fe
     if search_slug:
         query = query.filter(Tag.slug.ilike(f"%{search_slug}%"))
 
+    if busqueda:
+        query = query.filter(Tag.nombre.ilike(f"%{busqueda}%"))
+        
     if hasattr(Tag, order_by):
         column = getattr(Tag, order_by)
         if order_dir == 'desc':

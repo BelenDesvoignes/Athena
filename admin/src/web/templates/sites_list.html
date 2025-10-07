@@ -1,8 +1,11 @@
 {% extends "base_layout.html" %}
 {% block title %}Sitios Históricos{% endblock %}
 {% block content %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@4.0.1/dist/css/multi-select-tag.min.css">
+
 <section class="container mt-5">
-    <header class="d-flex justify-content-between align-items-center mb-3">
+      <header class="d-flex justify-content-between align-items-center mb-3">
         <h2>Listado de Sitios Históricos</h2>
         <a href="{{url_for('sitios.new')}}" class="btn btn-outline-primary">Agregar sitio</a>
         <a href="{{ url_for('sitios.export') }}" class="btn btn-outline-primary">Exportar Sitios</a>
@@ -18,73 +21,165 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <article>
-        <table class="table table-striped table-hover mt-3">
-            <thead class="table-dark">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Ciudad</th>
-                    <th>Provincia</th>
-                    <th>Visible</th>
-                    {% if current_user %}
-                    <th>Acciones</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for sitio in sitios.items %}
-                <tr>
-                    <td>{{ sitio.nombre }}</td>
-                    <td>{{ sitio.ciudad }}</td>
-                    <td>{{ sitio.provincia }}</td>
-                    <td>{{ sitio.visible and "Sí" or "No" }}</td>
-                    {% if current_user %}
-                    <td>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-sm btn-secondary dropdown-toggle"
+
+    <form id="addFilter" method="get" action="{{ url_for('sitios.list')}}" class="p-4 border rounded shadow-sm bg-light">
+        <article class="mb-3">
+            <!-- Ciudad -->
+            <article class="mb-3">
+                <label for="ciudad" class="form-label">Ciudad</label>
+                <select class="form-control" id="ciudad" name="ciudad">
+                    <option value="">Seleccione una ciudad...</option>
+                    {% for ciud in ciudades %}
+                        <option value="{{ ciud }}">{{ ciud }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Provincia -->
+            <article class="mb-3">
+                <label for="provincia" class="form-label">Provincia</label>
+                <select class="form-control" id="provincia" name="provincia">
+                    <option value="">Seleccione una provincia...</option>
+                    {% for prov in provincias %}
+                        <option value="{{ prov }}">{{ prov }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Tags -->
+            <article class="mb-3">
+                <label for="tags" class="form-label">Tags</label>
+                <select class="form-control" id="tag" name="tag[]" multiple>
+                    {% for tag in tags %}
+                        <option value="{{ tag }}">{{ tag }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Estado de conservación -->
+            <article class="mb-3">
+                <label for="conservacion" class="form-label">Estado de conservación</label>
+                <select class="form-select" id="conservacion" name="conservacion">
+                    <option value="">Seleccione un estado de conservacion...</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                </select>
+            </article>
+
+            <!-- Fecha de registro -->
+            <article class="mb-3">
+                <article class="d-flex gap-2">
+                    <label>Registrado desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde">
+                    <label>Hasta</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta">
+                </article>
+            </article>
+
+            <!-- Visibilidad -->
+            <article class="form-check mb-4">
+                <input type="checkbox" class="form-check-input" id="visibilidad" name="visibilidad">
+                <label for="visibilidad" class="form-check-label">Mostrar solo visibles</label>
+            </article>
+        </article>
+
+        <article>
+            <input type="text" class="form-control" id="busqueda" name="busqueda" placeholder="Buscar por nombre o descripcion...">
+        </article>
+
+        <article class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-success flex-fill">Buscar</button>
+            <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary flex-fill">Reiniciar filtros</a>
+        </article>
+    </form>
+
+    
+    {% if ciudades %}
+        <article class="alert alert-info mt-3" role="alert">
+            Mostrando {{ (sitios.page - 1) * sitios.per_page + 1 }} 
+            - {{ (sitios.page - 1) * sitios.per_page + sitios.items|length }}
+            de {{ sitios.total }} resultados.
+        </article>
+
+        <article>
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Ciudad</th>
+                        <th>Provincia</th>
+                        <th>Visible</th>
+                        {% if current_user %}
+                        <th>Acciones</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sitio in sitios.items %}
+                    <tr>
+                        <td>{{ sitio.nombre }}</td>
+                        <td>{{ sitio.ciudad }}</td>
+                        <td>{{ sitio.provincia }}</td>
+                        <td>{{ sitio.visible and "Sí" or "No" }}</td>
+                        {% if current_user %}
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle"
                                 data-bs-toggle="dropdown" aria-expanded="false">
-                                Acciones
-                            </button>
-                            <ul class="dropdown-menu">
-                                {% if current_user.role_id in [1, 2] %}
-                                <li>
-                                    <a class="dropdown-item text-warning"
+                                    Acciones
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% if current_user.role_id in [1, 2] %}
+                                    <li>
+                                        <a class="dropdown-item text-warning"
                                         href="{{ url_for('sitios.edit', id=sitio.id) }}">
-                                        Editar
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% if current_user.role_id == 1 %}
-                                <li>
-                                    <form method="POST" action="{{ url_for('sitios.remove', id=sitio.id) }}"
-                                        onsubmit="return confirm('¿Estás seguro de que quieres eliminar {{ sitio.nombre }}?');"
+                                            Editar
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if current_user.role_id == 1 %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('sitios.remove', id=sitio.id) }}"
+                                          onsubmit="return confirm('¿Estás seguro de que quieres eliminar {{ sitio.nombre }}?');"
                                         style="display:inline;">
-                                        <button type="submit" class="dropdown-item text-danger">
-                                            Eliminar
-                                        </button>
-                                    </form>
-                                </li>
-                                {% endif %}
-                                <li>
-                                    <a class="dropdown-item text-info"
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="dropdown-item text-info"
                                         href="{{ url_for('sitios.detail', id=sitio.id) }}">
-                                        Ver detalle
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </article>
+                                            Ver detalle
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+    {% else %}
+        <article class="alert alert-info mt-3" role="alert">
+            No hay ciudades registradas con los filtros ingresados.
+        </article>
+    {% endif %}
     <nav aria-label="Page navigation">
         <ul class="pagination">
             {% for i in range(1, sitios.pages + 1) %}
             <li class="page-item {% if i == sitios.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('sitios.list', page=i) }}">{{ i }}</a>
+                <a class="page-link" href="{{ url_for('sitios.list', page=i,
+                                ciudad=request.args.get('ciudad'),
+                                provincia=request.args.get('provincia'),
+                                conservacion=request.args.get('conservacion'),
+                                desde=request.args.get('desde'),
+                                hasta=request.args.get('hasta'),
+                                visibilidad=request.args.get('visibilidad')) }}">{{ i }}</a>
             </li>
             {% endfor %}
         </ul>
@@ -92,9 +187,59 @@
 </section>
 
 <style>
+/* Contenedor del multiselect */
+.multi-select-tag-container {
+    color: #000 !important;
+}
+
+/* Input de búsqueda dentro del multiselect */
+.multi-select-tag-container input {
+    color: #000 !important;
+}
+
+/* Lista desplegable de opciones */
+.multi-select-tag-container .multi-select-tag-list li {
+    color: #000 !important;
+}
+
+/* Items seleccionados (los tags) */
+.multi-select-tag-container .multi-select-tag-item {
+    color: #000 !important;
+    background-color: #e9ecef !important;
+}
+
+/* Hover sobre las opciones */
+.multi-select-tag-container .multi-select-tag-list li:hover {
+    background-color: #f8f9fa !important;
+    color: #000 !important;
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@4.0.1/dist/js/multi-select-tag.min.js"></script>
+<script>
+    var tagSelector = new MultiSelectTag('tag', {
+        maxSelection: 5,              // default unlimited.
+        required: false,               // default false.
+        placeholder: 'Seleccione los tags...',   // default 'Search'.
+        onChange: function(selected) { // Callback when selection changes.
+            console.log('Selection changed:', selected);
+        }
+    });
+</script>
+
+<style>
     table.table thead th,
     table.table tbody td {
-        color: #fff !important;
+        color: #000000 !important;
+    }
+
+    #addFilter label {
+        color: #000 !important;
+    }
+
+    #addFilter article label {
+        color: #000 !important;
     }
 </style>
 {% endblock %}

@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# Registro y Preservación de Sitios Históricos
+=======
 # Registro y Preservación de Sitios Históricos.
 
 ## Participantes
