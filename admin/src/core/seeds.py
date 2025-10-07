@@ -6,7 +6,9 @@ from src.core.bcrypt import hash_password
 
 
 def seed_roles_permissions():
-    # 1. Roles
+    print("--- 1. Inicializando Roles y Permisos ---")
+
+    # Roles
     admin_role = Role(name="Administrador")
     editor_role = Role(name="Editor")
     public_role = Role(name="Usuario público")
