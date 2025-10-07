@@ -21,11 +21,14 @@ def list():
     order_by = request.args.get("order_by", "fecha_creacion")
     order_dir = request.args.get("order_dir", "desc")
     
+    busqueda = request.args.get("busqueda")
+
     pagination = list_tags(
         page=page,
         per_page=25,
         search_nombre=search_nombre,
         search_slug=search_slug,
+        busqueda=busqueda,
         order_by=order_by,
         order_dir=order_dir
     )

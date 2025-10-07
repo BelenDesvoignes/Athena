@@ -19,6 +19,7 @@ from src.core.models.tag import Tag
 from src.core.models.user import User
 from src.core.database import db
 from src.web.handlers.auth import login_required, permission_required
+from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
 
 """Controlador para la gestión de sitios turísticos."""
@@ -44,6 +45,7 @@ def list():
     desde = request.args.get('desde')
     hasta = request.args.get('hasta')
     visibilidad = request.args.get('visibilidad')
+    busqueda = request.args.get('busqueda')
 
     if ciudad:
         query = query.filter(Sitio.ciudad == ciudad)
@@ -60,13 +62,20 @@ def list():
         query = query.filter(Sitio.registrado < hasta_dt)
     if visibilidad:
         query = query.filter(Sitio.visible == "true")
-
+    if busqueda:
+        query = query.filter(
+        or_(
+            Sitio.nombre.ilike(f"%{busqueda}%"),
+            Sitio.descripcion_breve.ilike(f"%{busqueda}%"),
+            Sitio.descripcion_completa.ilike(f"%{busqueda}%")
+        )
+    )
 
     sitios = query.paginate(page=page, per_page=25)
 
+    """Paso las provincias, ciudades y tags guardados en la BD para poner en los select"""
     provincias = [p[0] for p in db.session.query(Sitio.provincia).distinct().all()]
     ciudades = [p[0] for p in db.session.query(Sitio.ciudad).distinct().all()]
-
     tags = [p[0] for p in db.session.query(Tag.nombre).distinct().all()]
 
     current_user = get_current_user()
