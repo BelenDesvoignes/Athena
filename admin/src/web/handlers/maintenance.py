@@ -1,4 +1,4 @@
-from flask import redirect, url_for, session, g, request, g
+from flask import redirect, url_for, session, g, request
 from src.core.database import db
 from src.core.models.user import User
 from src.core.models.feature_flags import FeatureFlag
@@ -15,7 +15,8 @@ def maintenance_check(app):
         endpoint = request.endpoint or ""
 
         maintenance_endpoints = [
-            "maintenance_admin", "maintenance_portal",
+            "feature_flags.maintenance_admin",
+            "feature_flags.maintenance_portal",
             "auth.login", "auth.logout"
         ]
 
@@ -24,12 +25,11 @@ def maintenance_check(app):
 
         if g.feature_flags.get("admin_maintenance_mode"):
             if "admin" in endpoint and (user or 'user_id' in session):
-                return redirect(url_for("maintenance_admin"))
+                return redirect(url_for("feature_flags.maintenance_admin"))
 
         if g.feature_flags.get("portal_maintenance_mode"):
             if "portal" in endpoint and (user or 'user_id' in session):
-                return redirect(url_for("maintenance_portal"))
-
+                return redirect(url_for("feature_flags.maintenance_portal"))
 
 
 def maintenance_protected(area: str):
@@ -45,9 +45,9 @@ def maintenance_protected(area: str):
                 return f(*args, **kwargs)
             
             if area == "admin" and g.feature_flags.get("admin_maintenance_mode"):
-                return redirect(url_for("maintenance_admin"))
+                return redirect(url_for("feature_flags.maintenance_admin"))
             elif area == "portal" and g.feature_flags.get("portal_maintenance_mode"):
-                return redirect(url_for("maintenance_portal"))
+                return redirect(url_for("feature_flags.maintenance_portal"))
 
             return f(*args, **kwargs)
         return wrapped

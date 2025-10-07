@@ -1,6 +1,6 @@
 from src.web import create_app
 from src.core.database import db, reset_db
-from src.core.seeds import seed_roles_permissions, seed_admin_user 
+from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags
 
 app = create_app()
 
@@ -13,6 +13,7 @@ with app.app_context():
     db.create_all()
     seed_roles_permissions() 
     seed_admin_user()        
+    seed_feature_flags()
     
     print("Tablas y datos iniciales listos.")
 

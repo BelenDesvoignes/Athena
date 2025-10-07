@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
 from datetime import datetime, timezone, timedelta
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
@@ -6,6 +6,23 @@ from src.web.handlers.auth import login_required, permission_required
 from src.core.models.user import User
 
 feature_flags_bp = Blueprint("feature_flags", __name__, url_prefix="/admin/feature-flags")
+
+
+@feature_flags_bp.route("/maintenance/admin")
+def maintenance_admin():
+    msg = g.feature_flags_msg.get("admin_maintenance_mode")
+    return render_template(
+        "maintenance_admin.html",
+        message=msg or "El área de administración está en mantenimiento."
+    )
+
+@feature_flags_bp.route("/maintenance/portal")
+def maintenance_portal():
+    msg = g.feature_flags_msg.get("portal_maintenance_mode")
+    return render_template(
+        "maintenance_portal.html",
+        message=msg or "El portal está en mantenimiento."
+    )
 
 @feature_flags_bp.route("/", methods=["GET"])
 @permission_required("feature_flags_manage")
@@ -71,3 +88,4 @@ def update_all():
         flash(f"Error al actualizar los feature flags: {e}", "danger")
 
     return redirect(url_for("feature_flags.index"))
+

@@ -8,7 +8,10 @@ from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
 from src.core.permissions_service import current_user_permissions
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
-
+from src.core.flags import is_flag_enabled
+from src.web.handlers.maintenance import maintenance_check
+from src.core.models.feature_flags import FeatureFlag
+from web.controllers.feature_flags_routes import feature_flags_bp
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder,template_folder="templates")
@@ -22,12 +25,14 @@ def create_app(env="development", static_folder="../../static"):
     db.init_app(app)
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
+    app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
 
     #registro de blueprints
     app.register_blueprint(auth_bp, url_prefix="/auth")
     #app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
     app.register_blueprint(tag_bp, url_prefix="/tags")
     app.register_blueprint(user_admin_bp, url_prefix="/admin")
+    app.register_blueprint(feature_flags_bp)
 
     #rutas principales 
     @app.route("/")
@@ -46,6 +51,19 @@ def create_app(env="development", static_folder="../../static"):
             seed_roles_permissions() #insertar roles
             seed_admin_user()        #crear el admin
             print("Base de datos reseteada e inicializada con roles y admin.")
+
+    @app.context_processor
+    def inject_flags():
+        # Cargar flags de la BD
+        flags = db.session.query(FeatureFlag).all()
+        feature_flags = {f.key: f.is_enabled for f in flags}
+
+        return {
+            "feature_flags": feature_flags
+        }
+        
+    maintenance_check(app)
+    return app
 
     
     #manejo de errores
