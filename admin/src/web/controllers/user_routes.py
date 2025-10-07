@@ -7,23 +7,41 @@ from src.core.models.user import User
 from src.web.handlers.maintenance import maintenance_protected
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
-
-
-# ruta de Login
-# Esta ruta manejará la URL /admin/
+# Ruta de Login
+# Esta ruta maneja la URL /admin/
 @user_admin_bp.route("/", methods=["GET", "POST"])
 def login():
+    """Maneja la autenticación de usuarios mediante correo electrónico y contraseña.
+
+    Esta función gestiona las peticiones GET para mostrar el formulario de login 
+    y las peticiones POST para procesar las credenciales.
+
+    Proceso de autenticación (POST):
+    1. Obtiene el email y la contraseña del formulario.
+    2. Busca el usuario por email.
+    3. Verifica que:
+       a. El usuario exista (`user`).
+       b. El usuario esté activo (`user.enabled`).
+       c. La contraseña proporcionada coincida con el hash almacenado (`check_password`).
+    4. Si la autenticación es exitosa, se establece `user_id` y `user_role` 
+       en la sesión, y se redirige a la página de inicio.
+    5. Si falla, se vuelve a renderizar el formulario con un mensaje de error.
+
+    Returns:
+        str: Redirección a la página de inicio en caso de éxito, 
+             o la plantilla 'login.html' (con o sin error) en caso contrario.
+    """
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
 
         user = get_user_by_email(email)
 
-        # 1. 🔑 Verificación Completa:
+        #  Se verifica
         #    - Que el usuario exista.
         #    - Que el usuario esté ACTIVADO (enabled=True).
         #    - Que la contraseña coincida con el hash almacenado.
-        # 1. 🔑 Verificación Completa:
+        #  Se verifica
         #    - Que el usuario exista.
         #    - Que el usuario esté ACTIVADO (enabled=True).
         #    - Que la contraseña coincida con el hash almacenado.
@@ -31,21 +49,19 @@ def login():
             
             # Autenticación exitosa
             
-            # Autenticación exitosa
             session["user_id"] = user.id
             
-            # 2. 🎯 Asignación de Rol a la sesión (usando la relación .name)
+            # Asignación de Rol a la sesión (usando la relación .name)
             # Asumiendo que user.role es la relación al objeto Role
             session["user_role"] = user.role.name 
             
-            # 2. 🎯 Asignación de Rol a la sesión (usando la relación .name)
+            #  Asignación de Rol a la sesión (usando la relación .name)
             # Asumiendo que user.role es la relación al objeto Role
             session["user_role"] = user.role.name 
 
-            # redirige a la página de inicio (home.html)
+            # Redirige a la página de inicio (home.html)
             return redirect(url_for("user_admin.home"))
         else:
-            # Autenticación fallida o usuario inactivo
             # Autenticación fallida o usuario inactivo
             return render_template(
                 "login.html", error="Credenciales inválidas o cuenta inactiva."
@@ -54,42 +70,66 @@ def login():
     return render_template("login.html")
 
 
-# define la ruta de la página de inicio del admin
-# esta ruta manejará la URL /admin/home
+# Define la ruta de la página de inicio del admin
 @user_admin_bp.route("/home")
 def home():
+    """
+    Renderiza la página principal o de bienvenida del módulo de administración de usuarios.
+
+    Esta función es accesible a través de la ruta '/home' dentro del blueprint 
+    de administración de usuarios.
+
+    Returns:
+        str: La plantilla HTML renderizada ("home.html").
+    """
     return render_template("home.html")
 
 
-# ruta de Registro
+# Ruta de Registro
 @user_admin_bp.route("/register", methods=["GET", "POST"])
 @maintenance_protected("admin")
 def register():
+    """Maneja el registro de nuevos usuarios en el sistema.
+
+    Esta función gestiona las peticiones GET para mostrar el formulario de registro 
+    y las peticiones POST para procesar y crear una nueva cuenta. Está protegida 
+    por el decorador `maintenance_protected` para el rol "admin".
+
+    Proceso de registro (POST):
+    1. Obtiene los campos necesarios (email, password, nombre, apellido) del formulario.
+    2. Valida que todos los campos requeridos estén presentes.
+    3. Verifica si ya existe un usuario con el email proporcionado.
+    4. Si las validaciones son exitosas, prepara los datos con el rol "Usuario público" 
+       y el estado `activo=True`.
+    5. Llama al servicio `create_user` para persistir los datos.
+    6. En caso de éxito, redirige a la página de inicio de sesión.
+    7. En caso de error (p. ej., validación de contraseña en el servicio), captura 
+       el `ValueError` y lo muestra al usuario en el formulario.
+
+    Returns:
+        str: Redirección a la página de login en caso de éxito, 
+             o la plantilla 'register.html' (con mensaje de error) en caso contrario.
+    """
     if request.method == "POST":
-        # ... (código que obtiene datos y verifica email existente, sin cambios)
-        # ... (código que obtiene datos y verifica email existente, sin cambios)
         email = request.form.get("email")
         password = request.form.get("password")
         nombre = request.form.get("nombre")
         apellido = request.form.get("apellido")
 
-        # validación de campos requeridos (esta es la validación del controller, déjala)
-        # validación de campos requeridos (esta es la validación del controller, déjala)
+        # Valida de campos requeridos 
         if not all([email, password, nombre, apellido]):
             return render_template(
                 "register.html", error="Todos los campos son obligatorios."
             )
 
-        # verificar si el email ya existe (déjala)
-        # verificar si el email ya existe (déjala)
+        # Verifica si el email ya existe 
         existing_user = get_user_by_email(email)
         if existing_user:
             return render_template(
                 "register.html", error="El email ya está registrado."
             )
 
-        # datos para la creación del usuario (incluye 'password', está correcto)
-        # datos para la creación del usuario (incluye 'password', está correcto)
+        # Datos para la creación del usuario 
         data = {
             "nombre": nombre,
             "apellido": apellido,
@@ -100,31 +140,27 @@ def register():
             "rol": "Usuario público", 
             "activo": True,
         }
-        # ⬇️ ---------------------- CAMBIO CRÍTICO AQUÍ ---------------------- ⬇️
         try:
-            # Llamar a la función de servicio para crear el usuario
+            # Llama a la función de servicio para crear el usuario
             create_user(data)
 
-            # redirigir al login si es exitoso
+            # Redirige al login si es exitoso
+            return redirect(url_for("user_admin.login"))
+        
+        except ValueError as e:
+            # Captura el error de validación de user_service.py y lo muestra al usuario
+            return render_template("register.html", error=str(e))
+
+            # Redirige al login si es exitoso
             return redirect(url_for("user_admin.login"))
         
         except ValueError as e:
             # Captura el error de validación de user_service.py y lo muestra al usuario
             return render_template("register.html", error=str(e))
         
-        # ⬆️ 
-
-            # redirigir al login si es exitoso
-            return redirect(url_for("user_admin.login"))
-        
-        except ValueError as e:
-            # Captura el error de validación de user_service.py y lo muestra al usuario
-            return render_template("register.html", error=str(e))
-        
-        # ⬆️ ------------------------------------------------------------------ ⬆️
 
 
-    # mostrar el formulario de registro en una solicitud GET
+    # Muestra el formulario de registro en una solicitud GET
     return render_template("register.html")
 
 @maintenance_protected("admin")

@@ -4,7 +4,23 @@ from flask import session, redirect, url_for, flash
 
 
 def login_required(f):
-    """Decorador que verifica si el usuario tiene una sesión activa."""
+    """Verifica si el usuario tiene una sesión activa ('user_id' en la sesión).
+
+    Este decorador se utiliza en rutas que requieren autenticación. Si el usuario 
+    no tiene una sesión activa, interrumpe la ejecución de la función de vista 
+    decorada y realiza los siguientes pasos:
+    
+    1. Muestra un mensaje flash de error indicando que se requiere iniciar sesión.
+    2. Redirige al usuario a la ruta de inicio de sesión ('auth.login').
+
+    Si la sesión existe, la función de vista original se ejecuta normalmente.
+
+    Args:
+        f (function): La función de vista (view function) a decorar.
+
+    Returns:
+        function: La función decorada que incluye la lógica de verificación de sesión.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -15,6 +31,28 @@ def login_required(f):
 
 
 def permission_required(permission_name: str):
+    """Decorador de acceso basado en permisos, con doble anidación.
+
+    Este decorador garantiza que solo los usuarios autenticados, cuyo rol tenga 
+    el permiso específico requerido, puedan acceder a una función de vista (view function).
+
+    Flujo de Verificación:
+    1. **Autenticación:** Verifica si 'user_id' existe en la sesión. Si no, redirige 
+       al login con un mensaje de error.
+    2. **Existencia del Usuario:** Recupera el objeto User de la base de datos. Si 
+       no se encuentra, redirige al login.
+    3. **Verificación de Permiso:** Comprueba si `permission_name` está presente en la 
+       lista de permisos asociados al rol del usuario. Si no lo está, redirige a 
+       la página de inicio del administrador (`user_admin.home`) con una advertencia.
+    4. **Acceso:** Si todas las verificaciones pasan, la función de vista original se ejecuta.
+
+    Args:
+        permission_name (str): El nombre del permiso que se requiere para acceder 
+                               a la función de vista decorada (ej: 'user_index', 'site_delete').
+
+    Returns:
+        function: La función decorada que envuelve la función de vista.
+    """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
