@@ -160,5 +160,5 @@ def seed_feature_flags():
 #if __name__ == "__main__":
 #    with app.app_context():  # esto “activa” la app para poder usar db.session
 #        seed_roles_permissions()
-        seed_sitios()
+#        seed_sitios()
 #        seed_admin_user()
