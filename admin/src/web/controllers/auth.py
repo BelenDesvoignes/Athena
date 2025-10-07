@@ -43,8 +43,9 @@ def authenticate():
 
 
 #ruta de registro
-@maintenance_protected("admin")
+
 @auth_bp.route("/register", methods=['GET', 'POST'])
+@maintenance_protected("admin")
 def register():
     if 'user_id' in session:
         return redirect(url_for("user_admin.home"))
