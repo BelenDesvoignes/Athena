@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
 from src.web.handlers.auth import login_required, permission_required
@@ -38,6 +38,7 @@ def _validate_message(flag, new_value, new_message):
 @login_required
 @permission_required("feature_flags_manage")
 def update_all():
+    arg_tz = timezone(timedelta(hours=-3))
     try:
         flags = db.session.execute(db.select(FeatureFlag).order_by(FeatureFlag.id)).scalars().all()
         user_id = session.get("user_id")
@@ -52,10 +53,9 @@ def update_all():
             if _has_changes(flag, new_value, new_message):
                 if not _validate_message(flag, new_value, new_message):
                     return redirect(url_for("feature_flags.index"))
-
                 flag.is_enabled = new_value
                 flag.maintenance_message = new_message if new_message else None
-                flag.last_modified_at = datetime.utcnow()
+                flag.last_modified_at = datetime.now(arg_tz)
                 flag.last_modified_by = user.id if user else None
                 any_changes = True
 
