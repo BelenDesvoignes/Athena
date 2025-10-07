@@ -30,6 +30,14 @@
             </select>
         </div>
         <div class="col-auto">
+            <select name="sort_by" class="form-select">
+                <option value="">Orden por defecto</option>
+                <option value="created" {% if request.args.get('sort_by') == 'created' %}selected{% endif %}>Fecha de creación</option>
+                <option value="modified" {% if request.args.get('sort_by') == 'modified' %}selected{% endif %}>Fecha de modificación</option>
+            </select>
+        </div>
+
+        <div class="col-auto">
             <button type="submit" class="btn btn-primary">Filtrar</button>
         </div>
     </form>
@@ -106,6 +114,14 @@
                         <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
                         <li class="list-group-item"><strong>Nombre:</strong> {{ user.nombre }}</li>
                         <li class="list-group-item"><strong>Apellido:</strong> {{ user.apellido }}</li>
+                        <li class="list-group-item">
+                            <strong>Fecha de creación:</strong>
+                            {{ user.fecha_creacion.strftime("%d/%m/%Y %H:%M") if user.fecha_creacion else "No disponible" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Última modificación:</strong>
+                            {{ user.fecha_actualizacion.strftime("%d/%m/%Y %H:%M") if user.fecha_actualizacion else "No disponible" }}
+                        </li>
                     </ul>
                 </td>
             </tr>

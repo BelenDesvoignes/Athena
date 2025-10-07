@@ -1,55 +1,43 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <article class="container mt-5" aria-labelledby="register-heading">
-        <div class="row justify-content-center">
-            <section class="col-md-6">
-                <div class="card bg-dark text-white">
-                    
-                    <header class="card-header text-center">
-                        <h2 id="register-heading">Registrarse</h2>
-                    </header>
-                    
-                    <div class="card-body">
-                        <form method="post" action="{{ url_for('user_admin.register') }}">
-                            
-                            <div class="mb-3">
-                                <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" autocomplete="given-name" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="apellido" class="form-label">Apellido</label>
-                                <input type="text" class="form-control" id="apellido" name="apellido" autocomplete="family-name" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" autocomplete="email" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" required>
-                            </div>
-                            
-                            {% if error %}
-                                <div class="alert alert-danger" role="alert">{{ error }}</div>
-                            {% endif %}
-                            
-                            <button type="submit" class="btn btn-success w-100">Crear cuenta</button>
-                            
-                        </form>
-                    </div>
-                    
-                    <footer class="card-footer text-center">
-                        <p class="mb-0">¿Ya tienes una cuenta?</p>
-                        <nav aria-label="Enlaces complementarios de autenticación">
-                            <a href="{{ url_for('user_admin.login') }}">Inicia sesión aquí</a>
-                        </nav>
-                    </footer>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card bg-dark text-white">
+                <div class="card-header text-center">
+                    <h2>Registrarse</h2>
                 </div>
-            </section>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('user_admin.register') }}">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
+                        <button type="submit" class="btn btn-success w-100">Crear cuenta</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">¿Ya tienes una cuenta?</p>
+                    <a href="{{ url_for('user_admin.login') }}">Inicia sesión aquí</a>
+                </div>
+            </div>
         </div>
-    </article>
+    </div>
+</div>
 {% endblock %}

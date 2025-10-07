@@ -1,44 +1,35 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <article class="container mt-5" aria-labelledby="login-heading">
+    <div class="container mt-5">
         <div class="row justify-content-center">
-            <section class="col-md-6">
+            <div class="col-md-6">
                 <div class="card bg-dark text-white">
-                    
-                    <header class="card-header text-center">
-                        <h2 id="login-heading">Iniciar sesión</h2>
-                    </header>
-                    
+                    <div class="card-header text-center">
+                        <h2>Iniciar sesión</h2>
+                    </div>
                     <div class="card-body">
                         <form method="post" action="{{ url_for('user_admin.login') }}">
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" autocomplete="email" required>
+                                <input type="email" class="form-control" id="email" name="email" required>
                             </div>
-                            
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+                                <input type="password" class="form-control" id="password" name="password" required>
                             </div>
-                            
                             {% if error %}
-                                <div class="alert alert-danger" role="alert">{{ error }}</div>
+                                <div class="alert alert-danger">{{ error }}</div>
                             {% endif %}
-                            
                             <button type="submit" class="btn btn-primary w-100">Acceder</button>
-                            
                         </form>
                     </div>
-                    
-                    <footer class="card-footer text-center">
+                    <div class="card-footer text-center">
                         <p class="mb-0">¿No tienes una cuenta?</p>
-                        <nav aria-label="Enlaces complementarios de registro">
-                            <a href="{{ url_for('user_admin.register') }}">Regístrate aquí</a>
-                        </nav>
-                    </footer>
+                        <a href="{{ url_for('user_admin.register') }}">Regístrate aquí</a>
+                    </div>
                 </div>
-            </section>
+            </div>
         </div>
-    </article>
+    </div>
 {% endblock %}
