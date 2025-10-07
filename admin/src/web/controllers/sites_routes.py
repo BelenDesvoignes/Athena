@@ -112,6 +112,7 @@ def new():
 
 """Detalle de un sitio turístico"""
 
+
 @login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 def detail(id):
@@ -122,15 +123,18 @@ def detail(id):
     coordenadas = extract_coords(sitio.ubicacion)
 
     current_user = get_current_user()
-    
 
     return render_template(
         "site_detail.html",
         sitio=sitio,
         current_user=current_user,
-        coordenadas=coordenadas
+        coordenadas=coordenadas,
     )
+
+
 """Logica para editar un sitio turístico existente"""
+
+
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
 def edit(id):
@@ -145,11 +149,17 @@ def edit(id):
 
     if request.method == "POST":
         sitio.nombre = request.form.get("nombre", sitio.nombre)
-        sitio.descripcion_breve = request.form.get("descripcion_breve", sitio.descripcion_breve)
-        sitio.descripcion_completa = request.form.get("descripcion_completa", sitio.descripcion_completa)
+        sitio.descripcion_breve = request.form.get(
+            "descripcion_breve", sitio.descripcion_breve
+        )
+        sitio.descripcion_completa = request.form.get(
+            "descripcion_completa", sitio.descripcion_completa
+        )
         sitio.ciudad = request.form.get("ciudad", sitio.ciudad)
         sitio.provincia = request.form.get("provincia", sitio.provincia)
-        sitio.estado_conservacion = request.form.get("estado_conservacion", sitio.estado_conservacion)
+        sitio.estado_conservacion = request.form.get(
+            "estado_conservacion", sitio.estado_conservacion
+        )
         sitio.inauguracion = int(request.form.get("inauguracion", sitio.inauguracion))
         sitio.categoria = request.form.get("categoria", sitio.categoria)
         sitio.visible = bool(request.form.get("visible", sitio.visible))
@@ -159,32 +169,48 @@ def edit(id):
         if latitud and longitud:
             sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
 
-        # Validación de campos obligatorios
-        if not all([
-            sitio.nombre,
-            sitio.descripcion_breve,
-            sitio.descripcion_completa,
-            sitio.ciudad,
-            sitio.provincia,
-            sitio.estado_conservacion,
-            sitio.inauguracion,
-            sitio.categoria,
-            sitio.ubicacion,
-        ]):
+        """Validación de campos obligatorios"""
+        if not all(
+            [
+                sitio.nombre,
+                sitio.descripcion_breve,
+                sitio.descripcion_completa,
+                sitio.ciudad,
+                sitio.provincia,
+                sitio.estado_conservacion,
+                sitio.inauguracion,
+                sitio.categoria,
+                sitio.ubicacion,
+            ]
+        ):
             error = "Todos los campos son obligatorios."
-            return render_template("edit_site.html", sitio=sitio, error=error, latitud=latitud or sitio.latitud, longitud=longitud or sitio.longitud, current_user=current_user)
+            return render_template(
+                "edit_site.html",
+                sitio=sitio,
+                error=error,
+                latitud=latitud or sitio.latitud,
+                longitud=longitud or sitio.longitud,
+                current_user=current_user,
+            )
 
         db.session.commit()
         flash("Sitio actualizado correctamente")
         return redirect(url_for("sitios.list"))
-    
+
     coordenadas = extract_coords(sitio.ubicacion)
-    return render_template("edit_site.html", sitio=sitio,coordenadas=coordenadas, current_user=current_user)
+    return render_template(
+        "edit_site.html",
+        sitio=sitio,
+        coordenadas=coordenadas,
+        current_user=current_user,
+    )
 
 
+"""Elimina un sitio turístico"""
 
 
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
+@login_required
 def remove(id):
     current_user = get_current_user()
     if not current_user or not is_admin(current_user):
@@ -200,15 +226,24 @@ def remove(id):
 
 """ Logica para la exportacion de sitios a CSV """
 
+
 @bp_sitios.route("/exportar", methods=["GET"])
 @login_required
 def export():
+    current_user = get_current_user()
+    if not is_admin(current_user):
+        abort(401, "Solo administradores pueden exportar sitios.")
     # Consulta con extracción de coordenadas usando func.ST_X y func.ST_Y
     sitios = db.session.query(
         Sitio,
         func.ST_Y(Sitio.ubicacion).label("latitud"),
         func.ST_X(Sitio.ubicacion).label("longitud"),
     ).all()
+    if not sitios:
+        flash("No hay sitios para exportar.")
+        return redirect(url_for("sitios.list"))
+
+    """Crear CSV en memoria"""
     si = StringIO()
     writer = csv.writer(si)
 
@@ -272,6 +307,6 @@ def is_editor_or_admin(user):
 def extract_coords(ubicacion):
     geom = to_shape(ubicacion)
 
-    resultado = {'latitud': float(geom.y), 'longitud': float(geom.x)}
-    
+    resultado = {"latitud": float(geom.y), "longitud": float(geom.x)}
+
     return resultado

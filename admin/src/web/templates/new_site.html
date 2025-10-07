@@ -17,7 +17,8 @@
                 </div>
                 <div class="mb-3">
                     <label for="descripcion_completa" class="form-label">Descripción completa</label>
-                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3" required></textarea>
+                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3"
+                        required></textarea>
                 </div>
                 <div class="mb-3">
                     <label for="ciudad" class="form-label">Ciudad</label>
@@ -70,7 +71,7 @@
     }).addTo(map);
 
     var marker;
-    map.on('click', function(e) {
+    map.on('click', function (e) {
         if (marker) map.removeLayer(marker);
         marker = L.marker(e.latlng).addTo(map);
         document.getElementById('latitud').value = e.latlng.lat;
@@ -80,4 +81,3 @@
 {% endblock %}
 
 {% block title %}Crear Nuevo Sitio Histórico{% endblock %}
-
