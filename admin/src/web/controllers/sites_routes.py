@@ -16,9 +16,12 @@ from datetime import datetime
 from sqlalchemy import func
 from src.core.models.site import Sitio
 from src.core.models.user import User
+from shapely.wkt import loads
 from src.core.database import db
 from src.web.handlers.auth import login_required, permission_required
 from geoalchemy2.elements import WKTElement
+from geoalchemy2.shape import to_shape
+
 
 """Controlador para la gestión de sitios turísticos."""
 """ Ruta basica para sitios turísticos. """
@@ -43,7 +46,7 @@ def list():
 
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
-def create_sitio():
+def new():
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
         abort(401, "No tienes permisos para crear sitios.")
@@ -109,20 +112,25 @@ def create_sitio():
 
 """Detalle de un sitio turístico"""
 
-
+@login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 def detail(id):
-    current_user = get_current_user()
-
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404, "Sitio no encontrado.")
 
-    return render_template("site_detail.html", sitio=sitio, current_user=current_user)
+    coordenadas = extract_coords(sitio.ubicacion)
 
+    current_user = get_current_user()
+    
 
+    return render_template(
+        "site_detail.html",
+        sitio=sitio,
+        current_user=current_user,
+        coordenadas=coordenadas
+    )
 """Logica para editar un sitio turístico existente"""
-
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
 def edit(id):
@@ -136,8 +144,6 @@ def edit(id):
     error = None
 
     if request.method == "POST":
-        latitud = request.form.get("latitud")
-        longitud = request.form.get("longitud")
         sitio.nombre = request.form.get("nombre", sitio.nombre)
         sitio.descripcion_breve = request.form.get("descripcion_breve", sitio.descripcion_breve)
         sitio.descripcion_completa = request.form.get("descripcion_completa", sitio.descripcion_completa)
@@ -146,8 +152,14 @@ def edit(id):
         sitio.estado_conservacion = request.form.get("estado_conservacion", sitio.estado_conservacion)
         sitio.inauguracion = int(request.form.get("inauguracion", sitio.inauguracion))
         sitio.categoria = request.form.get("categoria", sitio.categoria)
-        sitio.visible = True if request.form.get("visible") == "1" else False
-        sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)        # Validación de campos obligatorios
+        sitio.visible = bool(request.form.get("visible", sitio.visible))
+
+        latitud = request.form.get("latitud", None)
+        longitud = request.form.get("longitud", None)
+        if latitud and longitud:
+            sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
+
+        # Validación de campos obligatorios
         if not all([
             sitio.nombre,
             sitio.descripcion_breve,
@@ -165,20 +177,12 @@ def edit(id):
         db.session.commit()
         flash("Sitio actualizado correctamente")
         return redirect(url_for("sitios.list"))
-
-    latitud = None
-    longitud = None
-    if sitio.ubicacion:
-        coords = str(sitio.ubicacion)
-        try:
-            lng, lat = coords.replace("POINT(", "").replace(")", "").split()
-            latitud = float(lat)
-            longitud = float(lng)
-        except Exception:
-            latitud = None
-            longitud = None
     
-    return render_template("edit_site.html", sitio=sitio, latitud=latitud or -34.6, longitud=longitud or -58.4, current_user=current_user)
+    coordenadas = extract_coords(sitio.ubicacion)
+    return render_template("edit_site.html", sitio=sitio,coordenadas=coordenadas, current_user=current_user)
+
+
+
 
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 def remove(id):
@@ -263,3 +267,11 @@ def is_admin(user):
 
 def is_editor_or_admin(user):
     return user.role_id in [1, 2]
+
+
+def extract_coords(ubicacion):
+    geom = to_shape(ubicacion)
+
+    resultado = {'latitud': float(geom.y), 'longitud': float(geom.x)}
+    
+    return resultado

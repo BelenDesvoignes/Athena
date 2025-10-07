@@ -60,15 +60,20 @@
     </article>
 </section>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+
 <script>
-    var lat = parseFloat("{{ latitud|default(sitio.latitud, true)|default(-34.6, true) }}");
-    var lng = parseFloat("{{ longitud|default(sitio.longitud, true)|default(-58.4, true) }}");
-    var map = L.map('map').setView([lat, lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(map);
+    var lat = parseFloat("{{ coordenadas.latitud |default(-34.6, true) }}");
+    var lng = parseFloat("{{ coordenadas.longitud |default(-58.4, true) }}");
+    var map = L.map('map').setView([lat,lng], 13);
+   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
 
     var marker = L.marker([lat, lng]).addTo(map);
 
