@@ -182,14 +182,17 @@ def list():
     page = request.args.get("page", 1, type=int)
     search_email = request.args.get("search_email")
     search_enabled = request.args.get("search_enabled")
-    
+    sort_by = request.args.get("sort_by")  # nuevo parámetro
+
     pagination = list_users(
         page=page,
         per_page=25,
         search_email=search_email,
         search_enabled=search_enabled,
+        sort_by=sort_by
     )
     users = pagination.items
+
     return render_template("list.html", users=users, pagination=pagination)
 
 @maintenance_protected("admin")
