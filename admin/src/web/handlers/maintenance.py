@@ -40,13 +40,12 @@ def maintenance_protected(area: str):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            # Asegurarse de que los flags estén cargados
+            
             if not hasattr(g, "feature_flags"):
                 return f(*args, **kwargs)
             
             if area == "admin" and g.feature_flags.get("admin_maintenance_mode"):
-                if 'user_id' in session:
-                    return redirect(url_for("maintenance_admin"))
+                return redirect(url_for("maintenance_admin"))
             elif area == "portal" and g.feature_flags.get("portal_maintenance_mode"):
                 return redirect(url_for("maintenance_portal"))
 

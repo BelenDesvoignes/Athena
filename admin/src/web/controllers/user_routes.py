@@ -62,8 +62,8 @@ def home():
 
 
 # ruta de Registro
-@maintenance_protected("admin")
 @user_admin_bp.route("/register", methods=["GET", "POST"])
+@maintenance_protected("admin")
 def register():
     if request.method == "POST":
         # ... (código que obtiene datos y verifica email existente, sin cambios)
@@ -156,6 +156,7 @@ def list():
     users = pagination.items
     return render_template("list.html", users=users, pagination=pagination)
 
+@maintenance_protected("admin")
 @user_admin_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @permission_required("user_new")
@@ -191,7 +192,7 @@ def new():
     return render_template("create_user.html")
 
 
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
 @permission_required("user_update")
@@ -247,7 +248,7 @@ def edit(user_id):
         
     return render_template("edit_user.html", user=user)
 
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/delete", methods=["POST"])
 def delete(user_id):
     """
@@ -269,7 +270,7 @@ def delete(user_id):
     return redirect(url_for("user_admin.list"))
 
 
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/toggle_enabled", methods=["POST"])
 @login_required
 @permission_required("user_update")
