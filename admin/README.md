@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # Registro y Preservación de Sitios Históricos
+=======
+# Registro y Preservación de Sitios Históricos.
+>>>>>>> origin
 
 ## Participantes
 - Amarilla, Kevin Ezequiel  
