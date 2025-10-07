@@ -5,7 +5,7 @@ import re
 from src.core.bcrypt import hash_password, check_password
 from typing import TYPE_CHECKING
 from src.core.models.role_permission import Role
-
+from datetime import datetime, timezone
 if TYPE_CHECKING:
     from src.core.models.role_permission import Role
 
@@ -159,6 +159,8 @@ def update_user(user_id, data):
                 raise ValueError("La nueva clave debe tener al menos 8 caracteres.")
             user.password = hash_password(data['password'])
         
+        user.fecha_actualizacion = datetime.now(timezone.utc)
+        
         db.session.commit()
         return user
     except Exception as e:
@@ -197,7 +199,7 @@ def delete_user(user_id):
 
     
 
-def list_users(page, per_page, search_email=None, search_enabled=None, search_role_id=None, order_by='fecha_creacion', order_dir='desc'):
+def list_users(page, per_page, search_email=None, search_enabled=None, sort_by=None):
     """
     Lista usuarios con paginación y filtros opcionales.
 
@@ -206,16 +208,12 @@ def list_users(page, per_page, search_email=None, search_enabled=None, search_ro
         per_page (int): Cantidad de usuarios por página.
         search_email (str, optional): Filtra por email.
         search_enabled (str, optional): Filtra por estado ('True' o 'False').
-        search_role_id (int, optional): Filtra por rol.
-        order_by (str): Columna para ordenar.
-        order_dir (str): Dirección del orden ('asc' o 'desc').
 
     Returns:
         Pagination: Objeto con atributos 'items', 'page', 'per_page', 'total', 'pages'.
     """
     query = db.session.query(User)
 
-  
     if search_email:
         query = query.filter(User.email.ilike(f"%{search_email}%"))
 
@@ -223,27 +221,18 @@ def list_users(page, per_page, search_email=None, search_enabled=None, search_ro
         is_enabled = search_enabled == 'True'
         query = query.filter_by(enabled=is_enabled)
 
+  
+    if sort_by == "created":
+        query = query.order_by(User.fecha_creacion.desc())  
+    elif sort_by == "modified":
+        query = query.order_by(User.fecha_actualizacion.desc())
+    else:
+        query = query.order_by(User.id.asc())  
 
-    if search_role_id:
-        try:
-            role_id_int = int(search_role_id)
-            query = query.filter_by(role_id=role_id_int)
-        except ValueError:
-            pass
-
-    
-    if hasattr(User, order_by):
-        column = getattr(User, order_by)
-        if order_dir == 'desc':
-            query = query.order_by(column.desc())
-        else:
-            query = query.order_by(column.asc())
-
-    
+   
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()
 
-  
     class Pagination:
         def __init__(self, items, page, per_page, total):
             self.items = items
@@ -253,7 +242,6 @@ def list_users(page, per_page, search_email=None, search_enabled=None, search_ro
             self.pages = (total + per_page - 1) // per_page
 
     return Pagination(users, page, per_page, total)
-
 
 
 
