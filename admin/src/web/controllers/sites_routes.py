@@ -62,7 +62,7 @@ def list():
         query = query.filter(Sitio.visible == "true")
 
 
-    sitios = query.paginate(page=page, per_page=1)
+    sitios = query.paginate(page=page, per_page=25)
 
     provincias = [p[0] for p in db.session.query(Sitio.provincia).distinct().all()]
     ciudades = [p[0] for p in db.session.query(Sitio.ciudad).distinct().all()]
