@@ -4,7 +4,7 @@ from src.core.user_service import list_users, create_user, update_user, delete_u
 from src.web.handlers.auth import login_required, permission_required
 from src.core.bcrypt import check_password   
 from src.core.models.user import User    
-
+from src.web.handlers.maintenance import maintenance_protected
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
 
@@ -63,6 +63,7 @@ def home():
 
 # ruta de Registro
 @user_admin_bp.route("/register", methods=["GET", "POST"])
+@maintenance_protected("admin")
 def register():
     if request.method == "POST":
         # ... (código que obtiene datos y verifica email existente, sin cambios)
@@ -126,7 +127,7 @@ def register():
     # mostrar el formulario de registro en una solicitud GET
     return render_template("register.html")
 
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/list", methods=["GET"])
 @login_required
 @permission_required("user_index")
@@ -155,8 +156,7 @@ def list():
     users = pagination.items
     return render_template("list.html", users=users, pagination=pagination)
 
-
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @permission_required("user_new")
@@ -192,8 +192,7 @@ def new():
     return render_template("create_user.html")
 
 
-
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/edit", methods=["GET", "POST"])
 @login_required
 @permission_required("user_update")
@@ -249,10 +248,7 @@ def edit(user_id):
         
     return render_template("edit_user.html", user=user)
 
-
-
-
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/delete", methods=["POST"])
 def delete(user_id):
     """
@@ -274,7 +270,7 @@ def delete(user_id):
     return redirect(url_for("user_admin.list"))
 
 
-
+@maintenance_protected("admin")
 @user_admin_bp.route("/<int:user_id>/toggle_enabled", methods=["POST"])
 @login_required
 @permission_required("user_update")

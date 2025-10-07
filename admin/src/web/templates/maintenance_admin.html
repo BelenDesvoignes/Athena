@@ -1,0 +1,21 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Área de Administración en Mantenimiento{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <h2 class="fw-bold text-warning mb-4">
+        Área de Administración en Mantenimiento
+    </h2>
+
+    <p class="lead mb-4 text-light">
+        {{ message if message else "El área de administración está temporalmente en mantenimiento. Te pedimos disculpas por las molestias." }}
+    </p>
+
+    <hr class="border-secondary my-4" style="opacity: 0.3;">
+
+    <p class="">
+        Por favor, vuelve a intentarlo más tarde.
+    </p>
+</div>
+{% endblock %}

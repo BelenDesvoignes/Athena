@@ -8,6 +8,7 @@ from flask import Blueprint, render_template, request, redirect, session, flash,
 from src.core.user_service import authenticate_user, create_user
 from src.core.permissions_service import get_role_by_name
 from src.web.handlers.auth import login_required 
+from src.web.handlers.maintenance import maintenance_protected
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -42,7 +43,9 @@ def authenticate():
 
 
 #ruta de registro
+
 @auth_bp.route("/register", methods=['GET', 'POST'])
+@maintenance_protected("admin")
 def register():
     if 'user_id' in session:
         return redirect(url_for("user_admin.home"))

@@ -66,3 +66,6 @@ celerybeat-schedule
 .ipynb_checkpoints
 
 # Archivos de configuración de Spyder
+
+# Archivos de sesiones de Flask
+src/web/flask_sessions/

@@ -1,6 +1,6 @@
-from flask import Flask, render_template, session
-from src.web.config import config
+from src.web import create_app
 from src.core.database import db, reset_db
+from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags
 from src.core.permissions_service import current_user_permissions
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
@@ -61,9 +61,19 @@ def create_app(env="development"):
     
 
 app = create_app()
+
 with app.app_context():
-    # crea todas las tablas en la base de datos.
+
+    print("Limpieza de base de datos")
+    reset_db()
+
+    print("Iniciando creación de tablas y siembra de datos...")
     db.create_all()
+    seed_roles_permissions() 
+    seed_admin_user()        
+    seed_feature_flags()
+    
+    print("Tablas y datos iniciales listos.")
 
 if __name__ == "__main__":
     app.run(debug=True)
