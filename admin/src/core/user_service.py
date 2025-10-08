@@ -115,7 +115,7 @@ def create_user(data):
             email=data['email'],
             password=hashed_password,
             role_id=role_obj.id,
-            enabled=True  # siempre activo
+            enabled=True  
         )
         db.session.add(user)
         db.session.commit()
@@ -212,7 +212,7 @@ def list_users(page, per_page, search_email=None, search_enabled=None, sort_by=N
     Returns:
         Pagination: Objeto con atributos 'items', 'page', 'per_page', 'total', 'pages'.
     """
-    query = db.session.query(User)
+    query = db.session.query(User).filter_by(eliminado=False)
 
     if search_email:
         query = query.filter(User.email.ilike(f"%{search_email}%"))
