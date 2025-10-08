@@ -12,7 +12,7 @@ from flask import (
 )
 import csv
 from io import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag
@@ -23,6 +23,7 @@ from src.web.handlers.auth import login_required, permission_required
 from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
+from src.core.models.modification_history import ModificationHistory
 
 
 """Controlador para la gestión de sitios turísticos."""
@@ -155,6 +156,9 @@ def new():
             db.session.add(sitio)
             db.session.commit()
             flash("Sitio creado correctamente")
+            
+            registrar_modificacion(sitio, current_user, "Creación")
+            
             return redirect(url_for("sitios.list"))
         except Exception as e:
             error = f"Error al crear el sitio: {str(e)}"
@@ -168,24 +172,36 @@ def new():
 """Detalle de un sitio turístico"""
 
 
+
 @login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 def detail(id):
+    """
+    Muestra el detalle de un sitio y su historial de modificaciones paginado.
+
+    Args:
+        id (int): ID del sitio.
+
+    Returns:
+        Renderiza 'site_detail.html' con sitio, usuario actual, coordenadas e historial.
+    """
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404, "Sitio no encontrado.")
 
     coordenadas = extract_coords(sitio.ubicacion)
-
     current_user = get_current_user()
+
+    # Obtenemos historial filtrado y paginado
+    historial = list_modifications(id)
 
     return render_template(
         "site_detail.html",
         sitio=sitio,
         current_user=current_user,
         coordenadas=coordenadas,
+        historial=historial
     )
-
 
 """Logica para editar un sitio turístico existente"""
 
@@ -254,6 +270,9 @@ def edit(id):
             )
 
         db.session.commit()
+        
+        registrar_modificacion(sitio, current_user, "Edición")
+        
         flash("Sitio actualizado correctamente")
         return redirect(url_for("sitios.list"))
 
@@ -279,6 +298,9 @@ def remove(id):
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404)
+    
+    #registrar_modificacion(sitio, current_user, "Eliminación")
+    
     db.session.delete(sitio)
     db.session.commit()
     flash("Sitio eliminado")
@@ -371,3 +393,66 @@ def extract_coords(ubicacion):
     resultado = {"latitud": float(geom.y), "longitud": float(geom.x)}
 
     return resultado
+
+arg_tz = timezone(timedelta(hours=-3))
+def registrar_modificacion(sitio, usuario, tipo_accion):
+    """
+    Crea un registro en el historial de modificaciones para un sitio.
+
+    Args:
+        sitio: instancia del Sitio que se modificó
+        usuario: instancia del User que realizó la acción
+        tipo_accion: str indicando la acción ('creación', 'edición', 'eliminación', etc.)
+    """
+    if not sitio or not usuario or not tipo_accion:
+        raise ValueError("Faltan parámetros obligatorios para registrar la modificación.")
+    
+    registro = ModificationHistory(
+        sitio_id=sitio.id,
+        usuario_id=usuario.id,
+        tipo_accion=tipo_accion,
+        fecha_modificacion=datetime.now(arg_tz)
+    )
+    db.session.add(registro)
+    db.session.commit()
+    
+@bp_sitios.route("/<int:id>/modifications", methods=["GET"])
+@login_required
+def list_modifications(sitio_id):
+    """
+    Obtiene el historial de modificaciones de un sitio con filtros y paginación.
+
+    Args:
+        sitio_id (int): ID del sitio histórico cuyos registros se desean consultar.
+
+    Returns:
+        Pagination: objeto paginado con los registros que cumplen los filtros.
+    """
+    page = request.args.get("page", 1, type=int)
+    usuario_nombre = request.args.get("usuario", "").strip()
+    tipo_accion = request.args.get("tipo_accion", "").strip()
+    desde = request.args.get("desde", "").strip()
+    hasta = request.args.get("hasta", "").strip()
+
+    query = db.session.query(ModificationHistory).filter_by(sitio_id=sitio_id)
+
+    if usuario_nombre:
+        query = query.join(User).filter(User.nombre.ilike(f"%{usuario_nombre}%"))
+    if tipo_accion:
+        query = query.filter(ModificationHistory.tipo_accion == tipo_accion)
+    if desde:
+        try:
+            desde_dt = datetime.strptime(desde, "%Y-%m-%d")
+            query = query.filter(ModificationHistory.fecha_modificacion >= desde_dt)
+        except ValueError:
+            pass
+    if hasta:
+        try:
+            hasta_dt = datetime.strptime(hasta, "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(ModificationHistory.fecha_modificacion < hasta_dt)
+        except ValueError:
+            pass
+
+    query = query.order_by(ModificationHistory.fecha_modificacion.desc())
+    historial = query.paginate(page=page, per_page=25)
+    return historial

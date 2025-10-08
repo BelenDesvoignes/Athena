@@ -24,6 +24,7 @@ def create_app(env="development", static_folder="../../static"):
     Session(app) 
 
     db.init_app(app)
+    
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
     app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled

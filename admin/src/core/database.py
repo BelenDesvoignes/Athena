@@ -32,6 +32,7 @@ def init_db(app):
     """
     # inicializa la aplicación con la instancia de db
     db.init_app(app)
+    
     return db
 
 
