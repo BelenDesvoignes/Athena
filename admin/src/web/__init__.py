@@ -6,6 +6,7 @@ from src.web.handlers.auth import login_required
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
+from src.web.controllers.sites_routes import bp_sitios
 from src.core.permissions_service import current_user_permissions
 from src.core.seeds import seed_roles_permissions, seed_admin_user 
 from src.core.flags import is_flag_enabled
@@ -33,7 +34,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(tag_bp, url_prefix="/tags")
     app.register_blueprint(user_admin_bp, url_prefix="/admin")
     app.register_blueprint(feature_flags_bp)
-
+    app.register_blueprint(bp_sitios, url_prefix="/sitios")
     #rutas principales 
     @app.route("/")
     def index():

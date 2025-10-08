@@ -17,8 +17,8 @@ from sqlalchemy import func
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag
 from src.core.models.user import User
-from shapely.wkt import loads
 from src.core.database import db
+from src.web.handlers.maintenance import maintenance_protected
 from src.web.handlers.auth import login_required, permission_required
 from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
