@@ -18,6 +18,9 @@ flask-sqlalchemy-lite = ">=0.1.0,<0.2.0"
 flask-sqlalchemy = "^3.1.1"
 flask-session = "^0.8.0"
 bcrypt = "^5.0.0"
+geoalchemy = "^0.7.2"
+shapely = "^2.1.2"
+geoalchemy2 = "^0.18.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

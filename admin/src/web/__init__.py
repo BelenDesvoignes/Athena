@@ -1,57 +1,82 @@
 from flask import Flask, jsonify, render_template, abort, session, g
-from src.core import database
+from src.core.database import db, reset_db
 from src.web.config import config
 from flask_session import Session
 from src.web.handlers.auth import login_required
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.controllers.tag_routes import tag_bp
-
-app = Flask(__name__)
-
+from src.web.controllers.sites_routes import bp_sitios
+from src.core.permissions_service import current_user_permissions
+from src.core.seeds import seed_roles_permissions, seed_admin_user 
+from src.core.flags import is_flag_enabled
+from src.web.handlers.maintenance import maintenance_check
+from src.core.models.feature_flags import FeatureFlag
+from web.controllers.feature_flags_routes import feature_flags_bp
 
 def create_app(env="development", static_folder="../../static"):
-    app = Flask(__name__, static_folder=static_folder)
+    app = Flask(__name__, static_folder=static_folder,template_folder="templates")
 
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
 
     #inicializar la session
     Session(app) 
+
+    db.init_app(app)
+    
     # inicializa la bd
-    database.init_db(app)
+    app.jinja_env.globals['current_user_permissions'] = current_user_permissions
+    app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
 
-    
-    
-    
     #registro de blueprints
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    #app.register_blueprint(user_admin_bp, url_prefix="/admin/users")
     app.register_blueprint(tag_bp, url_prefix="/tags")
-
+    app.register_blueprint(user_admin_bp, url_prefix="/admin")
+    app.register_blueprint(feature_flags_bp)
+    app.register_blueprint(bp_sitios, url_prefix="/sitios")
+    #rutas principales 
     @app.route("/")
     def index():
         return render_template("index.html")
+    
+    @app.route("/limpiar_sesion")
+    def limpiar_sesion():
+        session.clear()
+        return "Sesión borrada"
+    
+    @app.cli.command("reset-db")
+    def reset_db_command():
+        reset_db() #elimina y recrea la estructura de la bd 
+        with app.app_context(): 
+            seed_roles_permissions() #insertar roles
+            seed_admin_user()        #crear el admin
+            print("Base de datos reseteada e inicializada con roles y admin.")
 
+    @app.context_processor
+    def inject_flags():
+        # Cargar flags de la BD
+        flags = db.session.query(FeatureFlag).all()
+        feature_flags = {f.key: f.is_enabled for f in flags}
+
+        return {
+            "feature_flags": feature_flags
+        }
+        
+    maintenance_check(app)
+    return app
+
+    
     #manejo de errores
     @app.route("/not_found")
     @app.errorhandler(404)
     def not_found(error):
         return render_template("error_404.html"), 404
 
-
-    @app.route("/internal_error")
-    def error_500():
-        return abort(500)
-
     @app.errorhandler(500)
     def internal_error(error):
         return render_template("error_500.html"), 500
-
-
-    @app.route("/protected")
-    def error_401():
-        return abort(401)
 
     @app.errorhandler(401)
     def unauthorized(error):

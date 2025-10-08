@@ -1,0 +1,268 @@
+{% extends "base_layout.html" %}
+{% block title %}Sitios Históricos{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@4.0.1/dist/css/multi-select-tag.min.css">
+
+<section class="container mt-5">
+      <header class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Listado de Sitios Históricos</h2>
+        <a href="{{url_for('sitios.new')}}" class="btn btn-outline-primary">Agregar sitio</a>
+        <a href="{{ url_for('sitios.export') }}" class="btn btn-outline-primary">Exportar Sitios</a>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
+        role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form id="addFilter" method="get" action="{{ url_for('sitios.list')}}" class="p-4 border rounded shadow-sm bg-dark">
+        <article class="mb-3">
+            <!-- Ciudad -->
+            <article class="mb-3">
+                <label for="ciudad" class="form-label">Ciudad</label>
+                <select class="form-control" id="ciudad" name="ciudad">
+                    <option value="">Seleccione una ciudad...</option>
+                    {% for ciud in ciudades %}
+                        <option value="{{ ciud }}">{{ ciud }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Provincia -->
+            <article class="mb-3">
+                <label for="provincia" class="form-label">Provincia</label>
+                <select class="form-control" id="provincia" name="provincia">
+                    <option value="">Seleccione una provincia...</option>
+                    {% for prov in provincias %}
+                        <option value="{{ prov }}">{{ prov }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Tags -->
+            <article class="mb-3">
+                <label for="tags" class="form-label">Tags</label>
+                <select class="form-control" id="tag" name="tag[]" multiple>
+                    {% for tag in tags %}
+                        <option value="{{ tag }}">{{ tag }}</option>
+                    {% endfor %}
+                </select>
+            </article>
+
+            <!-- Estado de conservación -->
+            <article class="mb-3">
+                <label for="conservacion" class="form-label">Estado de conservación</label>
+                <select class="form-select" id="conservacion" name="conservacion">
+                    <option value="">Seleccione un estado de conservacion...</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                </select>
+            </article>
+
+            <!-- Fecha de registro -->
+            <article class="mb-3">
+                <article class="d-flex gap-2">
+                    <label>Registrado desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde">
+                    <label>Hasta</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta">
+                </article>
+            </article>
+
+            <!-- Visibilidad -->
+            <article class="form-check mb-4">
+                <input type="checkbox" class="form-check-input" id="visibilidad" name="visibilidad">
+                <label for="visibilidad" class="form-check-label">Mostrar solo visibles</label>
+            </article>
+        </article>
+
+        <article>
+            <input type="text" class="form-control" id="busqueda" name="busqueda" placeholder="Buscar por nombre o descripcion...">
+        </article>
+
+        <article class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-success flex-fill">Buscar</button>
+            <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary flex-fill">Reiniciar filtros</a>
+        </article>
+    </form>
+
+    <!-- CONTROLES DE ORDENAMIENTO -->
+    <form id="sortForm" method="get" action="{{ url_for('sitios.list') }}" class="mt-4">
+        <!-- Conservamos todos los filtros activos -->
+        {% for key, value in request.args.items() %}
+            {% if key not in ['order_by', 'order_dir', 'page'] and value %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
+
+        <input type="hidden" name="order_by" id="order_by" value="{{ request.args.get('order_by', 'nombre') }}">
+        <input type="hidden" name="order_dir" id="order_dir" value="{{ request.args.get('order_dir', 'asc') }}">
+
+        <article class="d-flex flex-wrap gap-2 align-items-center">
+            <label class="fw-bold me-2">Ordenar por:</label>
+            <article class="btn-group">
+                <button type="button" class="btn btn-secondary" data-by="nombre">Nombre</button>
+                <button type="button" class="btn btn-secondary" data-by="ciudad">Ciudad</button>
+                <button type="button" class="btn btn-secondary" data-by="registrado">Fecha de registro</button>
+            </article>
+
+            <article class="btn-group ms-3">
+                <button type="button" class="btn btn-secondary" data-dir="asc">Ascendente</button>
+                <button type="button" class="btn btn-secondary" data-dir="desc">Descendente</button>
+            </article>
+        </article>
+    </form>
+    
+    {% if ciudades %}
+        <article class="alert alert-info mt-3" role="alert">
+            Mostrando {{ (sitios.page - 1) * sitios.per_page + 1 }} 
+            - {{ (sitios.page - 1) * sitios.per_page + sitios.items|length }}
+            de {{ sitios.total }} resultados.
+        </article>
+
+        <article>
+            <table class="table table-striped table-hover mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Ciudad</th>
+                        <th>Provincia</th>
+                        <th>Visible</th>
+                        {% if current_user %}
+                        <th>Acciones</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody >
+                    {% for sitio in sitios.items %}
+                    <tr>
+                        <td>{{ sitio.nombre }}</td>
+                        <td>{{ sitio.ciudad }}</td>
+                        <td>{{ sitio.provincia }}</td>
+                        <td>{{ sitio.visible and "Sí" or "No" }}</td>
+                        {% if current_user %}
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                    Acciones
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% if current_user.role_id in [1, 2] %}
+                                    <li>
+                                        <a class="dropdown-item text-warning"
+                                        href="{{ url_for('sitios.edit', id=sitio.id) }}">
+                                            Editar
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if current_user.role_id == 1 %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('sitios.remove', id=sitio.id) }}"
+                                          onsubmit="return confirm('¿Estás seguro de que quieres eliminar {{ sitio.nombre }}?');"
+                                        style="display:inline;">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="dropdown-item text-info"
+                                        href="{{ url_for('sitios.detail', id=sitio.id) }}">
+                                            Ver detalle
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+    {% else %}
+        <article class="alert alert-info mt-3" role="alert">
+            No hay ciudades registradas con los filtros ingresados.
+        </article>
+    {% endif %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            {% for i in range(1, sitios.pages + 1) %}
+            <li class="page-item {% if i == sitios.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('sitios.list', page=i,
+                                ciudad=request.args.get('ciudad'),
+                                provincia=request.args.get('provincia'),
+                                conservacion=request.args.get('conservacion'),
+                                desde=request.args.get('desde'),
+                                hasta=request.args.get('hasta'),
+                                visibilidad=request.args.get('visibilidad')) }}">{{ i }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('sortForm');
+  const orderByInput = document.getElementById('order_by');
+  const orderDirInput = document.getElementById('order_dir');
+
+  // Botones de "ordenar por"
+  document.querySelectorAll('button[data-by]').forEach(button => {
+    button.addEventListener('click', () => {
+      orderByInput.value = button.getAttribute('data-by');
+      form.submit();
+    });
+  });
+
+  // Botones de dirección
+  document.querySelectorAll('button[data-dir]').forEach(button => {
+    button.addEventListener('click', () => {
+      orderDirInput.value = button.getAttribute('data-dir');
+      form.submit();
+    });
+  });
+});
+</script>
+
+</section>
+
+<script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@4.0.1/dist/js/multi-select-tag.min.js"></script>
+<script>
+    var tagSelector = new MultiSelectTag('tag', {
+        maxSelection: 5,              // default unlimited.
+        required: false,               // default false.
+        placeholder: 'Seleccione los tags...',   // default 'Search'.
+        onChange: function(selected) { // Callback when selection changes.
+            console.log('Selection changed:', selected);
+        }
+    });
+</script>
+
+<style>
+    table.table thead th,
+    table.table tbody td {
+        color: #ffff !important;
+    }
+
+    #addFilter label {
+        color: #ffff !important;
+    }
+
+    #addFilter article label {
+        color: #ffff !important;
+    }
+
+
+</style>
+{% endblock %}
