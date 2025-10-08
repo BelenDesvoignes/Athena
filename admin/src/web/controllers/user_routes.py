@@ -48,23 +48,19 @@ def login():
         if user and user.enabled and check_password(password, user.password):
             
             # Autenticación exitosa
-            
             session["user_id"] = user.id
-            
+            session["user_name"] = user.nombre
+            session["user_apellido"] = user.apellido
+            session["user_email"] = user.email
+            session["user_enabled"] = user.enabled
             # Asignación de Rol a la sesión (usando la relación .name)
-            # Asumiendo que user.role es la relación al objeto Role
             session["user_role"] = user.role.name 
             
-            #  Asignación de Rol a la sesión (usando la relación .name)
-            # Asumiendo que user.role es la relación al objeto Role
-            session["user_role"] = user.role.name 
-
-            # Redirige a la página de inicio (home.html)
             return redirect(url_for("user_admin.home"))
         else:
             # Autenticación fallida o usuario inactivo
             return render_template(
-                "login.html", error="Credenciales inválidas o cuenta inactiva."
+                "login.html", error="Contraseña incorrecta o cuenta inactiva."
             )
 
     return render_template("login.html")
@@ -335,3 +331,13 @@ def toggle_enabled(user_id):
         estado = "activado" if user.enabled else "bloqueado"
         flash(f"Usuario {estado} correctamente.", "success")
     return redirect(url_for("user_admin.list"))
+
+@user_admin_bp.route("/profile")
+@login_required 
+def profile():
+    """
+    Renderiza la página de perfil del usuario logueado. 
+    Los datos se obtienen directamente de la variable 'session' para mayor velocidad.
+    """
+    return render_template("profile.html")
+

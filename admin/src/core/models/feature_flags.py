@@ -5,6 +5,20 @@ from datetime import datetime
 from src.core.models.user import User
 
 class FeatureFlag(Base):
+    """
+    Representa un flag del sistema.
+    
+    Attributes:
+        id (int): Identificador único del flag.
+        key (str): Clave única para referenciar el flag.
+        display_name (str): Nombre legible del flag.
+        description (str, opcional): Descripción del flag.
+        is_enabled (bool): Indica si el flag está habilitado (ON) o deshabilitado (OFF).
+        maintenance_message (str, opcional): Mensaje mostrado si el flag es modo mantenimiento.
+        last_modified_at (datetime): Fecha y hora de la última modificación.
+        last_modified_by (int, opcional): ID del usuario que realizó la última modificación.
+    """
+
     __tablename__ = "feature_flags"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
