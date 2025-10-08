@@ -20,9 +20,11 @@ from src.core.models.user import User
 from src.core.database import db
 from src.web.handlers.maintenance import maintenance_protected
 from src.web.handlers.auth import login_required, permission_required
+from src.web.handlers.mod_history import record_history
 from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
+from src.core.models.modification_history import ModificationHistory
 
 
 """Controlador para la gestión de sitios turísticos."""
@@ -90,6 +92,7 @@ def list():
 
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
+@record_history("Creación")
 def new():
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
@@ -157,6 +160,14 @@ def new():
 """Detalle de un sitio turístico"""
 
 
+def get_historial_sitio(sitio_id):
+    return (
+        db.session.query(ModificationHistory)
+        .filter(ModificationHistory.sitio_id == sitio_id)
+        .order_by(ModificationHistory.fecha_modificacion.desc())
+        .all()
+    )
+
 @login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 def detail(id):
@@ -165,22 +176,24 @@ def detail(id):
         abort(404, "Sitio no encontrado.")
 
     coordenadas = extract_coords(sitio.ubicacion)
-
     current_user = get_current_user()
+
+    historial = get_historial_sitio(id)
 
     return render_template(
         "site_detail.html",
         sitio=sitio,
         current_user=current_user,
         coordenadas=coordenadas,
+        historial=historial
     )
-
 
 """Logica para editar un sitio turístico existente"""
 
 
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
+@record_history("Edición")
 def edit(id):
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
@@ -255,6 +268,7 @@ def edit(id):
 
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 @login_required
+@record_history("Eliminación")
 def remove(id):
     current_user = get_current_user()
     if not current_user or not is_admin(current_user):

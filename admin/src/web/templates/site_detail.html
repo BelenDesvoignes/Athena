@@ -7,51 +7,97 @@
             <h1>Sitio Nro {{ sitio.id }}</h1>
             <h2>{{ sitio.nombre }}</h2>
         </header>
+
         <fieldset class="mb-4">
             <legend>Información del sitio</legend>
             <p><strong>Descripción breve:</strong> {{ sitio.descripcion_breve }}</p>
             <p><strong>Descripción completa:</strong> {{ sitio.descripcion_completa }}</p>
             <p><strong>Ciudad:</strong> {{ sitio.ciudad }}</p>
             <p><strong>Provincia:</strong> {{ sitio.provincia }}</p>
-            <p><strong>Ubicacion:</strong> {{ coordenadas.latitud }} {{ coordenadas.longitud }}</p>
+            <p><strong>Ubicación:</strong> {{ coordenadas.latitud }} {{ coordenadas.longitud }}</p>
             <p><strong>Estado de conservación:</strong> {{ sitio.estado_conservacion }}</p>
             <p><strong>Año de inauguración:</strong> {{ sitio.inauguracion }}</p>
             <p><strong>Categoría:</strong> {{ sitio.categoria }}</p>
             <p><strong>Visible:</strong> {{ sitio.visible and "Sí" or "No" }}</p>
         </fieldset>
+
         <section class="mb-4">
-            <legend>Ubicación en el mapa</legend>
+            <h3>Ubicación en el mapa</h3>
             <div id="map" style="height: 400px; width: 100%;"></div>
         </section>
+
         <footer>
             <div class="d-flex gap-2">
                 <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Volver a la lista</a>
-                {% if current_user and current_user.role_id in [1, 2] %}
-                <a href="{{ url_for('sitios.edit', id=sitio.id) }}" class="btn btn-warning">Editar</a>
-                {% if current_user.role_id == 1 %}
-                <form action="{{ url_for('sitios.remove', id=sitio.id) }}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn-danger"
-                        onclick="return confirm('¿Seguro que desea eliminar este sitio?')">Eliminar</button>
-                </form>
-                {% endif %}
+
+                {% if current_user %}
+                    {% if current_user.role_id in [1, 2] %}
+                        <a href="{{ url_for('sitios.edit', id=sitio.id) }}" class="btn btn-warning">Editar</a>
+                        <button id="btn-historial" class="btn btn-info">Ver historial</button>
+                    {% endif %}
+
+                    {% if current_user.role_id == 1 %}
+                        <form action="{{ url_for('sitios.remove', id=sitio.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('¿Seguro que desea eliminar este sitio?')">Eliminar</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </footer>
+
+
+        <div id="historial-container" class="mt-4" style="display:none;">
+            {% if sitio.historial_modificaciones|length > 0 %}
+            <h3>Historial de modificaciones</h3>
+            <table class="table table-striped" id="historial-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in sitio.historial_modificaciones %}
+                    <tr>
+                        <td>{{ h.usuario.nombre }}</td>
+                        <td>{{ h.tipo_accion }}</td>
+                        <td>{{ h.fecha_modificacion.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                No hay modificaciones registradas para este sitio.
+            </div>
+            {% endif %}
+        </div>
     </article>
 </section>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
 <script>
-    var lat = parseFloat("{{ coordenadas.latitud.latitud |default(-34.6, true) }}");
-    var lng = parseFloat("{{ coordenadas.longitud |default(-58.4, true) }}");
+    var lat = parseFloat("{{ coordenadas.latitud | default(-34.6) }}");
+    var lng = parseFloat("{{ coordenadas.longitud | default(-58.4) }}");
     var map = L.map('map').setView([lat, lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
     var marker = L.marker([lat, lng]).addTo(map);
+
+    const btnHistorial = document.getElementById("btn-historial");
+    const historialContainer = document.getElementById("historial-container");
+
+    btnHistorial.addEventListener("click", () => {
+        if (historialContainer.style.display === "none") {
+            historialContainer.style.display = "block";
+            btnHistorial.textContent = "Ocultar historial";
+        } else {
+            historialContainer.style.display = "none";
+            btnHistorial.textContent = "Ver historial";
+        }
+    });
 </script>
 {% endblock %}
