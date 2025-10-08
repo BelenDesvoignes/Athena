@@ -1,4 +1,7 @@
 {% extends 'base_layout.html' %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 {% block content %}
 <section class="container mt-5">
@@ -44,6 +47,20 @@
                     <label for="categoria" class="form-label">Categoría</label>
                     <input type="text" class="form-control" id="categoria" name="categoria" required>
                 </div>
+                <label for="tag-input">Tags:</label>
+                <div id="tag-selector">
+
+                    <input type="text" id="tag-input" placeholder="Buscar o seleccionar tags...">
+                    <div id="selected-tags"></div>
+                    <div id="tag-list">
+                        {% for tag in tags %}
+                        <div class="tag-option" data-id="{{ tag.id }}" data-nombre="{{ tag.nombre }}">{{ tag.nombre }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1">
                     <label class="form-check-label" for="visible">Visible</label>
@@ -62,8 +79,86 @@
 </section>
 
 
+<style>
+    #tag-selector {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: right: 0;
+        ;
+        gap: 6px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 6px;
+        background: #555;
+        position: relative;
+        cursor: text;
+    }
+
+    /* Chips seleccionados */
+    #selected-tags {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin: auto;
+    }
+
+    .tag-chip {
+        background: #007bff;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.9em;
+        white-space: nowrap;
+    }
+
+    .tag-chip span {
+        cursor: pointer;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    /* Input alineado con los chips */
+    #tag-input {
+        border: none;
+        outline: none;
+        flex-grow: 1;
+        min-width: 150px;
+        font-size: 0.9em;
+    }
+
+    /* Lista desplegable */
+    #tag-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        background: #333233;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-height: 180px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        border-radius: 4px;
+    }
+
+    .tag-option {
+        padding: 6px 10px;
+        cursor: pointer;
+    }
+
+    .tag-option:hover {
+        background: #222;
+    }
+</style>
+
+
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script>
     var map = L.map('map').setView([-34.6, -58.4], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -77,6 +172,93 @@
         document.getElementById('latitud').value = e.latlng.lat;
         document.getElementById('longitud').value = e.latlng.lng;
     });
+
+
+    const tagSelector = document.getElementById("tag-selector");
+    const tagInput = document.getElementById("tag-input");
+    const tagList = document.getElementById("tag-list");
+    const selectedTagsContainer = document.getElementById("selected-tags");
+    let selectedTags = [];
+
+    function showAllTags() {
+        const options = tagList.querySelectorAll(".tag-option");
+        let visible = 0;
+        options.forEach(option => {
+            const id = parseInt(option.dataset.id);
+            if (selectedTags.includes(id)) {
+                option.style.display = "none";
+            } else {
+                option.style.display = "block";
+                visible++;
+            }
+        });
+        tagList.style.display = visible > 0 ? "block" : "none";
+    }
+
+    function filterTags() {
+        const search = tagInput.value.toLowerCase();
+        const options = tagList.querySelectorAll(".tag-option");
+        let visible = 0;
+        options.forEach(option => {
+            const nombre = option.dataset.nombre.toLowerCase();
+            const id = parseInt(option.dataset.id);
+            const shouldShow = nombre.includes(search) && !selectedTags.includes(id);
+            option.style.display = shouldShow ? "block" : "none";
+            if (shouldShow) visible++;
+        });
+        tagList.style.display = visible > 0 ? "block" : "none";
+    }
+
+    function selectTag(tagDiv) {
+        const id = parseInt(tagDiv.dataset.id);
+        const nombre = tagDiv.dataset.nombre;
+        if (!selectedTags.includes(id)) {
+            selectedTags.push(id);
+            const chip = document.createElement("div");
+            chip.classList.add("tag-chip");
+            chip.innerHTML = `${nombre} <span onclick="removeTag(${id})">&times;</span>`;
+
+            const hidden = document.createElement("input");
+            hidden.type = "hidden";
+            hidden.name = "tags";
+            hidden.value = id;
+            chip.appendChild(hidden);
+
+            selectedTagsContainer.appendChild(chip);
+            tagInput.value = "";
+            filterTags();
+        }
+    }
+
+    function removeTag(id) {
+        selectedTags = selectedTags.filter(t => t !== id);
+        document.querySelectorAll(".tag-chip").forEach(chip => {
+            if (chip.querySelector(`input[value="${id}"]`)) chip.remove();
+        });
+        filterTags();
+    }
+
+    // Interacciones
+    tagInput.addEventListener("focus", showAllTags);
+    tagInput.addEventListener("input", filterTags);
+
+    tagList.querySelectorAll(".tag-option").forEach(option => {
+        option.addEventListener("click", () => selectTag(option));
+    });
+
+    document.addEventListener("click", e => {
+        if (!tagSelector.contains(e.target)) {
+            tagList.style.display = "none";
+        }
+    });
+
+    // Permite hacer clic en cualquier parte del contenedor para enfocar
+    tagSelector.addEventListener("click", () => tagInput.focus());
+
+
+
+
+
 </script>
 {% endblock %}
 

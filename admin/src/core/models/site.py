@@ -1,7 +1,9 @@
 from src.core.database import db, Base
 from sqlalchemy import String, Integer, Boolean, DateTime, Float, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 from datetime import datetime
+from .tag import sitios_tags
 from geoalchemy2.types import Geometry
 
 
@@ -27,6 +29,9 @@ class Sitio(Base):
         Geometry(geometry_type="POINT", srid=4326), nullable=False
     )
     """Relaciones con etiquetas"""
+    tags: Mapped[List["Tag"]] = relationship(
+        "Tag", secondary=sitios_tags, back_populates="sitios", lazy="selectin"
+    )
 
     def __repr__(self):
         return f"<Sitio(id={self.id}, nombre={self.nombre})>"

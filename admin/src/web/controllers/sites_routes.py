@@ -40,21 +40,20 @@ def list():
 
     query = db.session.query(Sitio)
 
-    
-    ciudad = request.args.get('ciudad')
-    provincia = request.args.get('provincia')
-    #faltaria filtro de tags
-    conservacion = request.args.get('conservacion')
-    desde = request.args.get('desde')
-    hasta = request.args.get('hasta')
-    visibilidad = request.args.get('visibilidad')
-    busqueda = request.args.get('busqueda')
+    ciudad = request.args.get("ciudad")
+    provincia = request.args.get("provincia")
+    # faltaria filtro de tags
+    conservacion = request.args.get("conservacion")
+    desde = request.args.get("desde")
+    hasta = request.args.get("hasta")
+    visibilidad = request.args.get("visibilidad")
+    busqueda = request.args.get("busqueda")
 
     if ciudad:
         query = query.filter(Sitio.ciudad == ciudad)
     if provincia:
         query = query.filter(Sitio.provincia == provincia)
-    #faltaria filtro de tags
+    # faltaria filtro de tags
     if conservacion:
         query = query.filter(Sitio.estado_conservacion == conservacion)
     if desde:
@@ -67,12 +66,12 @@ def list():
         query = query.filter(Sitio.visible == "true")
     if busqueda:
         query = query.filter(
-        or_(
-            Sitio.nombre.ilike(f"%{busqueda}%"),
-            Sitio.descripcion_breve.ilike(f"%{busqueda}%"),
-            Sitio.descripcion_completa.ilike(f"%{busqueda}%")
+            or_(
+                Sitio.nombre.ilike(f"%{busqueda}%"),
+                Sitio.descripcion_breve.ilike(f"%{busqueda}%"),
+                Sitio.descripcion_completa.ilike(f"%{busqueda}%"),
+            )
         )
-    )
 
     sitios = query.paginate(page=page, per_page=25)
 
@@ -82,7 +81,14 @@ def list():
     tags = [p[0] for p in db.session.query(Tag.nombre).distinct().all()]
 
     current_user = get_current_user()
-    return render_template("sites_list.html", sitios=sitios, current_user=current_user, provincias=provincias, ciudades=ciudades, tags=tags)
+    return render_template(
+        "sites_list.html",
+        sitios=sitios,
+        current_user=current_user,
+        provincias=provincias,
+        ciudades=ciudades,
+        tags=tags,
+    )
 
 
 """Procedimiento para crear un nuevo sitio turístico"""
@@ -91,11 +97,13 @@ def list():
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
 def new():
+
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
         abort(401, "No tienes permisos para crear sitios.")
 
     error = None
+    tags = db.session.query(Tag).all()
 
     if request.method == "POST":
         nombre = request.form.get("nombre")
@@ -108,6 +116,7 @@ def new():
         estado_conservacion = request.form.get("estado_conservacion")
         inauguracion = request.form.get("inauguracion")
         categoria = request.form.get("categoria")
+        tag_ids = request.form.getlist("tags")
         visible = bool(request.form.get("visible"))
         ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
         """ Validaciones básicas de los campos """
@@ -124,8 +133,8 @@ def new():
                 ubicacion,
             ]
         ):
-            error = "Todos los campos son obligatorios."
-            return render_template("new_site.html", error=error)
+            error = "No completaste todos los campos obligatorios."
+            return render_template("new_site.html", tags=tags, error=error)
 
         try:
             ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
@@ -140,6 +149,7 @@ def new():
                 estado_conservacion=estado_conservacion,
                 inauguracion=int(inauguracion),
                 categoria=categoria,
+                tags=db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all(),
                 visible=visible,
             )
             db.session.add(sitio)
@@ -149,9 +159,10 @@ def new():
         except Exception as e:
             error = f"Error al crear el sitio: {str(e)}"
             db.session.rollback()
-            return render_template("new_site.html", error=error)
 
-    return render_template("new_site.html")
+            return render_template("new_site.html", tags=tags, error=error)
+
+    return render_template("new_site.html", tags=tags, current_user=current_user)
 
 
 """Detalle de un sitio turístico"""
@@ -191,6 +202,8 @@ def edit(id):
 
     error = None
 
+    tags = db.session.query(Tag).all()
+
     if request.method == "POST":
         sitio.nombre = request.form.get("nombre", sitio.nombre)
         sitio.descripcion_breve = request.form.get(
@@ -206,6 +219,8 @@ def edit(id):
         )
         sitio.inauguracion = int(request.form.get("inauguracion", sitio.inauguracion))
         sitio.categoria = request.form.get("categoria", sitio.categoria)
+        tag_ids = request.form.getlist("tags")
+        sitio.tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
         sitio.visible = bool(request.form.get("visible", sitio.visible))
 
         latitud = request.form.get("latitud", None)
@@ -231,6 +246,7 @@ def edit(id):
             return render_template(
                 "edit_site.html",
                 sitio=sitio,
+                tags=tags,
                 error=error,
                 latitud=latitud or sitio.latitud,
                 longitud=longitud or sitio.longitud,
@@ -245,6 +261,7 @@ def edit(id):
     return render_template(
         "edit_site.html",
         sitio=sitio,
+        tags=tags,
         coordenadas=coordenadas,
         current_user=current_user,
     )

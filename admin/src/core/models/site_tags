@@ -2,11 +2,12 @@ from src.core.database import Base
 from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 
+
 """Tabla de asosciacion muchos a muchos entre Sitio y Tag"""
 
 sitios_tags = Table(
-    'sitios_tags',
+    "sitios_tags",
     Base.metadata,
-    Column('sitio_id', Integer, ForeignKey('sitios.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+    Column("sitio_id", Integer, ForeignKey("sitios.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )

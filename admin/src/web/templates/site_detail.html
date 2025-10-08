@@ -17,6 +17,14 @@
             <p><strong>Estado de conservación:</strong> {{ sitio.estado_conservacion }}</p>
             <p><strong>Año de inauguración:</strong> {{ sitio.inauguracion }}</p>
             <p><strong>Categoría:</strong> {{ sitio.categoria }}</p>
+
+            <p><strong>Tags:</strong>
+                {% for tag in sitio.tags %}
+                <span class="badge bg-info text-dark">{{ tag.nombre }}</span>
+                {% else %}
+                <span>No hay tags asociados.</span>
+                {% endfor %}
+
             <p><strong>Visible:</strong> {{ sitio.visible and "Sí" or "No" }}</p>
         </fieldset>
         <section class="mb-4">
