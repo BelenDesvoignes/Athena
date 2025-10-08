@@ -51,11 +51,12 @@
             {% if sitio.historial_modificaciones|length > 0 %}
             <h3>Historial de modificaciones</h3>
             <table class="table table-striped" id="historial-table">
-                <thead>
+                <thead class="table-dark">
                     <tr>
                         <th>Usuario</th>
                         <th>Acción</th>
                         <th>Fecha</th>
+                        <th>Hora</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,7 +64,8 @@
                     <tr>
                         <td>{{ h.usuario.nombre }}</td>
                         <td>{{ h.tipo_accion }}</td>
-                        <td>{{ h.fecha_modificacion.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>{{ h.fecha_modificacion.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ h.fecha_modificacion.strftime('%H:%M:%S') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -74,6 +76,12 @@
             </div>
             {% endif %}
         </div>
+        <style>
+        #historial-container table thead th,
+        #historial-container table tbody td {
+            color: #fff !important;
+        }
+        </style>
     </article>
 </section>
 
@@ -101,3 +109,4 @@
     });
 </script>
 {% endblock %}
+

@@ -12,7 +12,7 @@ from flask import (
 )
 import csv
 from io import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag
@@ -147,7 +147,7 @@ def new():
             db.session.commit()
             flash("Sitio creado correctamente")
             
-            registrar_modificacion(sitio, current_user, "creación")
+            registrar_modificacion(sitio, current_user, "Creación")
             
             return redirect(url_for("sitios.list"))
         except Exception as e:
@@ -252,7 +252,7 @@ def edit(id):
 
         db.session.commit()
         
-        registrar_modificacion(sitio, current_user, "edición")
+        registrar_modificacion(sitio, current_user, "Edición")
         
         flash("Sitio actualizado correctamente")
         return redirect(url_for("sitios.list"))
@@ -279,7 +279,7 @@ def remove(id):
     if not sitio:
         abort(404)
     
-    #registrar_modificacion(sitio, current_user, "eliminación")
+    #registrar_modificacion(sitio, current_user, "Eliminación")
     
     db.session.delete(sitio)
     db.session.commit()
@@ -374,6 +374,7 @@ def extract_coords(ubicacion):
 
     return resultado
 
+arg_tz = timezone(timedelta(hours=-3))
 def registrar_modificacion(sitio, usuario, tipo_accion):
     """
     Crea un registro en el historial de modificaciones para un sitio.
@@ -390,6 +391,7 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
         sitio_id=sitio.id,
         usuario_id=usuario.id,
         tipo_accion=tipo_accion,
+        fecha_modificacion=datetime.now(arg_tz)
     )
     db.session.add(registro)
     db.session.commit()
