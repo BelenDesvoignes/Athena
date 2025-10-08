@@ -6,10 +6,10 @@ from src.web.handlers.maintenance import maintenance_protected
 
 tag_bp = Blueprint('tag', __name__, url_prefix='/tags', template_folder='../templates')
 
-@tag_bp.route("/list", methods=["GET"])
-@login_required
-@permission_required("user_index")
 @maintenance_protected("admin")
+@login_required
+@permission_required("tag_manage")
+@tag_bp.route("/list", methods=["GET"])
 def list():
     """
     Muestra una lista paginada de etiquetas.
@@ -44,6 +44,8 @@ def list():
 
 
 @maintenance_protected("admin")
+@login_required
+@permission_required("tag_manage")
 @tag_bp.route('/add', methods=['POST'])
 def add_tag():
     """
@@ -88,6 +90,8 @@ def add_tag():
 
 
 @maintenance_protected("admin")
+@login_required
+@permission_required("tag_manage")
 @tag_bp.route("/<int:tag_id>/delete", methods=['POST'])
 def del_tag(tag_id):
     """
@@ -109,6 +113,8 @@ def del_tag(tag_id):
 
 
 @maintenance_protected("admin")
+@login_required
+@permission_required("tag_manage")
 @tag_bp.route("/<int:tag_id>/edit", methods=['POST'])
 def edit_tag(tag_id):
     """
