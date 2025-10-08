@@ -114,7 +114,6 @@
                         <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
                         <li class="list-group-item"><strong>Nombre:</strong> {{ user.nombre }}</li>
                         <li class="list-group-item"><strong>Apellido:</strong> {{ user.apellido }}</li>
-                        <li class="list-group-item"><strong>Usuario elminado:</strong> {{ 'Sí' if user.eliminado else 'No' }}</li>
                         <li class="list-group-item">
                             <strong>Fecha de creación:</strong>
                                 {{ user.fecha_creacion.strftime("%d/%m/%Y %H:%M") if user.fecha_creacion else "No disponible" }}
