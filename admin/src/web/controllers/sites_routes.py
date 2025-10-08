@@ -35,6 +35,7 @@ bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 
 @bp_sitios.route("/", methods=["GET"])
 @login_required
+@maintenance_protected("admin")
 def list():
 
     page = request.args.get("page", 1, type=int)
@@ -94,9 +95,9 @@ def list():
 
 """Procedimiento para crear un nuevo sitio turístico"""
 
-
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
+@maintenance_protected("admin")
 def new():
 
     current_user = get_current_user()
@@ -172,9 +173,8 @@ def new():
 """Detalle de un sitio turístico"""
 
 
-
-@login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
+@maintenance_protected("admin")
 def detail(id):
     """
     Muestra el detalle de un sitio y su historial de modificaciones paginado.
@@ -205,9 +205,9 @@ def detail(id):
 
 """Logica para editar un sitio turístico existente"""
 
-
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
+@maintenance_protected("admin")
 def edit(id):
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
@@ -288,9 +288,9 @@ def edit(id):
 
 """Elimina un sitio turístico"""
 
-
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 @login_required
+@maintenance_protected("admin")
 def remove(id):
     current_user = get_current_user()
     if not current_user or not is_admin(current_user):
@@ -309,9 +309,9 @@ def remove(id):
 
 """ Logica para la exportacion de sitios a CSV """
 
-
 @bp_sitios.route("/exportar", methods=["GET"])
 @login_required
+@maintenance_protected("admin")
 def export():
     current_user = get_current_user()
     if not is_admin(current_user):
@@ -371,7 +371,6 @@ def export():
         headers={"Content-Disposition": f"attachment;filename={filename}"},
     )
 
-
 def get_current_user():
     user_id = session.get("user_id")
     if not user_id:
@@ -395,6 +394,7 @@ def extract_coords(ubicacion):
     return resultado
 
 arg_tz = timezone(timedelta(hours=-3))
+@maintenance_protected("admin")
 def registrar_modificacion(sitio, usuario, tipo_accion):
     """
     Crea un registro en el historial de modificaciones para un sitio.
@@ -417,8 +417,10 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
     db.session.add(registro)
     db.session.commit()
     
+   
 @bp_sitios.route("/<int:id>/modifications", methods=["GET"])
 @login_required
+@maintenance_protected("admin")
 def list_modifications(sitio_id):
     """
     Obtiene el historial de modificaciones de un sitio con filtros y paginación.
