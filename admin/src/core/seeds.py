@@ -82,6 +82,9 @@ def seed_admin_user():
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
 
 def seed_feature_flags():
+    """
+    Crea los flags de características iniciales en la base de datos.
+    """
     flags = [
         FeatureFlag(
             key="admin_maintenance_mode",

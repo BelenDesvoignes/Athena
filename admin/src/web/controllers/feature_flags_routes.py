@@ -10,6 +10,12 @@ feature_flags_bp = Blueprint("feature_flags", __name__, url_prefix="/admin/featu
 
 @feature_flags_bp.route("/maintenance/admin")
 def maintenance_admin():
+    """
+    Muestra la página de mantenimiento del área de administración.
+    
+    Returns:
+        Renderiza el template 'maintenance_admin.html' con el mensaje correspondiente.
+    """
     msg = g.feature_flags_msg.get("admin_maintenance_mode")
     return render_template(
         "maintenance_admin.html",
@@ -18,6 +24,12 @@ def maintenance_admin():
 
 @feature_flags_bp.route("/maintenance/portal")
 def maintenance_portal():
+    """
+    Muestra la página de mantenimiento del portal web.
+
+    Returns:
+        Renderiza el template 'maintenance_portal.html' con el mensaje correspondiente.
+    """
     msg = g.feature_flags_msg.get("portal_maintenance_mode")
     return render_template(
         "maintenance_portal.html",
@@ -27,6 +39,12 @@ def maintenance_portal():
 @feature_flags_bp.route("/", methods=["GET"])
 @permission_required("feature_flags_manage")
 def index():
+    """
+    Lista todos los feature flags ordenados por ID.
+
+    Returns:
+        Renderiza el template 'feature_flags.html' con la lista de flags.
+    """
     flags = db.session.execute(
             db.select(FeatureFlag).order_by(FeatureFlag.id)
             ).scalars().all()   
@@ -36,12 +54,32 @@ def index():
 
 
 def _has_changes(flag, new_value, new_message):
-    """Devuelve True si hubo cambios en estado o mensaje del flag."""
+    """
+    Comprueba si hubo cambios en el estado o mensaje de un flag.
+
+    Args:
+        flag (FeatureFlag): El flag a comparar.
+        new_value (bool): Nuevo valor de 'is_enabled'.
+        new_message (str): Nuevo mensaje de mantenimiento.
+
+    Returns:
+        bool: True si hay cambios, False si no.
+    """
     current_message = flag.maintenance_message or ""
     return flag.is_enabled != new_value or current_message != (new_message or "")
 
 def _validate_message(flag, new_value, new_message):
-    """Valida el mensaje solo si se habilita un modo de mantenimiento."""
+    """
+    Valida el mensaje de mantenimiento si el flag corresponde a modo mantenimiento.
+
+    Args:
+        flag (FeatureFlag): El flag a validar.
+        new_value (bool): Nuevo valor de 'is_enabled'.
+        new_message (str): Nuevo mensaje de mantenimiento.
+
+    Returns:
+        bool: True si el mensaje es válido o no aplica, False si hay error.
+    """
     if flag.key in ["admin_maintenance_mode", "portal_maintenance_mode"]:
         if new_value and not new_message:
             flash(f"El flag '{flag.display_name}' requiere un mensaje de mantenimiento.", "danger")
@@ -55,6 +93,14 @@ def _validate_message(flag, new_value, new_message):
 @login_required
 @permission_required("feature_flags_manage")
 def update_all():
+    """
+    Actualiza todos los feature flags según los valores enviados desde el formulario.
+
+    Modifica 'is_enabled', 'maintenance_message', 'last_modified_at' y 'last_modified_by'.
+
+    Returns:
+        Redirige a la página de lista de feature flags y muestra un mensaje flash.
+    """
     arg_tz = timezone(timedelta(hours=-3))
     try:
         flags = db.session.execute(db.select(FeatureFlag).order_by(FeatureFlag.id)).scalars().all()

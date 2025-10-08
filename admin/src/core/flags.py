@@ -6,7 +6,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 def get_flag_by_name(flag_name: str) -> FeatureFlag:
     """
-    Devuelve el objeto FeatureFlag por su nombre.
+    Obtiene un FeatureFlag por su clave.
+
+    Args:
+        flag_name (str): Nombre del flag a buscar.
+
+    Returns:
+        FeatureFlag: Objeto del flag encontrado.
     """
     flag = (
         db.session.execute(
@@ -24,7 +30,13 @@ def get_flag_by_name(flag_name: str) -> FeatureFlag:
 
 def is_flag_enabled(flag_name: str) -> bool:
     """
-    Devuelve True si el flag está habilitado (ON), False si está deshabilitado (OFF).
+    Verifica si un FeatureFlag está habilitado.
+
+    Args:
+        flag_name (str): Nombre del flag a verificar.
+
+    Returns:
+        bool: True si está habilitado, False en caso contrario o si no existe.
     """
     try:
         flag = get_flag_by_name(flag_name)
