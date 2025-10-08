@@ -1,7 +1,9 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from src.core.database import Base
+
+arg_tz = timezone(timedelta(hours=-3))
 
 class ModificationHistory(Base):
     __tablename__ = "historial_modificaciones"
@@ -10,7 +12,7 @@ class ModificationHistory(Base):
     sitio_id: Mapped[int] = mapped_column(Integer, ForeignKey("sitios.id"), nullable=False)
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     tipo_accion: Mapped[str] = mapped_column(String(50), nullable=False)
-    fecha_modificacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha_modificacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(arg_tz), nullable=False)
 
     sitio = relationship("Sitio", backref="historial_modificaciones")
     usuario = relationship("User", backref="historial_modificaciones")

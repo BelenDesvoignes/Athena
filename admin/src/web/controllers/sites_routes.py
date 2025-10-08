@@ -20,7 +20,6 @@ from src.core.models.user import User
 from src.core.database import db
 from src.web.handlers.maintenance import maintenance_protected
 from src.web.handlers.auth import login_required, permission_required
-from src.web.handlers.mod_history import record_history
 from sqlalchemy import or_
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
@@ -92,7 +91,6 @@ def list():
 
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
-@record_history("Creación")
 def new():
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
@@ -148,6 +146,9 @@ def new():
             db.session.add(sitio)
             db.session.commit()
             flash("Sitio creado correctamente")
+            
+            registrar_modificacion(sitio, current_user, "creación")
+            
             return redirect(url_for("sitios.list"))
         except Exception as e:
             error = f"Error al crear el sitio: {str(e)}"
@@ -193,7 +194,6 @@ def detail(id):
 
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
-@record_history("Edición")
 def edit(id):
     current_user = get_current_user()
     if not current_user or not is_editor_or_admin(current_user):
@@ -251,6 +251,9 @@ def edit(id):
             )
 
         db.session.commit()
+        
+        registrar_modificacion(sitio, current_user, "edición")
+        
         flash("Sitio actualizado correctamente")
         return redirect(url_for("sitios.list"))
 
@@ -268,7 +271,6 @@ def edit(id):
 
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 @login_required
-@record_history("Eliminación")
 def remove(id):
     current_user = get_current_user()
     if not current_user or not is_admin(current_user):
@@ -276,6 +278,9 @@ def remove(id):
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404)
+    
+    #registrar_modificacion(sitio, current_user, "eliminación")
+    
     db.session.delete(sitio)
     db.session.commit()
     flash("Sitio eliminado")
@@ -368,3 +373,23 @@ def extract_coords(ubicacion):
     resultado = {"latitud": float(geom.y), "longitud": float(geom.x)}
 
     return resultado
+
+def registrar_modificacion(sitio, usuario, tipo_accion):
+    """
+    Crea un registro en el historial de modificaciones para un sitio.
+
+    Args:
+        sitio: instancia del Sitio que se modificó
+        usuario: instancia del User que realizó la acción
+        tipo_accion: str indicando la acción ('creación', 'edición', 'eliminación', etc.)
+    """
+    if not sitio or not usuario or not tipo_accion:
+        raise ValueError("Faltan parámetros obligatorios para registrar la modificación.")
+    
+    registro = ModificationHistory(
+        sitio_id=sitio.id,
+        usuario_id=usuario.id,
+        tipo_accion=tipo_accion,
+    )
+    db.session.add(registro)
+    db.session.commit()
