@@ -161,13 +161,6 @@ def new():
 """Detalle de un sitio turístico"""
 
 
-def get_historial_sitio(sitio_id):
-    return (
-        db.session.query(ModificationHistory)
-        .filter(ModificationHistory.sitio_id == sitio_id)
-        .order_by(ModificationHistory.fecha_modificacion.desc())
-        .all()
-    )
 
 @login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
@@ -179,7 +172,8 @@ def detail(id):
     coordenadas = extract_coords(sitio.ubicacion)
     current_user = get_current_user()
 
-    historial = get_historial_sitio(id)
+    # Obtenemos historial filtrado y paginado
+    historial = list_modifications(id)
 
     return render_template(
         "site_detail.html",
@@ -395,3 +389,36 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
     )
     db.session.add(registro)
     db.session.commit()
+    
+@bp_sitios.route("/<int:id>/modifications", methods=["GET"])
+@login_required
+def list_modifications(sitio_id):
+    """Obtiene historial de un sitio con filtros y paginación."""
+    page = request.args.get("page", 1, type=int)
+    usuario_nombre = request.args.get("usuario", "").strip()
+    tipo_accion = request.args.get("tipo_accion", "").strip()
+    desde = request.args.get("desde", "").strip()
+    hasta = request.args.get("hasta", "").strip()
+
+    query = db.session.query(ModificationHistory).filter_by(sitio_id=sitio_id)
+
+    if usuario_nombre:
+        query = query.join(User).filter(User.nombre.ilike(f"%{usuario_nombre}%"))
+    if tipo_accion:
+        query = query.filter(ModificationHistory.tipo_accion == tipo_accion)
+    if desde:
+        try:
+            desde_dt = datetime.strptime(desde, "%Y-%m-%d")
+            query = query.filter(ModificationHistory.fecha_modificacion >= desde_dt)
+        except ValueError:
+            pass
+    if hasta:
+        try:
+            hasta_dt = datetime.strptime(hasta, "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(ModificationHistory.fecha_modificacion < hasta_dt)
+        except ValueError:
+            pass
+
+    query = query.order_by(ModificationHistory.fecha_modificacion.desc())
+    historial = query.paginate(page=page, per_page=25)
+    return historial
