@@ -6,6 +6,18 @@ from src.core.database import Base
 arg_tz = timezone(timedelta(hours=-3))
 
 class ModificationHistory(Base):
+    """
+    Representa un registro de modificaciones realizadas en un sitio histórico.
+    
+    Attributes:
+        id (int): Identificador único del registro.
+        sitio_id (int): ID del sitio modificado.
+        usuario_id (int): ID del usuario que realizó la modificación.
+        tipo_accion (str): Tipo de acción realizada (ej. "editar", "eliminar").
+        fecha_modificacion (datetime): Fecha y hora de la modificación (UTC-3).
+        sitio (Sitio): Relación con el sitio modificado.
+        usuario (User): Relación con el usuario que realizó la modificación.
+    """
     __tablename__ = "historial_modificaciones"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
