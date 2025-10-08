@@ -299,7 +299,7 @@ def remove(id):
     if not sitio:
         abort(404)
     
-    #registrar_modificacion(sitio, current_user, "Eliminación")
+    registrar_modificacion(sitio, current_user, "Eliminación")
     
     db.session.delete(sitio)
     db.session.commit()
@@ -400,15 +400,16 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
     Crea un registro en el historial de modificaciones para un sitio.
 
     Args:
-        sitio: instancia del Sitio que se modificó
+        sitio: instancia del Sitio que se modificó (puede ser None si ya se eliminó)
         usuario: instancia del User que realizó la acción
         tipo_accion: str indicando la acción ('creación', 'edición', 'eliminación', etc.)
     """
-    if not sitio or not usuario or not tipo_accion:
+    if not usuario or not tipo_accion:
         raise ValueError("Faltan parámetros obligatorios para registrar la modificación.")
     
     registro = ModificationHistory(
-        sitio_id=sitio.id,
+        sitio_id=sitio.id if sitio else None,
+        sitio_nombre=sitio.nombre if sitio else "Sitio eliminado",
         usuario_id=usuario.id,
         tipo_accion=tipo_accion,
         fecha_modificacion=datetime.now(arg_tz)

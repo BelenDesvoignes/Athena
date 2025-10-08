@@ -70,7 +70,7 @@
                     <label for="tipo_accion" class="form-label">Tipo de acción</label>
                     <select class="form-control" id="tipo_accion" name="tipo_accion">
                         <option value="">Seleccione un tipo de acción...</option>
-                        {% set tipos_accion = ["Creación", "Edición", "Eliminación", "Modificación de Tags"] %}
+                        {% set tipos_accion = ["Creación", "Edición", "Eliminación"] %}
                         {% for t in tipos_accion %}
                             <option value="{{ t }}" {% if request.args.get('tipo_accion') == t %}selected{% endif %}>{{ t }}</option>
                         {% endfor %}
