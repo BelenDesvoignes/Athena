@@ -291,7 +291,7 @@ def edit(user_id):
 @user_admin_bp.route("/<int:user_id>/delete", methods=["POST"])
 def delete(user_id):
     """
-    Marca un usuario como eliminado.
+    Marca un usuario como eliminado con protección para el administrador del sistema.
 
     Path Parameters:
         user_id (int): ID del usuario a eliminar.
@@ -299,13 +299,14 @@ def delete(user_id):
     Returns:
         Response: Redirige a la lista de usuarios mostrando mensaje de éxito o error.
     """
-    user = get_user_by_id(user_id)
-    if user:
-        user.eliminado = True  
-        db.session.commit()
+    try:
+        # Llamamos a la función de negocio que maneja la validación
+        delete_user(user_id)
         flash("Usuario eliminado correctamente", "success")
-    else:
-        flash("Usuario no encontrado", "error")
+    except ValueError as e:
+        # Capturamos el error si es admin o usuario no encontrado
+        flash(str(e), "danger")
+    
     return redirect(url_for("user_admin.list"))
 
 
@@ -327,7 +328,7 @@ def toggle_enabled(user_id):
     if not user:
         flash("Usuario no encontrado.", "danger")
     elif getattr(user, "system_admin", False):
-        flash("No se puede bloquear/desbloquear al administrador del sistema.", "danger")
+        flash("No se puede bloquear al administrador del sistema.", "danger")
     else:
         user.enabled = not user.enabled
         db.session.commit()
