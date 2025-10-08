@@ -22,7 +22,7 @@
     {% endif %}
     {% endwith %}
 
-    <form id="addFilter" method="get" action="{{ url_for('sitios.list')}}" class="p-4 border rounded shadow-sm bg-light">
+    <form id="addFilter" method="get" action="{{ url_for('sitios.list')}}" class="p-4 border rounded shadow-sm bg-dark">
         <article class="mb-3">
             <!-- Ciudad -->
             <article class="mb-3">
@@ -115,7 +115,7 @@
                         {% endif %}
                     </tr>
                 </thead>
-                <tbody>
+                <tbody >
                     {% for sitio in sitios.items %}
                     <tr>
                         <td>{{ sitio.nombre }}</td>
@@ -188,6 +188,8 @@
 
 <style>
 /* Contenedor del multiselect */
+
+
 .multi-select-tag-container {
     color: #000 !important;
 }
@@ -213,6 +215,9 @@
     background-color: #f8f9fa !important;
     color: #000 !important;
 }
+.form-control{
+    color: #ffff;
+}
 </style>
 
 
@@ -231,15 +236,19 @@
 <style>
     table.table thead th,
     table.table tbody td {
-        color: #000000 !important;
+        color: #ffff !important;
     }
 
     #addFilter label {
-        color: #000 !important;
+        color: #ffff !important;
     }
 
     #addFilter article label {
-        color: #000 !important;
+        color: #ffff !important;
     }
+
+
 </style>
+
+
 {% endblock %}

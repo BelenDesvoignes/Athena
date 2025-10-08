@@ -35,11 +35,11 @@
                 <div class="mb-3">
                     <label for="estado_conservacion" class="form-label">Estado de conservación</label>
                     <select class="form-select" id="estado_conservacion" name="estado_conservacion" required>
-                        <option value="Bueno" {% if sitio.estado_conservacion="Bueno" %}selected{% endif %}>Bueno
+                        <option value="Bueno" {% if sitio.estado_conservacion=="Bueno" %}selected{% endif %}>Bueno
                         </option>
-                        <option value="Regular" {% if sitio.estado_conservacion="Regular" %}selected{% endif %}>Regular
+                        <option value="Regular" {% if sitio.estado_conservacion=="Regular" %}selected{% endif %}>Regular
                         </option>
-                        <option value="Malo" {% if sitio.estado_conservacion="Malo" %}selected{% endif %}>Malo</option>
+                        <option value="Malo" {% if sitio.estado_conservacion=="Malo" %}selected{% endif %}>Malo</option>
                     </select>
                 </div>
                 <div class="mb-3">
