@@ -36,8 +36,9 @@ bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 @bp_sitios.route("/", methods=["GET"])
 @login_required
 def list():
-
     page = request.args.get("page", 1, type=int)
+    order_by = request.args.get("order_by", "nombre")
+    order_dir = request.args.get("order_dir", "asc")
 
     query = db.session.query(Sitio)
 
@@ -50,6 +51,7 @@ def list():
     visibilidad = request.args.get("visibilidad")
     busqueda = request.args.get("busqueda")
 
+    # Filtros existentes
     if ciudad:
         query = query.filter(Sitio.ciudad == ciudad)
     if provincia:
@@ -80,9 +82,20 @@ def list():
             )
         )
 
+    if order_by == "ciudad":
+        columna = Sitio.ciudad
+    elif order_by == "registrado":
+        columna = Sitio.registrado
+    else:
+        columna = Sitio.nombre
+
+    if order_dir == "desc":
+        query = query.order_by(columna.desc())
+    else:
+        query = query.order_by(columna.asc())
+
     sitios = query.paginate(page=page, per_page=25)
 
-    """Paso las provincias, ciudades y tags guardados en la BD para poner en los select"""
     provincias = [p[0] for p in db.session.query(Sitio.provincia).distinct().all()]
     ciudades = [p[0] for p in db.session.query(Sitio.ciudad).distinct().all()]
     tags = [p[0] for p in db.session.query(Tag.nombre).distinct().all()]
