@@ -165,6 +165,15 @@ def new():
 @login_required
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 def detail(id):
+    """
+    Muestra el detalle de un sitio y su historial de modificaciones paginado.
+
+    Args:
+        id (int): ID del sitio.
+
+    Returns:
+        Renderiza 'site_detail.html' con sitio, usuario actual, coordenadas e historial.
+    """
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404, "Sitio no encontrado.")
@@ -393,7 +402,15 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
 @bp_sitios.route("/<int:id>/modifications", methods=["GET"])
 @login_required
 def list_modifications(sitio_id):
-    """Obtiene historial de un sitio con filtros y paginación."""
+    """
+    Obtiene el historial de modificaciones de un sitio con filtros y paginación.
+
+    Args:
+        sitio_id (int): ID del sitio histórico cuyos registros se desean consultar.
+
+    Returns:
+        Pagination: objeto paginado con los registros que cumplen los filtros.
+    """
     page = request.args.get("page", 1, type=int)
     usuario_nombre = request.args.get("usuario", "").strip()
     tipo_accion = request.args.get("tipo_accion", "").strip()
