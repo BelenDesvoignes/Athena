@@ -15,7 +15,7 @@ from io import StringIO
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from src.core.models.site import Sitio
-from src.core.models.tag import Tag
+from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
 from src.core.database import db
 from src.web.handlers.maintenance import maintenance_protected
@@ -37,25 +37,33 @@ bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 @login_required
 @maintenance_protected("admin")
 def list():
-
     page = request.args.get("page", 1, type=int)
+    order_by = request.args.get("order_by", "nombre")
+    order_dir = request.args.get("order_dir", "asc")
 
     query = db.session.query(Sitio)
 
     ciudad = request.args.get("ciudad")
     provincia = request.args.get("provincia")
-    # faltaria filtro de tags
+    tags_seleccionados = request.args.getlist("tag[]")
     conservacion = request.args.get("conservacion")
     desde = request.args.get("desde")
     hasta = request.args.get("hasta")
     visibilidad = request.args.get("visibilidad")
     busqueda = request.args.get("busqueda")
 
+    # Filtros existentes
     if ciudad:
         query = query.filter(Sitio.ciudad == ciudad)
     if provincia:
         query = query.filter(Sitio.provincia == provincia)
-    # faltaria filtro de tags
+    if tags_seleccionados:
+        query = (
+            query.join(sitios_tags, Sitio.id == sitios_tags.c.sitio_id)
+                 .join(Tag, Tag.id == sitios_tags.c.tag_id)
+                 .filter(Tag.nombre.in_(tags_seleccionados))
+                 .distinct()
+        )
     if conservacion:
         query = query.filter(Sitio.estado_conservacion == conservacion)
     if desde:
@@ -75,9 +83,20 @@ def list():
             )
         )
 
+    if order_by == "ciudad":
+        columna = Sitio.ciudad
+    elif order_by == "registrado":
+        columna = Sitio.registrado
+    else:
+        columna = Sitio.nombre
+
+    if order_dir == "desc":
+        query = query.order_by(columna.desc())
+    else:
+        query = query.order_by(columna.asc())
+
     sitios = query.paginate(page=page, per_page=25)
 
-    """Paso las provincias, ciudades y tags guardados en la BD para poner en los select"""
     provincias = [p[0] for p in db.session.query(Sitio.provincia).distinct().all()]
     ciudades = [p[0] for p in db.session.query(Sitio.ciudad).distinct().all()]
     tags = [p[0] for p in db.session.query(Tag.nombre).distinct().all()]

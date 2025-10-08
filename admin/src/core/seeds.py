@@ -130,6 +130,9 @@ def seed_sitios():
     print("Sitios históricos de ejemplo cargados.")
 
 def seed_feature_flags():
+    """
+    Crea los flags de características iniciales en la base de datos.
+    """
     flags = [
         FeatureFlag(
             key="admin_maintenance_mode",

@@ -94,6 +94,32 @@
         </article>
     </form>
 
+    <!-- CONTROLES DE ORDENAMIENTO -->
+    <form id="sortForm" method="get" action="{{ url_for('sitios.list') }}" class="mt-4">
+        <!-- Conservamos todos los filtros activos -->
+        {% for key, value in request.args.items() %}
+            {% if key not in ['order_by', 'order_dir', 'page'] and value %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
+
+        <input type="hidden" name="order_by" id="order_by" value="{{ request.args.get('order_by', 'nombre') }}">
+        <input type="hidden" name="order_dir" id="order_dir" value="{{ request.args.get('order_dir', 'asc') }}">
+
+        <article class="d-flex flex-wrap gap-2 align-items-center">
+            <label class="fw-bold me-2">Ordenar por:</label>
+            <article class="btn-group">
+                <button type="button" class="btn btn-secondary" data-by="nombre">Nombre</button>
+                <button type="button" class="btn btn-secondary" data-by="ciudad">Ciudad</button>
+                <button type="button" class="btn btn-secondary" data-by="registrado">Fecha de registro</button>
+            </article>
+
+            <article class="btn-group ms-3">
+                <button type="button" class="btn btn-secondary" data-dir="asc">Ascendente</button>
+                <button type="button" class="btn btn-secondary" data-dir="desc">Descendente</button>
+            </article>
+        </article>
+    </form>
     
     {% if ciudades %}
         <article class="alert alert-info mt-3" role="alert">
@@ -184,42 +210,32 @@
             {% endfor %}
         </ul>
     </nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('sortForm');
+  const orderByInput = document.getElementById('order_by');
+  const orderDirInput = document.getElementById('order_dir');
+
+  // Botones de "ordenar por"
+  document.querySelectorAll('button[data-by]').forEach(button => {
+    button.addEventListener('click', () => {
+      orderByInput.value = button.getAttribute('data-by');
+      form.submit();
+    });
+  });
+
+  // Botones de dirección
+  document.querySelectorAll('button[data-dir]').forEach(button => {
+    button.addEventListener('click', () => {
+      orderDirInput.value = button.getAttribute('data-dir');
+      form.submit();
+    });
+  });
+});
+</script>
+
 </section>
-
-<style>
-/* Contenedor del multiselect */
-
-
-.multi-select-tag-container {
-    color: #000 !important;
-}
-
-/* Input de búsqueda dentro del multiselect */
-.multi-select-tag-container input {
-    color: #000 !important;
-}
-
-/* Lista desplegable de opciones */
-.multi-select-tag-container .multi-select-tag-list li {
-    color: #000 !important;
-}
-
-/* Items seleccionados (los tags) */
-.multi-select-tag-container .multi-select-tag-item {
-    color: #000 !important;
-    background-color: #e9ecef !important;
-}
-
-/* Hover sobre las opciones */
-.multi-select-tag-container .multi-select-tag-list li:hover {
-    background-color: #f8f9fa !important;
-    color: #000 !important;
-}
-.form-control{
-    color: #ffff;
-}
-</style>
-
 
 <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@4.0.1/dist/js/multi-select-tag.min.js"></script>
 <script>
@@ -249,6 +265,4 @@
 
 
 </style>
-
-
 {% endblock %}
