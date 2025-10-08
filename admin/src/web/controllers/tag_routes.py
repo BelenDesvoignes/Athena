@@ -5,7 +5,7 @@
 #sujeto a modificaciones
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from src.core.tag_service import generate_slug, get_tag_by_slug, create_tag, list_tags, delete_tag, update_tag, get_tag_by_name
+from src.core.tag_service import generate_slug, get_tag_by_slug, create_tag, list_tags, delete_tag, update_tag, get_tag_by_name, used_tag
 from src.core.models import Tag
 from src.web.handlers.auth import login_required, permission_required
 from src.web.handlers.maintenance import maintenance_protected
@@ -75,7 +75,9 @@ def add_tag():
 @tag_bp.route("/<int:tag_id>/delete", methods=['POST'])
 def del_tag(tag_id):
 
-    #falta condicion de que no este asignado a un sitio historico
+    if used_tag(tag_id):
+        flash("El tag no se puede eliminar debido a que un sitio lo esta utilizando.", "danger")
+        return redirect(url_for('tag.list'))
 
     delete_tag(tag_id)
 

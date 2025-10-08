@@ -1,5 +1,7 @@
 from src.core.models.tag import Tag
 from src.core.database import db
+from sqlalchemy import exists
+from src.core.models.tag import sitios_tags
 import re
 
 def get_tag_by_slug(slug):
@@ -77,3 +79,9 @@ def list_tags(page, per_page, search_nombre=None, search_slug=None, busqueda=Non
             self.pages = (total + per_page - 1) // per_page
 
     return Pagination(tags, page, per_page, total)
+
+def used_tag(tag_id):
+
+    usado = db.session.query(exists().where(sitios_tags.c.tag_id == tag_id)).scalar()
+
+    return usado

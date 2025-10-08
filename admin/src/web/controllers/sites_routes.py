@@ -15,7 +15,7 @@ from io import StringIO
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from src.core.models.site import Sitio
-from src.core.models.tag import Tag
+from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
 from src.core.database import db
 from src.web.handlers.maintenance import maintenance_protected
@@ -43,7 +43,7 @@ def list():
 
     ciudad = request.args.get("ciudad")
     provincia = request.args.get("provincia")
-    # faltaria filtro de tags
+    tags_seleccionados = request.args.getlist("tag[]")
     conservacion = request.args.get("conservacion")
     desde = request.args.get("desde")
     hasta = request.args.get("hasta")
@@ -54,7 +54,13 @@ def list():
         query = query.filter(Sitio.ciudad == ciudad)
     if provincia:
         query = query.filter(Sitio.provincia == provincia)
-    # faltaria filtro de tags
+    if tags_seleccionados:
+        query = (
+            query.join(sitios_tags, Sitio.id == sitios_tags.c.sitio_id)
+                 .join(Tag, Tag.id == sitios_tags.c.tag_id)
+                 .filter(Tag.nombre.in_(tags_seleccionados))
+                 .distinct()
+        )
     if conservacion:
         query = query.filter(Sitio.estado_conservacion == conservacion)
     if desde:
