@@ -64,7 +64,7 @@ def login():
         else:
             # Autenticación fallida o usuario inactivo
             return render_template(
-                "login.html", error="Credenciales inválidas o cuenta inactiva."
+                "login.html", error="Contraseña incorrecta o cuenta inactiva."
             )
 
     return render_template("login.html")
