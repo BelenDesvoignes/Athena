@@ -13,6 +13,7 @@ from src.core.flags import is_flag_enabled
 from src.web.handlers.maintenance import maintenance_check
 from src.core.models.feature_flags import FeatureFlag
 from web.controllers.feature_flags_routes import feature_flags_bp
+from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags, seed_sitios 
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder,template_folder="templates")
@@ -25,6 +26,13 @@ def create_app(env="development", static_folder="../../static"):
 
     db.init_app(app)
     
+    with app.app_context():
+        db.create_all()
+        seed_roles_permissions() 
+        seed_admin_user()        
+        seed_feature_flags()
+        seed_sitios()
+
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
     app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
@@ -65,9 +73,7 @@ def create_app(env="development", static_folder="../../static"):
         }
         
     maintenance_check(app)
-    return app
 
-    
     #manejo de errores
     @app.route("/not_found")
     @app.errorhandler(404)
