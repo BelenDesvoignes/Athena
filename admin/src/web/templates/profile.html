@@ -1,0 +1,58 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Mi Perfil - Athena{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        {% if session.user_name %}
+            👋 Hola, {{ session.user_name }}
+        {% else %}
+            👤 Perfil de Usuario
+        {% endif %}
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card bg-dark text-light border-secondary">
+            <div class="card-header border-secondary">
+                Información de la Cuenta
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    
+                    <dt class="col-sm-4">Nombre Completo:</dt>
+                    <dd class="col-sm-8">
+                        {% if session.user_name %}{{ session.user_name }} {{ session.user_apellido }}{% else %}Desconocido{% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-4">Correo Electrónico:</dt>
+                    <dd class="col-sm-8">
+                        {% if session.user_email %}{{ session.user_email }}{% else %}N/A{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Rol Asignado:</dt>
+                    <dd class="col-sm-8">
+                        {% if session.user_role %}{{ session.user_role }}{% else %}Sin Rol{% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-4">Estado:</dt>
+                    <dd class="col-sm-8">
+                        {% if session.user_enabled is not none %}
+                            {% if session.user_enabled %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Bloqueado/Inactivo</span>
+                            {% endif %}
+                        {% else %}
+                            Desconocido
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

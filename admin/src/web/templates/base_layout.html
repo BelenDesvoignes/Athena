@@ -93,7 +93,7 @@
                         {% if g.user %}{{ g.user.nombre }}{% else %}Cuenta{% endif %}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-dark">
-                        <li><a class="dropdown-item text-light" href="#">Ver perfil</a></li>
+                        <li><a class="dropdown-item text-light" href="{{ url_for('user_admin.profile') }}">Ver perfil</a></li> 
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-light" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
                     </ul>
