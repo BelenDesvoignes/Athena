@@ -27,6 +27,11 @@ def seed_roles_permissions():
         Permission(name="tag_manage"),             # ejemplo adicional
         Permission(name="feature_flags_manage"),
         Permission(name="export_csv"),             # permiso extra agregado
+        Permission(name="site_list"),
+        Permission(name="site_detail"),
+        Permission(name="site_new"),
+        Permission(name="site_update"),
+        Permission(name="site_delete"),
     ]
 
     db.session.add_all(roles + permisos)
@@ -42,9 +47,14 @@ def seed_roles_permissions():
             "user_show",
             "tag_manage",
             "feature_flags_manage",
-            "export_csv"
+            "export_csv",
+            "site_list",
+            "site_detail",
+            "site_new",
+            "site_update",
+            "site_delete"
         ],
-        "Editor": ["tag_manage", "export_csv"],
+        "Editor": ["tag_manage", "site_list", "site_detail", "site_new", "site_update"],
         "Usuario público": []
     }
 

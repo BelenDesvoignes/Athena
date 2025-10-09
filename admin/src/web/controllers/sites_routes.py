@@ -35,6 +35,7 @@ bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 
 @bp_sitios.route("/", methods=["GET"])
 @login_required
+@permission_required("site_list")
 @maintenance_protected("admin")
 def list():
     page = request.args.get("page", 1, type=int)
@@ -116,13 +117,10 @@ def list():
 
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
+@permission_required("site_new")
 @maintenance_protected("admin")
 def new():
-
     current_user = get_current_user()
-    if not current_user or not is_editor_or_admin(current_user):
-        abort(401, "No tienes permisos para crear sitios.")
-
     error = None
     tags = db.session.query(Tag).all()
 
@@ -194,6 +192,8 @@ def new():
 
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 @maintenance_protected("admin")
+@login_required
+@permission_required("site_detail")
 def detail(id):
     """
     Muestra el detalle de un sitio y su historial de modificaciones paginado.
@@ -226,15 +226,13 @@ def detail(id):
 
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 @login_required
+@permission_required("site_update")
 @maintenance_protected("admin")
 def edit(id):
-    current_user = get_current_user()
-    if not current_user or not is_editor_or_admin(current_user):
-        abort(401, "No tienes permisos para editar sitios.")
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404, "Sitio no encontrado.")
-
+    current_user = get_current_user()
     error = None
 
     tags = db.session.query(Tag).all()
@@ -309,15 +307,13 @@ def edit(id):
 
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 @login_required
+@permission_required("site_delete")
 @maintenance_protected("admin")
 def remove(id):
-    current_user = get_current_user()
-    if not current_user or not is_admin(current_user):
-        abort(401, "Solo administradores pueden eliminar sitios.")
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404)
-    
+    current_user = get_current_user()
     registrar_modificacion(sitio, current_user, "Eliminación")
     
     db.session.delete(sitio)
@@ -330,12 +326,9 @@ def remove(id):
 
 @bp_sitios.route("/exportar", methods=["GET"])
 @login_required
+@permission_required("export_csv")
 @maintenance_protected("admin")
 def export():
-    current_user = get_current_user()
-    if not is_admin(current_user):
-        abort(401, "Solo administradores pueden exportar sitios.")
-    # Consulta con extracción de coordenadas usando func.ST_X y func.ST_Y
     sitios = db.session.query(
         Sitio,
         func.ST_Y(Sitio.ubicacion).label("latitud"),
