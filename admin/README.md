@@ -42,3 +42,17 @@ poetry install
 3. Ejecutar la aplicación:
 cd admin
 poetry run flask --app main.py run
+
+## Usuarios disponibles
+
+Administrador
+    E-Mail: admin@example.com
+    Contraseña: admin123
+
+Editor
+    E-Mail: usuarioEditor@gmail.com
+    Contraseña: editor123
+
+Usuario publico
+    E-Mail: usuarioPublico@gmail.com
+    Contraseña: publico123
