@@ -124,7 +124,9 @@
                             {% if 'user_index' in current_user_permissions() %}
                                 <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.list') }}">Lista de Usuarios</a></li>
                             {% endif %}
-                            <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('tag.list') }}">Lista de Tags</a></li>
+                            {% if 'tag_manage' in current_user_permissions() %}
+                                <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('tag.list') }}">Lista de Tags</a></li>
+                            {% endif %}
                             {% if 'user_new' in current_user_permissions() %}
                                 <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.new') }}">Crear Usuario</a></li>
                             {% endif %}
