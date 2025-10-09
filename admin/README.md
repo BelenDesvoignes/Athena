@@ -42,6 +42,7 @@ poetry install
 3. Ejecutar la aplicación:
 cd admin
 poetry run flask --app main.py run
+```
 
 ## Usuarios disponibles
 
