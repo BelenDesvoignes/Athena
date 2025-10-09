@@ -6,10 +6,10 @@ from src.web.handlers.maintenance import maintenance_protected
 
 tag_bp = Blueprint('tag', __name__, url_prefix='/tags', template_folder='../templates')
 
+@tag_bp.route("/list", methods=["GET"])
 @maintenance_protected("admin")
 @login_required
 @permission_required("tag_manage")
-@tag_bp.route("/list", methods=["GET"])
 def list():
     """
     Muestra una lista paginada de etiquetas.
@@ -43,10 +43,10 @@ def list():
     return render_template("tags.html", tags=tags, pagination=pagination)
 
 
+@tag_bp.route('/add', methods=['POST'])
 @maintenance_protected("admin")
 @login_required
 @permission_required("tag_manage")
-@tag_bp.route('/add', methods=['POST'])
 def add_tag():
     """
     Crea una nueva etiqueta (Tag) a partir del formulario de creación.
@@ -89,10 +89,10 @@ def add_tag():
     return redirect(url_for('tag.list'))
 
 
+@tag_bp.route("/<int:tag_id>/delete", methods=['POST'])
 @maintenance_protected("admin")
 @login_required
 @permission_required("tag_manage")
-@tag_bp.route("/<int:tag_id>/delete", methods=['POST'])
 def del_tag(tag_id):
     """
     Elimina una etiqueta existente si no está siendo utilizada por un sitio.
@@ -112,10 +112,10 @@ def del_tag(tag_id):
     return redirect(url_for('tag.list'))
 
 
+@tag_bp.route("/<int:tag_id>/edit", methods=['POST'])
 @maintenance_protected("admin")
 @login_required
 @permission_required("tag_manage")
-@tag_bp.route("/<int:tag_id>/edit", methods=['POST'])
 def edit_tag(tag_id):
     """
     Edita una etiqueta existente (nombre y slug).
