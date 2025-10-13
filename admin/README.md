@@ -57,6 +57,4 @@ Editor
     E-Mail: usuarioEditor@gmail.com
     Contraseña: editor123
 
-Usuario publico
-    E-Mail: usuarioPublico@gmail.com
-    Contraseña: publico123
+Usuario público: Registar (crea con rol Usuario Público)

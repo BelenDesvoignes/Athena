@@ -182,7 +182,7 @@ def list():
 
     pagination = list_users(
         page=page,
-        per_page=25,
+        per_page=10,
         search_email=search_email,
         search_enabled=search_enabled,
         sort_by=sort_by

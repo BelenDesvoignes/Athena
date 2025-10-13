@@ -18,16 +18,15 @@ def seed_roles_permissions():
 
     roles = [admin_role, administrador_role, editor_role, public_role]
 
-    # 2. Permisos
     permisos = [
         Permission(name="user_index"),
         Permission(name="user_new"),
         Permission(name="user_update"),
         Permission(name="user_destroy"),
         Permission(name="user_show"),
-        Permission(name="tag_manage"),             # ejemplo adicional
+        Permission(name="tag_manage"),            
         Permission(name="feature_flags_manage"),
-        Permission(name="export_csv"),             # permiso extra agregado
+        Permission(name="export_csv"),             
         Permission(name="site_list"),
         Permission(name="site_detail"),
         Permission(name="site_new"),
@@ -38,7 +37,7 @@ def seed_roles_permissions():
     db.session.add_all(roles + permisos)
     db.session.commit()
 
-    # 3. Asociar roles con permisos
+    
     role_perm_map = {
         "Administrador": [
             "user_index",
@@ -91,14 +90,21 @@ def seed_admin_user():
         raise ValueError(
             "No se encontró el rol Admin, corre seed_roles_permissions primero."
         )
-    hashed_password1 = hash_password("admin123")  # contraseña inicial segura
+    hashed_password1 = hash_password("admin123")  
     admin_role = db.session.query(Role).filter_by(name="Administrador").first()
     if not admin_role:
         raise ValueError(
             "No se encontró el rol System Admin, corre seed_roles_permissions primero."
         )
+    
+    editor_role = db.session.query(Role).filter_by(name="Editor").first()
+    if not editor_role:
+        raise ValueError(
+            "No se encontró el rol Editor, corre seed_roles_permissions primero."
+        )
+    hashed_password2 = hash_password("editor123")  
 
-    hashed_password = hash_password("sysadmin123")  # contraseña inicial segura
+    hashed_password = hash_password("sysadmin123") 
 
     admin_user = User(
         nombre="Admin", 
@@ -122,10 +128,22 @@ def seed_admin_user():
         eliminado=False,
     )
 
-    db.session.add_all([admin_user, administrador_user])
+    editor_user = User(
+        nombre="Editor",
+        apellido="Principal",
+        email="usuarioEditor@gmail.com",
+        password=hashed_password2.decode("utf-8"),
+        role_id=editor_role.id,
+        system_admin=False, 
+        enabled=True,
+        eliminado=False,
+    )
+
+    db.session.add_all([admin_user, administrador_user, editor_user])
     db.session.commit()
     print("Usuario System Admin inicial creado: sysadmin@example.com / sysadmin123")
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
+    print("Usuario Editor inicial creado: usuarioEditor@gmail.com / editor123")
 
 
 def seed_sitios():
