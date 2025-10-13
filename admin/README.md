@@ -46,7 +46,7 @@ poetry run flask --app main.py run
 ## Usuarios disponibles
 
 System Admin:
-    E-Mail: system_admin@example.com
+    E-Mail: sysadmin@example.com
     Contraseña: sysadmin123
 
 Administrador
