@@ -38,11 +38,11 @@
             <div class="d-flex gap-2">
                 <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Volver a la lista</a>
                 {% if current_user %}
-                    {% if current_user.role_id in [1,2] %}
+                    {% if current_user.role_id in [1,2,3] %}
                         <a href="{{ url_for('sitios.edit', id=sitio.id) }}" class="btn btn-warning">Editar</a>
                         <button id="btn-historial" class="btn btn-info">Ver historial</button>
                     {% endif %}
-                    {% if current_user.role_id == 1 %}
+                    {% if current_user.role_id in [1,2] %}
                         <form action="{{ url_for('sitios.remove', id=sitio.id) }}" method="post" style="display:inline;">
                             <button type="submit" class="btn btn-danger" onclick="return confirm('¿Seguro que desea eliminar este sitio?')">Eliminar</button>
                         </form>
