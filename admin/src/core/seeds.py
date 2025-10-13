@@ -12,10 +12,11 @@ def seed_roles_permissions():
 
     # Roles
     admin_role = Role(name="Administrador")
+    administrador_role = Role(name="Admin")
     editor_role = Role(name="Editor")
     public_role = Role(name="Usuario público")
 
-    roles = [admin_role, editor_role, public_role]
+    roles = [admin_role, administrador_role, editor_role, public_role]
 
     # 2. Permisos
     permisos = [
@@ -54,6 +55,20 @@ def seed_roles_permissions():
             "site_update",
             "site_delete"
         ],
+        "Admin": [
+             "user_index",
+            "user_new",
+            "user_update",
+            "user_destroy",
+            "user_show",
+            "tag_manage",
+            "export_csv",
+            "site_list",
+            "site_detail",
+            "site_new",
+            "site_update",
+            "site_delete"
+        ],
         "Editor": ["tag_manage", "site_list", "site_detail", "site_new", "site_update"],
         "Usuario público": []
     }
@@ -71,19 +86,24 @@ def seed_roles_permissions():
 
 
 def seed_admin_user():
-    # Crear un admin inicial
+    administrador_role = db.session.query(Role).filter_by(name="Admin").first()
+    if not administrador_role:
+        raise ValueError(
+            "No se encontró el rol Admin, corre seed_roles_permissions primero."
+        )
+    hashed_password1 = hash_password("admin123")  # contraseña inicial segura
     admin_role = db.session.query(Role).filter_by(name="Administrador").first()
     if not admin_role:
         raise ValueError(
-            "No se encontró el rol Administrador, corre seed_roles_permissions primero."
+            "No se encontró el rol System Admin, corre seed_roles_permissions primero."
         )
 
-    hashed_password = hash_password("admin123")  # contraseña inicial segura
+    hashed_password = hash_password("sysadmin123")  # contraseña inicial segura
 
     admin_user = User(
         nombre="Admin", 
         apellido="Principal",
-        email="admin@example.com",
+        email="sysadmin@example.com",
         password=hashed_password.decode("utf-8"),
         role_id=admin_role.id,
         system_admin=True,
@@ -91,8 +111,20 @@ def seed_admin_user():
         eliminado=False,
     )
 
-    db.session.add(admin_user)
+    administrador_user = User(
+        nombre="Administrador", 
+        apellido="Principal",
+        email="admin@example.com",
+        password=hashed_password1.decode("utf-8"),
+        role_id=administrador_role.id,
+        system_admin=False,
+        enabled=True,
+        eliminado=False,
+    )
+
+    db.session.add_all([admin_user, administrador_user])
     db.session.commit()
+    print("Usuario System Admin inicial creado: sysadmin@example.com / sysadmin123")
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
 
 

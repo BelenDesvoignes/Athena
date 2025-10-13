@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 # Registro y Preservación de Sitios Históricos
-=======
+
 # Registro y Preservación de Sitios Históricos.
 
 ## Participantes
@@ -45,6 +44,10 @@ poetry run flask --app main.py run
 ```
 
 ## Usuarios disponibles
+
+System Admin:
+    E-Mail: system_admin@example.com
+    Contraseña: sysadmin123
 
 Administrador
     E-Mail: admin@example.com
