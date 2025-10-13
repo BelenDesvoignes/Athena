@@ -323,7 +323,7 @@ def toggle_enabled(user_id):
     user = get_user_by_id(user_id)
     if not user:
         flash("Usuario no encontrado.", "danger")
-    elif getattr(user, "system_admin", False):
+    elif getattr(user, "system_admin", False) or user.role.name in ["Administrador", "Admin"]:
         flash("No se puede bloquear al administrador del sistema.", "danger")
     else:
         user.enabled = not user.enabled

@@ -187,7 +187,7 @@ def delete_user(user_id):
     if not user:
         raise ValueError("Usuario no encontrado.")
     
-    if getattr(user, "system_admin", False):
+    if getattr(user, "system_admin", False) or user.role.name in ["Administrador", "Admin"]:
         raise ValueError("No se puede eliminar un usuario administrador del sistema.")
 
     user.eliminado = True
