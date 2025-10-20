@@ -1,7 +1,10 @@
-from sqlalchemy import Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from src.core.database import Base
+
 
 arg_tz = timezone(timedelta(hours=-3))
 

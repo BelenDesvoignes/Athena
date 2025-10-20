@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from src.core.tag_service import generate_slug, get_tag_by_slug, create_tag, list_tags, delete_tag, update_tag, get_tag_by_name, used_tag
-from src.core.models import Tag
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+
+from src.core.tag_service import create_tag,delete_tag,generate_slug,get_tag_by_name,get_tag_by_slug,list_tags,update_tag,used_tag
+
 from src.web.handlers.auth import login_required, permission_required
 from src.web.handlers.maintenance import maintenance_protected
+
 
 tag_bp = Blueprint('tag', __name__, url_prefix='/tags', template_folder='../templates')
 

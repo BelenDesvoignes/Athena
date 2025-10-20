@@ -1,6 +1,8 @@
-# este archivo define como interactua la app con la bd
-from flask_sqlalchemy import SQLAlchemy
+# Este archivo define cómo interactúa la app con la base de datos
+
 from sqlalchemy.orm import DeclarativeBase
+from flask_sqlalchemy import SQLAlchemy
+
 
 
 class Base(DeclarativeBase):

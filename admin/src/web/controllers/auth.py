@@ -1,9 +1,10 @@
-from src.core.models.role_permission import Role
-from flask import Blueprint, render_template, request, redirect, session, flash, url_for
-from src.core.user_service import authenticate_user, create_user
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+
 from src.core.permissions_service import get_role_by_name
-from src.web.handlers.auth import login_required 
+from src.core.user_service import authenticate_user, create_user
+from src.web.handlers.auth import login_required
 from src.web.handlers.maintenance import maintenance_protected
+
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 

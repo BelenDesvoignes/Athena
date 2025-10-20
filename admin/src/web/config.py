@@ -1,10 +1,10 @@
 # Archivo para manejar distintos ambientes de prueba
 # le dice  database.py a que bd conectarse
-from flask import Flask
-from flask import render_template
-from src.core.database import db as main_db
+import os
 from os import environ
-import os 
+
+from src.core.database import db as main_db
+
 
 
 class Config:

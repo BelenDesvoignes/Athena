@@ -1,29 +1,20 @@
-from flask import (
-    Blueprint,
-    render_template,
-    request,
-    Response,
-    redirect,
-    url_for,
-    flash,
-    abort,
-    send_file,
-    session,
-)
-import csv
-from io import StringIO
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
+from io import StringIO
+import csv
+
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for
+from geoalchemy2.elements import WKTElement
+from geoalchemy2.shape import to_shape
+from sqlalchemy import func, or_
+
+from src.core.database import db
+from src.core.models.modification_history import ModificationHistory
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
-from src.core.database import db
-from src.web.handlers.maintenance import maintenance_protected
 from src.web.handlers.auth import login_required, permission_required
-from sqlalchemy import or_
-from geoalchemy2.elements import WKTElement
-from geoalchemy2.shape import to_shape
-from src.core.models.modification_history import ModificationHistory
+from src.web.handlers.maintenance import maintenance_protected
+
 
 
 """Controlador para la gestión de sitios turísticos."""

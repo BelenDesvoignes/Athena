@@ -1,19 +1,21 @@
-from flask import Flask, jsonify, render_template, abort, session, g
-from src.core.database import db, reset_db
-from src.web.config import config
+from flask import Flask, render_template, session
 from flask_session import Session
-from src.web.handlers.auth import login_required
-from src.web.controllers.auth import auth_bp
-from src.web.controllers.user_routes import user_admin_bp
-from src.web.controllers.tag_routes import tag_bp
-from src.web.controllers.sites_routes import bp_sitios
-from src.core.permissions_service import current_user_permissions
-from src.core.seeds import seed_roles_permissions, seed_admin_user 
+
+from src.core.database import db, reset_db
 from src.core.flags import is_flag_enabled
-from src.web.handlers.maintenance import maintenance_check
 from src.core.models.feature_flags import FeatureFlag
+from src.core.permissions_service import current_user_permissions
+from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios
+
+from src.web.config import config
+from src.web.controllers.auth import auth_bp
+from src.web.controllers.sites_routes import bp_sitios
+from src.web.controllers.tag_routes import tag_bp
+from src.web.controllers.user_routes import user_admin_bp
+from src.web.handlers.maintenance import maintenance_check
+
 from web.controllers.feature_flags_routes import feature_flags_bp
-from src.core.seeds import seed_roles_permissions, seed_admin_user, seed_feature_flags, seed_sitios 
+
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder,template_folder="templates")

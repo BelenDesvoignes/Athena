@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+
+from src.core.bcrypt import check_password
 from src.core.database import db
-from src.core.user_service import list_users, create_user, update_user, delete_user, get_user_by_id, get_user_by_email, check_email_unique
+from src.core.user_service import check_email_unique, create_user, delete_user, get_user_by_email, get_user_by_id, list_users, update_user
 from src.web.handlers.auth import login_required, permission_required
-from src.core.bcrypt import check_password   
-from src.core.models.user import User    
 from src.web.handlers.maintenance import maintenance_protected
+
+
 user_admin_bp = Blueprint("user_admin", __name__, url_prefix="/admin/users")
 
 # Ruta de Login
