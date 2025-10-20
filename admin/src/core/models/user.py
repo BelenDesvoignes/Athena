@@ -1,11 +1,14 @@
-from src.core.database import Base
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.database import Base
+
 if TYPE_CHECKING:
     from src.core.models.role_permission import Role
+
 
 
 

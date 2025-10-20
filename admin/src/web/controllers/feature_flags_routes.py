@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
-from src.web.handlers.auth import login_required, permission_required
 from src.core.models.user import User
+from src.web.handlers.auth import login_required, permission_required
+
 
 feature_flags_bp = Blueprint("feature_flags", __name__, url_prefix="/admin/feature-flags")
 

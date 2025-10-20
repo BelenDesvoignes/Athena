@@ -1,10 +1,13 @@
-from src.core.database import db
-from src.core.models.user import User
-from src.core.models.role_permission import Role, Permission, RolePermission
-from src.core.models.site import Sitio
-from src.core.models.feature_flags import FeatureFlag
-from src.core.bcrypt import hash_password
 from geoalchemy2.elements import WKTElement
+
+from src.core.bcrypt import hash_password
+from src.core.database import db
+from src.core.models.feature_flags import FeatureFlag
+from src.core.models.role_permission import Permission, Role, RolePermission
+from src.core.models.site import Sitio
+from src.core.models.user import User
+
+
 
 
 def seed_roles_permissions():

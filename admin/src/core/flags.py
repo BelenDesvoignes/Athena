@@ -1,6 +1,8 @@
+import logging
+
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
-import logging
+
 
 logging.basicConfig(level=logging.DEBUG)
 

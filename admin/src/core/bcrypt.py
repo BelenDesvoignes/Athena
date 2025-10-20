@@ -1,5 +1,7 @@
-import bcrypt 
 from typing import Union
+
+import bcrypt
+
 
 def hash_password(password: str) -> bytes:
     """

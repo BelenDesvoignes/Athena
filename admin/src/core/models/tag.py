@@ -1,8 +1,11 @@
-from src.core.database import db, Base
-from typing import List
-from sqlalchemy import String, Integer, Boolean, DateTime, func, Table, Column, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column,relationship
 from datetime import datetime, timezone
+from typing import List
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.database import Base
+
 
 
 sitios_tags = Table(

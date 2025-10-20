@@ -1,10 +1,13 @@
-from src.core.database import db, Base
-from sqlalchemy import String, Integer, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.database import Base
 
 if TYPE_CHECKING:
     from src.core.models.user import User
+
 
 
 class RolePermission(Base):

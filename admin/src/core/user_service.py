@@ -1,13 +1,7 @@
 # admin/src/core/user_service.py
 from src.core.database import db
 from src.core.models.user import User 
-import re
-from src.core.bcrypt import hash_password, check_password
-from typing import TYPE_CHECKING
-from src.core.models.role_permission import Role
-from datetime import datetime, timezone
-if TYPE_CHECKING:
-    from src.core.models.role_permission import Role
+
 
 def get_user_by_email(email):
     """

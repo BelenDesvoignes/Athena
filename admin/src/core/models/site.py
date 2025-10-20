@@ -1,10 +1,13 @@
-from src.core.database import db, Base
-from sqlalchemy import String, Integer, Boolean, DateTime, Float, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import List
 from datetime import datetime
-from .tag import sitios_tags
+from typing import List
+
 from geoalchemy2.types import Geometry
+from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.database import Base
+from .tag import sitios_tags
+
 
 
 class Sitio(Base):

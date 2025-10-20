@@ -1,8 +1,9 @@
-from flask import redirect, url_for, session, g, request
-from src.core.database import db
-from src.core.models.user import User
-from src.core.models.feature_flags import FeatureFlag
 from functools import wraps
+from flask import g, redirect, request, session, url_for
+
+from src.core.database import db
+from src.core.models.feature_flags import FeatureFlag
+
 
 def maintenance_check(app):
     @app.before_request

@@ -1,8 +1,11 @@
+import logging
+
+from flask import session
+
 from src.core.database import db
 from src.core.models.role_permission import Role
 from src.core.models.user import User
-from flask import session
-import logging
+
 
 logging.basicConfig(level=logging.DEBUG)
 

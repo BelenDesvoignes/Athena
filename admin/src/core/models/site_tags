@@ -1,6 +1,7 @@
+from sqlalchemy import Column, ForeignKey, Integer, Table
+
 from src.core.database import Base
-from sqlalchemy import Table, Column, Integer, ForeignKey
-from sqlalchemy.orm import relationship
+
 
 
 """Tabla de asosciacion muchos a muchos entre Sitio y Tag"""

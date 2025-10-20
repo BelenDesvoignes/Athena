@@ -1,8 +1,11 @@
-from src.core.database import Base
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.database import Base
 from src.core.models.user import User
+
 
 class FeatureFlag(Base):
     """

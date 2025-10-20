@@ -1,6 +1,8 @@
 from functools import wraps
+from flask import flash, redirect, session, url_for
+
 from src.core.database import db
-from flask import session, redirect, url_for, flash
+
 
 
 def login_required(f):

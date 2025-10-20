@@ -1,8 +1,10 @@
-from src.core.models.tag import Tag
-from src.core.database import db
-from sqlalchemy import exists
-from src.core.models.tag import sitios_tags
 import re
+
+from sqlalchemy import exists
+
+from src.core.database import db
+from src.core.models.tag import Tag, sitios_tags
+
 
 def get_tag_by_slug(slug):
     """
