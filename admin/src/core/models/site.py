@@ -9,7 +9,6 @@ from src.core.database import Base
 from .tag import sitios_tags
 
 
-
 class Sitio(Base):
     __tablename__ = "sitios"
     """Modelo para representar un sitio turístico."""

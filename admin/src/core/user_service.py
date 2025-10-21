@@ -1,6 +1,9 @@
 # admin/src/core/user_service.py
 from src.core.database import db
 from src.core.models.user import User 
+from src.core.bcrypt import check_password, hash_password
+from datetime import datetime, timezone
+from src.core.models.role_permission import Role
 
 
 def get_user_by_email(email):
