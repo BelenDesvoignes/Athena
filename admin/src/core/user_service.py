@@ -4,7 +4,7 @@ from src.core.models.user import User
 from datetime import datetime, timezone
 
 from src.core.bcrypt import check_password, hash_password
-from src.core.model.role_permission import Role
+from src.core.models.role_permission import Role
 
 
 def get_user_by_email(email):
