@@ -4,9 +4,8 @@ from typing import List
 from geoalchemy2.types import Geometry
 from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from src.core.database import Base
 from .tag import sitios_tags
+from src.core.database import Base
 
 
 class Sitio(Base):
