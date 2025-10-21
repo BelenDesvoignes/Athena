@@ -2,7 +2,8 @@
 from src.core.database import db
 from src.core.models.user import User 
 from datetime import datetime, timezone
-from bcrypt import hash_password, check_password
+
+from src.core.bcrypt import check_password, hash_password
 from src.core.model.role_permission import Role
 
 
