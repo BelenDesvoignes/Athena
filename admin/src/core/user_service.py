@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from src.core.models.role_permission import Role
 
 
+
+
 def get_user_by_email(email):
     """
     Retorna un usuario activo no eliminado por email.
