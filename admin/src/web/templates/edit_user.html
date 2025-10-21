@@ -38,6 +38,16 @@
             <input type="checkbox" class="form-check-input" id="activo" name="activo" {% if user.enabled %}checked{% endif %}>
             <label class="form-check-label" for="activo">Activo</label>
         </div>
+        <div class="mb-3">
+          <label for="rol" class="form-label">Rol</label>
+          <select class="form-select" id="rol" name="rol" required>
+            <option value="" disabled>Seleccionar rol</option>
+            <option value="Administrador" {% if user.role == "Administrador" %}selected{% endif %}>Administrador</option>
+            <option value="Moderador" {% if user.role == "Moderador" %}selected{% endif %}>Moderador</option>
+            <option value="Editor" {% if user.role == "Editor" %}selected{% endif %}>Editor</option>
+            <option value="Usuario público" {% if user.role == "Usuario público" %}selected{% endif %}>Usuario público</option>
+          </select>
+        </div>
         <input type="hidden" name="role_id" value="{{ user.role_id }}">
         <button type="submit" class="btn btn-success">Guardar cambios</button>
         <a href="{{ url_for('user_admin.list') }}" class="btn btn-secondary">Cancelar</a>

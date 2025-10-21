@@ -3,9 +3,9 @@ from src.core.database import db
 from src.core.models.user import User 
 from src.core.bcrypt import check_password, hash_password
 from datetime import datetime, timezone
+
+from src.core.bcrypt import check_password, hash_password
 from src.core.models.role_permission import Role
-
-
 
 
 def get_user_by_email(email):
@@ -157,6 +157,8 @@ def update_user(user_id, data):
             if len(data['password']) < 8:
                 raise ValueError("La nueva clave debe tener al menos 8 caracteres.")
             user.password = hash_password(data['password'])
+        if "rol" in data:
+            user.role = get_role_by_name(data["rol"])
         
         user.fecha_actualizacion = datetime.now(timezone.utc)
         
