@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -37,6 +38,9 @@ class User(Base):
 
     role: Mapped["Role"] = relationship(back_populates="users", lazy="joined")
     eliminado: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="user", lazy="selectin")
+
 
     def __repr__(self):
         return f"<User {self.email}>"

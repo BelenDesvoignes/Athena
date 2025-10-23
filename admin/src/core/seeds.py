@@ -14,78 +14,53 @@ def seed_roles_permissions():
     print("--- 1. Inicializando Roles y Permisos ---")
 
     # Roles
-    admin_role = Role(name="Administrador")
-    administrador_role = Role(name="Admin")
-    editor_role = Role(name="Editor")
-    public_role = Role(name="Usuario público")
+    roles = ["Administrador", "Admin", "Editor", "Usuario público", "Moderador"]
+    role_objs = []
+    for r_name in roles:
+        role = db.session.query(Role).filter_by(name=r_name).first()
+        if not role:
+            role = Role(name=r_name)
+            db.session.add(role)
+        role_objs.append(role)
 
-    roles = [admin_role, administrador_role, editor_role, public_role]
 
-    permisos = [
-        Permission(name="user_index"),
-        Permission(name="user_new"),
-        Permission(name="user_update"),
-        Permission(name="user_destroy"),
-        Permission(name="user_show"),
-        Permission(name="tag_manage"),            
-        Permission(name="feature_flags_manage"),
-        Permission(name="export_csv"),             
-        Permission(name="site_list"),
-        Permission(name="site_detail"),
-        Permission(name="site_new"),
-        Permission(name="site_update"),
-        Permission(name="site_delete"),
+    permisos_nombres = [
+        "user_index", "user_new", "user_update", "user_destroy", "user_show",
+        "tag_manage", "feature_flags_manage", "export_csv",
+        "site_list", "site_detail", "site_new", "site_update", "site_delete", "user_moderation"
     ]
+    permiso_objs = []
+    for p_name in permisos_nombres:
+        perm = db.session.query(Permission).filter_by(name=p_name).first()
+        if not perm:
+            perm = Permission(name=p_name)
+            db.session.add(perm)
+        permiso_objs.append(perm)
 
-    db.session.add_all(roles + permisos)
     db.session.commit()
 
-    
+    # Asignar permisos a roles
     role_perm_map = {
-        "Administrador": [
-            "user_index",
-            "user_new",
-            "user_update",
-            "user_destroy",
-            "user_show",
-            "tag_manage",
-            "feature_flags_manage",
-            "export_csv",
-            "site_list",
-            "site_detail",
-            "site_new",
-            "site_update",
-            "site_delete"
-        ],
-        "Admin": [
-             "user_index",
-            "user_new",
-            "user_update",
-            "user_destroy",
-            "user_show",
-            "tag_manage",
-            "export_csv",
-            "site_list",
-            "site_detail",
-            "site_new",
-            "site_update",
-            "site_delete"
-        ],
+        "Administrador": permisos_nombres,
+        "Admin": permisos_nombres,
         "Editor": ["tag_manage", "site_list", "site_detail", "site_new", "site_update"],
-        "Usuario público": []
+        "Usuario público": [],
+        "Moderador": ["user_moderation"]
     }
 
     for role_name, perm_names in role_perm_map.items():
         role = db.session.query(Role).filter_by(name=role_name).first()
         for perm_name in perm_names:
             perm = db.session.query(Permission).filter_by(name=perm_name).first()
-            rp = RolePermission(role_id=role.id, permission_id=perm.id)
-            db.session.add(rp)
+            # Evitar duplicados en RolePermission
+            exists = db.session.query(RolePermission).filter_by(
+                role_id=role.id, permission_id=perm.id
+            ).first()
+            if not exists:
+                db.session.add(RolePermission(role_id=role.id, permission_id=perm.id))
 
     db.session.commit()
     print("Roles y permisos iniciales creados.")
-
-
 
 def seed_admin_user():
     administrador_role = db.session.query(Role).filter_by(name="Admin").first()
@@ -108,6 +83,14 @@ def seed_admin_user():
     hashed_password2 = hash_password("editor123")  
 
     hashed_password = hash_password("sysadmin123") 
+
+    moderador_role = db.session.query(Role).filter_by(name="Moderador").first()
+    if not moderador_role:
+        raise ValueError(
+            "No se encontró el rol Moderador, corre seed_roles_permissions primero."
+        )
+    hashed_password3 = hash_password("moderador123")  
+
 
     admin_user = User(
         nombre="Admin", 
@@ -142,11 +125,24 @@ def seed_admin_user():
         eliminado=False,
     )
 
-    db.session.add_all([admin_user, administrador_user, editor_user])
+    moderador_user = User(
+        nombre="Moderador",
+        apellido="Principal",
+        email="moderador@gmail.com",
+        password=hashed_password3.decode("utf-8"),
+        role_id=moderador_role.id,      
+        system_admin=False,
+        enabled=True,
+        eliminado=False,        
+    )
+
+    db.session.add_all([admin_user, administrador_user, editor_user, moderador_user])
     db.session.commit()
     print("Usuario System Admin inicial creado: sysadmin@example.com / sysadmin123")
     print("Usuario Administrador inicial creado: admin@example.com / admin123")
     print("Usuario Editor inicial creado: usuarioEditor@gmail.com / editor123")
+    print("Usuario Moderador inicial creado: moderador@gmail.com / moderador123")
+
 
 
 def seed_sitios():
@@ -193,35 +189,38 @@ def seed_sitios():
     print("Sitios históricos de ejemplo cargados.")
 
 def seed_feature_flags():
-    """
-    Crea los flags de características iniciales en la base de datos.
-    """
     flags = [
-        FeatureFlag(
-            key="admin_maintenance_mode",
-            display_name="Modo mantenimiento de administración",
-            description="Deshabilita temporalmente el sitio de administración.",
-            is_enabled=False,
-            maintenance_message=None
-        ),
-        FeatureFlag(
-            key="portal_maintenance_mode",
-            display_name="Modo mantenimiento del portal web",
-            description="Pone el portal en modo mantenimiento.",
-            is_enabled=False,
-            maintenance_message=None
-        ),
-        FeatureFlag(
-            key="reviews_enabled",
-            display_name="Permitir nuevas reseñas",
-            description="Habilita o deshabilita la creación y visualización de reseñas en el portal.",
-            is_enabled=True
-        )
+        {
+            "key": "admin_maintenance_mode",
+            "display_name": "Modo mantenimiento de administración",
+            "description": "Deshabilita temporalmente el sitio de administración.",
+            "is_enabled": False,
+            "maintenance_message": None
+        },
+        {
+            "key": "portal_maintenance_mode",
+            "display_name": "Modo mantenimiento del portal web",
+            "description": "Pone el portal en modo mantenimiento.",
+            "is_enabled": False,
+            "maintenance_message": None
+        },
+        {
+            "key": "reviews_enabled",
+            "display_name": "Permitir nuevas reseñas",
+            "description": "Habilita o deshabilita la creación y visualización de reseñas en el portal.",
+            "is_enabled": True,
+            "maintenance_message": None
+        }
     ]
 
-    db.session.add_all(flags)
+    for f in flags:
+        exists = db.session.query(FeatureFlag).filter_by(key=f["key"]).first()
+        if not exists:
+            db.session.add(FeatureFlag(**f))
+
     db.session.commit()
     print("Feature flags iniciales creados.")
+
 
 #if __name__ == "__main__":
 #    with app.app_context():  # esto “activa” la app para poder usar db.session

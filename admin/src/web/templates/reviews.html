@@ -20,6 +20,7 @@
   <div class="container mt-5">
     <h2>Listado de Reseñas</h2>
 
+    <!-- FILTROS -->
     <form method="GET" class="row g-3 mb-3">
       <div class="col-auto">
         <select name="status" class="form-select">
@@ -50,6 +51,7 @@
       </div>
     </form>
 
+    <!-- TABLA -->
     <table class="table table-striped table-hover mt-3">
       <thead class="table-dark">
         <tr>
@@ -58,6 +60,7 @@
           <th>Calificación</th>
           <th>Contenido</th>
           <th>Estado</th>
+          <th>Motivo</th>
           <th>Fecha</th>
           <th>Acciones</th>
         </tr>
@@ -65,7 +68,7 @@
       <tbody>
         {% for review in pagination.items %}
         <tr>
-          <td>{{ review.site.name }}</td>
+          <td>{{ review.site.nombre }}</td>
           <td>{{ review.user.email }}</td>
           <td>{{ review.rating }}</td>
           <td>{{ review.content | truncate(70) }}</td>
@@ -78,6 +81,13 @@
               <span class="badge bg-danger">Rechazada</span>
             {% endif %}
           </td>
+          <td>
+            {% if review.status == 'RECHAZADA' %}
+              {{ review.rejection_reason }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td>{{ review.created_at.strftime("%d/%m/%Y") }}</td>
           <td>
             <div class="btn-group">
@@ -86,31 +96,72 @@
               </button>
               <ul class="dropdown-menu">
                 {% if review.status == 'PENDIENTE' %}
-                <li>
-                  <form method="POST" action="{{ url_for('reviews.review_approve', review_id=review.id) }}" style="display:inline;">
-                    <button type="submit" class="dropdown-item text-success">Aprobar</button>
-                  </form>
-                </li>
-                <li>
-                  <form method="POST" action="{{ url_for('reviews.review_reject', review_id=review.id) }}" style="display:inline;">
-                    <input type="hidden" name="reason" value="Rechazada por contenido inapropiado">
-                    <button type="submit" class="dropdown-item text-warning">Rechazar</button>
-                  </form>
-                </li>
+                  <!-- Aprobar -->
+                  <li>
+                    <form method="POST" action="{{ url_for('reviews.review_approve', review_id=review.id) }}" style="display:inline;">
+                      <button type="submit" class="dropdown-item text-success"
+                              onclick="return confirm('¿Seguro que querés aprobar esta reseña?');">
+                        Aprobar
+                      </button>
+                    </form>
+                  </li>
+                  <!-- Rechazar -->
+                  <li>
+                    <form method="POST" 
+                          action="{{ url_for('reviews.review_reject', review_id=review.id) }}" 
+                          class="reject-form" 
+                          style="display:inline;">
+                        <div class="p-2">
+                          <input type="text" name="reason" placeholder="Motivo del rechazo" 
+                                 class="form-control form-control-sm mb-1" 
+                                 maxlength="200" required>
+                          <button type="submit" class="btn btn-sm btn-warning w-100"
+                                  onclick="return confirm('¿Seguro que querés rechazar esta reseña?');">
+                            Rechazar
+                          </button>
+                        </div>
+                    </form>
+                  </li>
                 {% endif %}
+                <!-- Eliminar -->
                 <li>
                   <form method="POST" action="{{ url_for('reviews.review_delete', review_id=review.id) }}" 
-                        onsubmit="return confirm('¿Seguro que querés eliminar esta reseña?');" style="display:inline;">
+                        onsubmit="return confirm('¡Atención! Esta acción es definitiva. ¿Querés eliminar esta reseña?');" 
+                        style="display:inline;">
                     <button type="submit" class="dropdown-item text-danger">Eliminar</button>
                   </form>
+                </li>
+                <!-- Ver detalle -->
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <button class="dropdown-item text-info" type="button" data-bs-toggle="collapse" data-bs-target="#details-{{ review.id }}" aria-expanded="false">
+                    Ver detalle
+                  </button>
                 </li>
               </ul>
             </div>
           </td>
         </tr>
+
+        <!-- DETALLE DE RESEÑA -->
+        <tr class="collapse" id="details-{{ review.id }}">
+          <td colspan="8">
+            <ul class="list-group">
+              <li class="list-group-item"><strong>Contenido completo:</strong> {{ review.content }}</li>
+              <li class="list-group-item"><strong>Calificación:</strong> {{ review.rating }}</li>
+              <li class="list-group-item"><strong>Estado:</strong> {{ review.status }}</li>
+              {% if review.status == 'RECHAZADA' %}
+              <li class="list-group-item"><strong>Motivo:</strong> {{ review.rejection_reason }}</li>
+              {% endif %}
+              <li class="list-group-item"><strong>Usuario:</strong> {{ review.user.email }}</li>
+              <li class="list-group-item"><strong>Sitio:</strong> {{ review.site.nombre}}</li>
+              <li class="list-group-item"><strong>Fecha creación:</strong> {{ review.created_at.strftime("%d/%m/%Y %H:%M") }}</li>
+            </ul>
+          </td>
+        </tr>
         {% else %}
         <tr>
-          <td colspan="7" class="text-center text-muted">No hay reseñas que coincidan con los filtros</td>
+          <td colspan="8" class="text-center text-muted">No hay reseñas que coincidan con los filtros</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -140,6 +191,10 @@
   }
   .badge {
       font-size: 0.85rem;
+  }
+  .list-group-item {
+      background-color: rgba(33,37,41,0.5);
+      color: #ccc;
   }
 </style>
 

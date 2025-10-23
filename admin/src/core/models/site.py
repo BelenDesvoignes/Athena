@@ -33,6 +33,9 @@ class Sitio(Base):
     tags: Mapped[List["Tag"]] = relationship(
         "Tag", secondary=sitios_tags, back_populates="sitios", lazy="selectin"
     )
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="site", lazy="selectin")
+
+
 
     def __repr__(self):
         return f"<Sitio(id={self.id}, nombre={self.nombre})>"

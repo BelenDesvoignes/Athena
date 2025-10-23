@@ -13,8 +13,10 @@ from src.web.controllers.sites_routes import bp_sitios
 from src.web.controllers.tag_routes import tag_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.handlers.maintenance import maintenance_check
+from src.web.controllers.review_routes import reviews_bp
 
-from web.controllers.feature_flags_routes import feature_flags_bp
+from src.web.controllers.feature_flags_routes import feature_flags_bp
+
 
 
 def create_app(env="development", static_folder="../../static"):
@@ -29,6 +31,10 @@ def create_app(env="development", static_folder="../../static"):
     db.init_app(app)
     
     with app.app_context():
+        from src.core.models.user import User
+        from src.core.models.site import Sitio
+        from src.core.models.review import Review
+        from src.core.models.feature_flags import FeatureFlag
         db.create_all()
         seed_roles_permissions() 
         seed_admin_user()        
@@ -46,6 +52,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(user_admin_bp, url_prefix="/admin")
     app.register_blueprint(feature_flags_bp)
     app.register_blueprint(bp_sitios, url_prefix="/sitios")
+    app.register_blueprint(reviews_bp, url_prefix="/reviews")
     #rutas principales 
     @app.route("/")
     def index():
