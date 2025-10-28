@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import csv
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, get_flashed_messages
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, or_
@@ -12,9 +12,19 @@ from src.core.models.modification_history import ModificationHistory
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
+from src.core.models.images import Imagen
 from src.web.handlers.auth import login_required, permission_required
 from src.web.handlers.maintenance import maintenance_protected
 
+from minio import Minio
+from werkzeug.utils import secure_filename
+import uuid
+
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024 
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 """Controlador para la gestión de sitios turísticos."""
@@ -129,26 +139,15 @@ def new():
         tag_ids = request.form.getlist("tags")
         visible = bool(request.form.get("visible"))
         ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
-        """ Validaciones básicas de los campos """
-        if not all(
-            [
-                nombre,
-                descripcion_breve,
-                descripcion_completa,
-                ciudad,
-                provincia,
-                estado_conservacion,
-                inauguracion,
-                categoria,
-                ubicacion,
-            ]
-        ):
+
+        if not all([
+            nombre, descripcion_breve, descripcion_completa, ciudad, provincia,
+            estado_conservacion, inauguracion, categoria, ubicacion
+        ]):
             error = "No completaste todos los campos obligatorios."
             return render_template("new_site.html", tags=tags, error=error)
 
         try:
-            ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
-
             sitio = Sitio(
                 nombre=nombre,
                 descripcion_breve=descripcion_breve,
@@ -163,22 +162,79 @@ def new():
                 visible=visible,
             )
             db.session.add(sitio)
-            db.session.commit()
-            flash("Sitio creado correctamente")
-            
-            registrar_modificacion(sitio, current_user, "Creación")
-            
-            return redirect(url_for("sitios.list"))
-        except Exception as e:
-            error = f"Error al crear el sitio: {str(e)}"
-            db.session.rollback()
+            db.session.flush()  # Para tener sitio.id antes de commit
+            print(f"[DEBUG] Sitio creado en memoria con ID temporal: {sitio.id}")
 
+            # --- Manejo de imágenes ---
+            minio_client = Minio(
+                endpoint=current_app.config["MINIO_SERVER"],
+                access_key=current_app.config["MINIO_ACCESS_KEY"],
+                secret_key=current_app.config["MINIO_SECRET_KEY"],
+                secure=current_app.config["MINIO_SECURE"],
+            )
+
+            imagenes = request.files.getlist("imagenes")
+            portada_form = request.form.getlist("portada")
+            portada_idx = int(portada_form[0]) if portada_form else 0
+
+            print(f"[DEBUG] Archivos recibidos: {[f.filename for f in imagenes]}")
+
+            if imagenes:
+                if len(imagenes) > 10:
+                    error = "No se pueden subir más de 10 imágenes."
+                    db.session.rollback()
+                    return render_template("new_site.html", tags=tags, error=error)
+
+                for idx, file in enumerate(imagenes):
+                    if not allowed_file(file.filename):
+                        error = f"Formato no permitido: {file.filename}"
+                        db.session.rollback()
+                        return render_template("new_site.html", tags=tags, error=error)
+
+                    file.seek(0, 2)
+                    size = file.tell()
+                    file.seek(0)
+
+                    if size > MAX_IMAGE_SIZE:
+                        error = f"Archivo demasiado grande: {file.filename}"
+                        db.session.rollback()
+                        return render_template("new_site.html", tags=tags, error=error)
+
+                    ext = file.filename.rsplit(".", 1)[1].lower()
+                    filename = f"{uuid.uuid4().hex}.{ext}"
+                    print(f"[DEBUG] Subiendo archivo {file.filename} como {filename}, tamaño {size} bytes")
+
+                    minio_client.put_object(
+                        bucket_name=current_app.config["MINIO_BUCKET"],
+                        object_name=filename,
+                        data=file,
+                        length=size,
+                        content_type=file.mimetype,
+                    )
+
+                    imagen = Imagen(
+                        sitio_id=sitio.id,
+                        ruta=f"{current_app.config['MINIO_BUCKET']}/{filename}",
+                        titulo=secure_filename(file.filename),
+                        descripcion="",
+                        orden=idx,
+                        es_portada=(idx == portada_idx)
+                    )
+                    db.session.add(imagen)
+
+            db.session.commit()
+            registrar_modificacion(sitio, current_user, "Creación")
+            flash("Sitio creado correctamente")
+            return redirect(url_for("sitios.list"))
+
+        except Exception as e:
+            db.session.rollback()
+            error = f"Error al crear el sitio: {str(e)}"
+            print(f"[DEBUG] Exception: {error}")
             return render_template("new_site.html", tags=tags, error=error)
 
     return render_template("new_site.html", tags=tags, current_user=current_user)
 
-
-"""Detalle de un sitio turístico"""
 
 def get_modification_history(sitio_id, usuario_nombre="", tipo_accion="", desde="", hasta="", page=1):
     """

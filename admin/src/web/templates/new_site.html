@@ -7,9 +7,10 @@
 <section class="container mt-5">
     <article>
         <h2>Crear Nuevo Sitio Histórico</h2>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <fieldset>
                 <legend>Datos del sitio</legend>
+                <!-- Campos existentes -->
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre</label>
                     <input type="text" class="form-control" id="nombre" name="nombre" required>
@@ -47,124 +48,73 @@
                     <label for="categoria" class="form-label">Categoría</label>
                     <input type="text" class="form-control" id="categoria" name="categoria" required>
                 </div>
+
+                <!-- Tags -->
                 <label for="tag-input">Tags:</label>
                 <div id="tag-selector">
-
                     <input type="text" id="tag-input" placeholder="Buscar o seleccionar tags...">
                     <div id="selected-tags"></div>
                     <div id="tag-list">
                         {% for tag in tags %}
-                        <div class="tag-option" data-id="{{ tag.id }}" data-nombre="{{ tag.nombre }}">{{ tag.nombre }}
-                        </div>
+                        <div class="tag-option" data-id="{{ tag.id }}" data-nombre="{{ tag.nombre }}">{{ tag.nombre }}</div>
                         {% endfor %}
                     </div>
                 </div>
-
 
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1">
                     <label class="form-check-label" for="visible">Visible</label>
                 </div>
+
+                <!-- Ubicación -->
                 <div class="mb-3">
                     <label class="form-label">Ubicación en el mapa</label>
                     <div id="map" style="height: 400px; width: 100%;"></div>
                     <input type="hidden" name="latitud" id="latitud">
                     <input type="hidden" name="longitud" id="longitud">
                 </div>
+
+                <!-- Sección de imágenes -->
+                <fieldset>
+                    <legend>Imágenes del sitio</legend>
+                    <div class="mb-3">
+                        <label for="imagenes" class="form-label">Subir imágenes (máx. 10, JPG/PNG/WEBP, 5MB c/u)</label>
+                        <input type="file" class="form-control" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                    </div>
+                    <div id="imagenes-lista" style="margin-top: 15px;"></div>
+                </fieldset>
+
             </fieldset>
+
             <button type="submit" class="btn btn-success">Guardar sitio</button>
             <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </article>
 </section>
 
-
 <style>
-    #tag-selector {
-        display: inline-flex;
-        flex-wrap: wrap;
-        align-items: right: 0;
-        ;
-        gap: 6px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 6px;
-        background: #555;
-        position: relative;
-        cursor: text;
-    }
+    /* Tags */
+    #tag-selector { display: inline-flex; flex-wrap: wrap; align-items: right; gap: 6px; border: 1px solid #ccc; border-radius: 6px; padding: 6px; background: #555; position: relative; cursor: text; }
+    #selected-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: auto; }
+    .tag-chip { background: #007bff; color: white; padding: 4px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.9em; white-space: nowrap; }
+    .tag-chip span { cursor: pointer; font-weight: bold; }
+    #tag-input { border: none; outline: none; flex-grow: 1; min-width: 150px; font-size: 0.9em; }
+    #tag-list { position: absolute; top: calc(100% + 4px); left: 0; background: #333233; border: 1px solid #ccc; width: 100%; max-height: 180px; overflow-y: auto; z-index: 1000; display: none; border-radius: 4px; }
+    .tag-option { padding: 6px 10px; cursor: pointer; }
+    .tag-option:hover { background: #222; }
 
-    /* Chips seleccionados */
-    #selected-tags {
-        display: inline-flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-        margin: auto;
-    }
-
-    .tag-chip {
-        background: #007bff;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.9em;
-        white-space: nowrap;
-    }
-
-    .tag-chip span {
-        cursor: pointer;
-        font-weight: bold;
-        line-height: 1;
-    }
-
-    /* Input alineado con los chips */
-    #tag-input {
-        border: none;
-        outline: none;
-        flex-grow: 1;
-        min-width: 150px;
-        font-size: 0.9em;
-    }
-
-    /* Lista desplegable */
-    #tag-list {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        background: #333233;
-        border: 1px solid #ccc;
-        width: 100%;
-        max-height: 180px;
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-        border-radius: 4px;
-    }
-
-    .tag-option {
-        padding: 6px 10px;
-        cursor: pointer;
-    }
-
-    .tag-option:hover {
-        background: #222;
-    }
+    /* Imágenes */
+    .imagen-item { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .imagen-item img { border: 1px solid #ccc; border-radius: 4px; }
 </style>
-
-
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script>
-    var map = L.map('map').setView([-34.6, -58.4], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(map);
 
+<script>
+    // MAPA
+    var map = L.map('map').setView([-34.6, -58.4], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
     var marker;
     map.on('click', function (e) {
         if (marker) map.removeLayer(marker);
@@ -173,7 +123,7 @@
         document.getElementById('longitud').value = e.latlng.lng;
     });
 
-
+    // TAGS
     const tagSelector = document.getElementById("tag-selector");
     const tagInput = document.getElementById("tag-input");
     const tagList = document.getElementById("tag-list");
@@ -185,16 +135,11 @@
         let visible = 0;
         options.forEach(option => {
             const id = parseInt(option.dataset.id);
-            if (selectedTags.includes(id)) {
-                option.style.display = "none";
-            } else {
-                option.style.display = "block";
-                visible++;
-            }
+            if (selectedTags.includes(id)) option.style.display = "none";
+            else { option.style.display = "block"; visible++; }
         });
         tagList.style.display = visible > 0 ? "block" : "none";
     }
-
     function filterTags() {
         const search = tagInput.value.toLowerCase();
         const options = tagList.querySelectorAll(".tag-option");
@@ -208,7 +153,6 @@
         });
         tagList.style.display = visible > 0 ? "block" : "none";
     }
-
     function selectTag(tagDiv) {
         const id = parseInt(tagDiv.dataset.id);
         const nombre = tagDiv.dataset.nombre;
@@ -217,19 +161,16 @@
             const chip = document.createElement("div");
             chip.classList.add("tag-chip");
             chip.innerHTML = `${nombre} <span onclick="removeTag(${id})">&times;</span>`;
-
             const hidden = document.createElement("input");
             hidden.type = "hidden";
             hidden.name = "tags";
             hidden.value = id;
             chip.appendChild(hidden);
-
             selectedTagsContainer.appendChild(chip);
             tagInput.value = "";
             filterTags();
         }
     }
-
     function removeTag(id) {
         selectedTags = selectedTags.filter(t => t !== id);
         document.querySelectorAll(".tag-chip").forEach(chip => {
@@ -237,28 +178,60 @@
         });
         filterTags();
     }
-
-    // Interacciones
     tagInput.addEventListener("focus", showAllTags);
     tagInput.addEventListener("input", filterTags);
-
     tagList.querySelectorAll(".tag-option").forEach(option => {
         option.addEventListener("click", () => selectTag(option));
     });
-
     document.addEventListener("click", e => {
-        if (!tagSelector.contains(e.target)) {
-            tagList.style.display = "none";
-        }
+        if (!tagSelector.contains(e.target)) tagList.style.display = "none";
     });
-
-    // Permite hacer clic en cualquier parte del contenedor para enfocar
     tagSelector.addEventListener("click", () => tagInput.focus());
 
+    // IMÁGENES
+    const inputImagenes = document.getElementById('imagenes');
+    const contenedor = document.getElementById('imagenes-lista');
 
+    inputImagenes.addEventListener('change', () => {
+        contenedor.innerHTML = "";
+        const files = inputImagenes.files;
 
+        Array.from(files).forEach((file, idx) => {
+            const div = document.createElement('div');
+            div.className = 'imagen-item';
 
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.width = 150;
 
+            const label = document.createElement('label');
+            label.innerText = "Portada ";
+
+            const checkbox = document.createElement('input');
+            checkbox.type = "checkbox";
+            checkbox.name = "portada";
+            checkbox.className = "portada-checkbox";
+            checkbox.value = idx;
+            if(idx === 0) checkbox.checked = true;
+
+            checkbox.addEventListener('change', () => {
+                if(checkbox.checked){
+                    document.querySelectorAll('.portada-checkbox').forEach(cb => {
+                        if(cb !== checkbox) cb.checked = false;
+                    });
+                } else {
+                    if(!Array.from(document.querySelectorAll('.portada-checkbox')).some(c => c.checked)){
+                        checkbox.checked = true;
+                    }
+                }
+            });
+
+            label.appendChild(checkbox);
+            div.appendChild(img);
+            div.appendChild(label);
+            contenedor.appendChild(div);
+        });
+    });
 </script>
 {% endblock %}
 

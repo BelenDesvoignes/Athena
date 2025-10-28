@@ -15,7 +15,7 @@ class Storage:
             secure=app.config.get('MINIO_SECURE')
         )
         
-        app.storage = self._client
+        app.storage = self.client
         return app
 
 storage = Storage()
