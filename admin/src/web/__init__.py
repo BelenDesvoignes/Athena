@@ -8,6 +8,7 @@ from src.core.permissions_service import current_user_permissions
 from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios
 
 from src.web.config import config
+from src.web.storage import storage
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.sites_routes import bp_sitios
 from src.web.controllers.tag_routes import tag_bp
@@ -29,6 +30,7 @@ def create_app(env="development", static_folder="../../static"):
     Session(app) 
 
     db.init_app(app)
+    storage.init_app(app)
     
     with app.app_context():
         from src.core.models.user import User

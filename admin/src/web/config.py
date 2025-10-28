@@ -16,10 +16,20 @@ class Config:
 
 
 class ProductionConfig(Config):
+    MINIO_SERVER = environ.get("MINIO_SERVER")
+    MINIO_ACCESS_KEY = environ.get("MINIO_ACCESS_KEY")
+    MINIO_SECRET_KEY = environ.get("MINIO_SECRET_KEY")
+    MINIO_SECURE = True
+    MINIO_BUCKET = "grupo19"
     SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL")
 
 
 class DevelopmentConfig(Config):
+    MINIO_SERVER = "localhost:9000"
+    MINIO_ACCESS_KEY = "grupo19admin"
+    MINIO_SECRET_KEY = "grupo19secret"
+    MINIO_SECURE = False    
+    MINIO_BUCKET = "grupo19"
     SECRET_KEY = "your_dev_secret_key"
     DB_USER = "postgres"
     DB_PASSWORD = "admin"
