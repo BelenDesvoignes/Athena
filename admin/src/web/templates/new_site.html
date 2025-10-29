@@ -1,37 +1,49 @@
 {% extends 'base_layout.html' %}
+
+{% block title %}Crear Nuevo Sitio Histórico{% endblock %}
+
+{% block content %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-{% block content %}
 <section class="container mt-5">
     <article>
         <h2>Crear Nuevo Sitio Histórico</h2>
-        <form method="post" enctype="multipart/form-data">
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('sitios.new') }}">
             <fieldset>
                 <legend>Datos del sitio</legend>
-                <!-- Campos existentes -->
+
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre</label>
                     <input type="text" class="form-control" id="nombre" name="nombre" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="descripcion_breve" class="form-label">Descripción breve</label>
                     <input type="text" class="form-control" id="descripcion_breve" name="descripcion_breve" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="descripcion_completa" class="form-label">Descripción completa</label>
-                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3"
-                        required></textarea>
+                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3" required></textarea>
                 </div>
+
                 <div class="mb-3">
                     <label for="ciudad" class="form-label">Ciudad</label>
                     <input type="text" class="form-control" id="ciudad" name="ciudad" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="provincia" class="form-label">Provincia</label>
                     <input type="text" class="form-control" id="provincia" name="provincia" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="estado_conservacion" class="form-label">Estado de conservación</label>
                     <select class="form-select" id="estado_conservacion" name="estado_conservacion" required>
@@ -40,33 +52,31 @@
                         <option value="Malo">Malo</option>
                     </select>
                 </div>
+
                 <div class="mb-3">
                     <label for="inauguracion" class="form-label">Año de inauguración</label>
                     <input type="number" class="form-control" id="inauguracion" name="inauguracion" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="categoria" class="form-label">Categoría</label>
                     <input type="text" class="form-control" id="categoria" name="categoria" required>
                 </div>
 
-                <!-- Tags -->
-                <label for="tag-input">Tags:</label>
-                <div id="tag-selector">
-                    <input type="text" id="tag-input" placeholder="Buscar o seleccionar tags...">
-                    <div id="selected-tags"></div>
-                    <div id="tag-list">
+                <div class="mb-3">
+                    <label for="tags" class="form-label">Tags</label>
+                    <select id="tags" name="tags" class="form-select" multiple="multiple" style="width: 100%;">
                         {% for tag in tags %}
-                        <div class="tag-option" data-id="{{ tag.id }}" data-nombre="{{ tag.nombre }}">{{ tag.nombre }}</div>
+                        <option value="{{ tag.id }}">{{ tag.nombre }}</option>
                         {% endfor %}
-                    </div>
+                    </select>
                 </div>
 
-                <div class="mb-3 form-check">
+                <div class="mb-3 form-check mt-3">
                     <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1">
                     <label class="form-check-label" for="visible">Visible</label>
                 </div>
 
-                <!-- Ubicación -->
                 <div class="mb-3">
                     <label class="form-label">Ubicación en el mapa</label>
                     <div id="map" style="height: 400px; width: 100%;"></div>
@@ -74,13 +84,16 @@
                     <input type="hidden" name="longitud" id="longitud">
                 </div>
 
-                <!-- Sección de imágenes -->
                 <fieldset>
-                    <legend>Imágenes del sitio</legend>
+                    <legend>Imágenes del sitio (máx. 10)</legend>
                     <div class="mb-3">
-                        <label for="imagenes" class="form-label">Subir imágenes (máx. 10, JPG/PNG/WEBP, 5MB c/u)</label>
-                        <input type="file" class="form-control" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                        <div class="custom-file-upload">
+                            <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
+                            <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                            <span id="file-count" class="ms-2 text-info"></span>
+                        </div>
                     </div>
+                    <input type="hidden" name="portada" id="portada-hidden" value="0">
                     <div id="imagenes-lista" style="margin-top: 15px;"></div>
                 </fieldset>
 
@@ -92,147 +105,222 @@
     </article>
 </section>
 
-<style>
-    /* Tags */
-    #tag-selector { display: inline-flex; flex-wrap: wrap; align-items: right; gap: 6px; border: 1px solid #ccc; border-radius: 6px; padding: 6px; background: #555; position: relative; cursor: text; }
-    #selected-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: auto; }
-    .tag-chip { background: #007bff; color: white; padding: 4px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.9em; white-space: nowrap; }
-    .tag-chip span { cursor: pointer; font-weight: bold; }
-    #tag-input { border: none; outline: none; flex-grow: 1; min-width: 150px; font-size: 0.9em; }
-    #tag-list { position: absolute; top: calc(100% + 4px); left: 0; background: #333233; border: 1px solid #ccc; width: 100%; max-height: 180px; overflow-y: auto; z-index: 1000; display: none; border-radius: 4px; }
-    .tag-option { padding: 6px 10px; cursor: pointer; }
-    .tag-option:hover { background: #222; }
-
-    /* Imágenes */
-    .imagen-item { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-    .imagen-item img { border: 1px solid #ccc; border-radius: 4px; }
-</style>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-    // MAPA
-    var map = L.map('map').setView([-34.6, -58.4], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-    var marker;
-    map.on('click', function (e) {
-        if (marker) map.removeLayer(marker);
-        marker = L.marker(e.latlng).addTo(map);
-        document.getElementById('latitud').value = e.latlng.lat;
-        document.getElementById('longitud').value = e.latlng.lng;
+$(document).ready(function() {
+    $('#tags').select2({
+        placeholder: "Selecciona uno o más tags",
+        allowClear: true
     });
+});
 
-    // TAGS
-    const tagSelector = document.getElementById("tag-selector");
-    const tagInput = document.getElementById("tag-input");
-    const tagList = document.getElementById("tag-list");
-    const selectedTagsContainer = document.getElementById("selected-tags");
-    let selectedTags = [];
+var map = L.map('map').setView([-34.6, -58.4], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+let marker;
 
-    function showAllTags() {
-        const options = tagList.querySelectorAll(".tag-option");
-        let visible = 0;
-        options.forEach(option => {
-            const id = parseInt(option.dataset.id);
-            if (selectedTags.includes(id)) option.style.display = "none";
-            else { option.style.display = "block"; visible++; }
-        });
-        tagList.style.display = visible > 0 ? "block" : "none";
-    }
-    function filterTags() {
-        const search = tagInput.value.toLowerCase();
-        const options = tagList.querySelectorAll(".tag-option");
-        let visible = 0;
-        options.forEach(option => {
-            const nombre = option.dataset.nombre.toLowerCase();
-            const id = parseInt(option.dataset.id);
-            const shouldShow = nombre.includes(search) && !selectedTags.includes(id);
-            option.style.display = shouldShow ? "block" : "none";
-            if (shouldShow) visible++;
-        });
-        tagList.style.display = visible > 0 ? "block" : "none";
-    }
-    function selectTag(tagDiv) {
-        const id = parseInt(tagDiv.dataset.id);
-        const nombre = tagDiv.dataset.nombre;
-        if (!selectedTags.includes(id)) {
-            selectedTags.push(id);
-            const chip = document.createElement("div");
-            chip.classList.add("tag-chip");
-            chip.innerHTML = `${nombre} <span onclick="removeTag(${id})">&times;</span>`;
-            const hidden = document.createElement("input");
-            hidden.type = "hidden";
-            hidden.name = "tags";
-            hidden.value = id;
-            chip.appendChild(hidden);
-            selectedTagsContainer.appendChild(chip);
-            tagInput.value = "";
-            filterTags();
+map.on('click', function(e) {
+    if (marker) map.removeLayer(marker);
+    marker = L.marker(e.latlng).addTo(map);
+    document.getElementById('latitud').value = e.latlng.lat;
+    document.getElementById('longitud').value = e.latlng.lng;
+});
+
+const inputImagenes = document.getElementById('imagenes');
+const contenedor = document.getElementById('imagenes-lista');
+const portadaHidden = document.getElementById('portada-hidden');
+let archivosSeleccionados = [];
+
+function renderizarImagenes() {
+    contenedor.innerHTML = "";
+    archivosSeleccionados.forEach((fileObj, idx) => {
+        const div = document.createElement('div');
+        div.className = 'imagen-item bg-dark p-2 rounded';
+        div.style.display = "inline-block";
+        div.style.margin = "10px";
+        div.style.textAlign = "center";
+        div.style.position = "relative";
+        div.style.verticalAlign = "top";
+
+        const imgContainer = document.createElement('div');
+        imgContainer.style.position = "relative";
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(fileObj.file);
+        img.width = 150;
+        img.height = 150;
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "4px";
+        imgContainer.appendChild(img);
+
+        if (!fileObj.portada) {
+            const botonEliminar = document.createElement('button');
+            botonEliminar.type = "button";
+            botonEliminar.textContent = "×";
+            botonEliminar.style.position = "absolute";
+            botonEliminar.style.top = "5px";
+            botonEliminar.style.right = "5px";
+            botonEliminar.style.backgroundColor = "#dc3545";
+            botonEliminar.style.color = "white";
+            botonEliminar.style.border = "none";
+            botonEliminar.style.borderRadius = "50%";
+            botonEliminar.style.width = "24px";
+            botonEliminar.style.height = "24px";
+            botonEliminar.style.cursor = "pointer";
+            botonEliminar.addEventListener('click', () => eliminarImagen(idx));
+            imgContainer.appendChild(botonEliminar);
         }
-    }
-    function removeTag(id) {
-        selectedTags = selectedTags.filter(t => t !== id);
-        document.querySelectorAll(".tag-chip").forEach(chip => {
-            if (chip.querySelector(`input[value="${id}"]`)) chip.remove();
+
+        const label = document.createElement('label');
+        label.style.display = "block";
+        label.style.marginTop = "5px";
+        label.style.textAlign = "center";
+        label.style.color = "white";
+        label.innerText = "Portada ";
+
+        const radio = document.createElement('input');
+        radio.type = "radio";
+        radio.name = "portada_radio";
+        radio.value = idx;
+        radio.checked = !!fileObj.portada;
+        radio.addEventListener('change', () => {
+            archivosSeleccionados.forEach(f => f.portada = false);
+            fileObj.portada = true;
+            portadaHidden.value = idx;
+            renderizarImagenes();
         });
-        filterTags();
+
+        label.appendChild(radio);
+        div.appendChild(imgContainer);
+        div.appendChild(label);
+        contenedor.appendChild(div);
+    });
+
+    actualizarInputFiles();
+    const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
+    portadaHidden.value = portadaIdx === -1 ? 0 : portadaIdx;
+}
+
+function eliminarImagen(idx) {
+    const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
+    if (idx === portadaIdx) {
+        alert("No se puede eliminar la imagen marcada como portada.");
+        return;
     }
-    tagInput.addEventListener("focus", showAllTags);
-    tagInput.addEventListener("input", filterTags);
-    tagList.querySelectorAll(".tag-option").forEach(option => {
-        option.addEventListener("click", () => selectTag(option));
+    archivosSeleccionados.splice(idx, 1);
+    if (portadaIdx > idx) {
+        archivosSeleccionados[portadaIdx - 1].portada = true;
+    }
+    renderizarImagenes();
+}
+
+function actualizarInputFiles() {
+    const dt = new DataTransfer();
+    archivosSeleccionados.forEach(f => dt.items.add(f.file));
+    inputImagenes.files = dt.files;
+}
+
+inputImagenes.addEventListener('change', (e) => {
+    Array.from(e.target.files).forEach(file => {
+        if (archivosSeleccionados.length < 10) {
+            archivosSeleccionados.push({ file, portada: archivosSeleccionados.length === 0 });
+        }
     });
-    document.addEventListener("click", e => {
-        if (!tagSelector.contains(e.target)) tagList.style.display = "none";
-    });
-    tagSelector.addEventListener("click", () => tagInput.focus());
-
-    // IMÁGENES
-    const inputImagenes = document.getElementById('imagenes');
-    const contenedor = document.getElementById('imagenes-lista');
-
-    inputImagenes.addEventListener('change', () => {
-        contenedor.innerHTML = "";
-        const files = inputImagenes.files;
-
-        Array.from(files).forEach((file, idx) => {
-            const div = document.createElement('div');
-            div.className = 'imagen-item';
-
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            img.width = 150;
-
-            const label = document.createElement('label');
-            label.innerText = "Portada ";
-
-            const checkbox = document.createElement('input');
-            checkbox.type = "checkbox";
-            checkbox.name = "portada";
-            checkbox.className = "portada-checkbox";
-            checkbox.value = idx;
-            if(idx === 0) checkbox.checked = true;
-
-            checkbox.addEventListener('change', () => {
-                if(checkbox.checked){
-                    document.querySelectorAll('.portada-checkbox').forEach(cb => {
-                        if(cb !== checkbox) cb.checked = false;
-                    });
-                } else {
-                    if(!Array.from(document.querySelectorAll('.portada-checkbox')).some(c => c.checked)){
-                        checkbox.checked = true;
-                    }
-                }
-            });
-
-            label.appendChild(checkbox);
-            div.appendChild(img);
-            div.appendChild(label);
-            contenedor.appendChild(div);
-        });
-    });
+    renderizarImagenes();
+    document.getElementById('file-count').textContent =
+        archivosSeleccionados.length > 0
+            ? `${archivosSeleccionados.length} imagen(es) seleccionada(s)`
+            : "";
+});
 </script>
-{% endblock %}
 
-{% block title %}Crear Nuevo Sitio Histórico{% endblock %}
+<style>
+body, label, legend, input, select, textarea {
+    color: #fff !important;
+}
+
+fieldset {
+    border: 1px solid #666;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.form-control, .form-select {
+    background-color: #222 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #0dcaf0 !important;
+    box-shadow: none !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+    background-color: #222 !important;
+    border: 1px solid #555 !important;
+    color: #fff !important;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    border: none !important;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 4px;
+}
+.select2-dropdown {
+    background-color: #222 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
+}
+.select2-results__option--highlighted {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+.imagen-item {
+    background-color: #1e1e1e;
+    border: 1px solid #444;
+}
+.imagen-item img {
+    border: 2px solid #555;
+}
+.imagen-item img:hover {
+    border-color: #0d6efd;
+}
+
+.custom-file-upload {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-file-upload input[type="file"] {
+    display: none;
+}
+
+.custom-file-upload .btn {
+    cursor: pointer;
+    background-color: #0d6efd;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.custom-file-upload .btn:hover {
+    background-color: #0b5ed7;
+}
+
+#file-count {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+</style>
+{% endblock %}

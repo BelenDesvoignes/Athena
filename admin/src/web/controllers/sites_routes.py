@@ -163,7 +163,6 @@ def new():
             )
             db.session.add(sitio)
             db.session.flush()  # Para tener sitio.id antes de commit
-            print(f"[DEBUG] Sitio creado en memoria con ID temporal: {sitio.id}")
 
             # --- Manejo de imágenes ---
             minio_client = Minio(
@@ -174,10 +173,8 @@ def new():
             )
 
             imagenes = request.files.getlist("imagenes")
-            portada_form = request.form.getlist("portada")
+            portada_form = request.form.getlist("portada")  # Índice de portada enviado
             portada_idx = int(portada_form[0]) if portada_form else 0
-
-            print(f"[DEBUG] Archivos recibidos: {[f.filename for f in imagenes]}")
 
             if imagenes:
                 if len(imagenes) > 10:
@@ -202,7 +199,6 @@ def new():
 
                     ext = file.filename.rsplit(".", 1)[1].lower()
                     filename = f"{uuid.uuid4().hex}.{ext}"
-                    print(f"[DEBUG] Subiendo archivo {file.filename} como {filename}, tamaño {size} bytes")
 
                     minio_client.put_object(
                         bucket_name=current_app.config["MINIO_BUCKET"],
