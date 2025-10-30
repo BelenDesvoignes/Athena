@@ -16,6 +16,7 @@ from src.web.handlers.maintenance import maintenance_check
 from src.web.controllers.review_routes import reviews_bp
 
 from src.web.controllers.feature_flags_routes import feature_flags_bp
+from src.web.api.api import api_bp
 
 
 
@@ -53,6 +54,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(feature_flags_bp)
     app.register_blueprint(bp_sitios, url_prefix="/sitios")
     app.register_blueprint(reviews_bp, url_prefix="/reviews")
+    app.register_blueprint(api_bp)
     #rutas principales 
     @app.route("/")
     def index():
