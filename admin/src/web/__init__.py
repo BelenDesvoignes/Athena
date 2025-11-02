@@ -17,7 +17,7 @@ from src.web.controllers.review_routes import reviews_bp
 
 from src.web.controllers.feature_flags_routes import feature_flags_bp
 from src.web.api.api import api_bp
-
+from flask_cors import CORS
 
 
 def create_app(env="development", static_folder="../../static"):
@@ -28,7 +28,7 @@ def create_app(env="development", static_folder="../../static"):
 
     #inicializar la session
     Session(app) 
-
+    CORS (app)
     db.init_app(app)
     
     with app.app_context():

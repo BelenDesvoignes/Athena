@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 # Endpoint de prueba para sitios
-@api_bp.get("/sites")
+@api_bp.get("/sites/")
 def get_sites():
     # Esto normalmente vendría de tu base de datos
     sitios = [
