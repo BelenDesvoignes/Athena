@@ -11,10 +11,14 @@ api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 # Endpoint de prueba para sitios
 @api_bp.get("/sites/")
 def get_sites():
-    # 1. Preparar la consulta base (solo sitios visibles)
+
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int) # 10 como default
+
+    #  Preparar la consulta base (solo sitios visibles)
     query = db.session.query(Sitio).filter(Sitio.visible == True)
 
-    # 2. Manejo de Búsqueda por Texto (Aplica sobre nombre y descripción breve)
+    # Manejo de Búsqueda por Texto (Aplica sobre nombre y descripción breve)
     search_term = request.args.get('search')
     if search_term:
         search_like = f"%{search_term}%"
@@ -24,7 +28,7 @@ def get_sites():
             Sitio.descripcion_breve.ilike(search_like)
         ))
 
-    # 3. Manejo de Filtros
+    #  Manejo de Filtros
     ciudad = request.args.get('city')
     provincia = request.args.get('province')
     estado = request.args.get('state') # Estado de conservación
@@ -36,7 +40,7 @@ def get_sites():
     if estado:
         query = query.filter(Sitio.estado_conservacion == estado)
         
-    # 4. Manejo de Tags (Filtro por multiselección)
+    # Manejo de Tags (Filtro por multiselección)
     tags_param = request.args.get('tags')
     if tags_param:
         # Convierte los IDs de tags separados por coma a una lista de enteros
@@ -45,17 +49,16 @@ def get_sites():
             # Hace un JOIN y filtra los sitios que contienen CUALQUIERA de los IDs
             query = query.join(Sitio.tags).filter(Tag.id.in_(tag_ids))
             
-    # 5. Manejo de Ordenamiento
+    #  Manejo de Ordenamiento
     # 'registrado' por defecto, para cumplir el requisito de 'fecha de registro'
     order_by = request.args.get('order_by', 'registrado') 
-    order_direction = request.args.get('order_dir', 'desc') # Por defecto: descendente (más reciente)
+    order_direction = request.args.get('order', 'desc') # Por defecto: descendente (más reciente)
 
     sort_column = None
     if order_by == 'nombre':
         sort_column = Sitio.nombre
     elif order_by == 'registrado':
         sort_column = Sitio.registrado
-    # Nota: Se omiten 'mejor rankeados' ya que eliminamos la dependencia de reviews.
 
     # Aplicar la dirección del orden
     if sort_column is not None:
@@ -65,8 +68,7 @@ def get_sites():
             query = query.order_by(desc(sort_column))
 
 
-    # 6. Ejecutar la consulta y formatear la respuesta
-    sitios_data = query.all()
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     data = [
         {
@@ -81,10 +83,15 @@ def get_sites():
             "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]], 
             "image_url": "/img/default.jpg", # URL de imagen de portada (placeholder)
         }
-        for sitio in sitios_data
+        for sitio in pagination.items
     ]
 
-    return jsonify({"data": data, "total": len(data)})
+    return jsonify({
+        "data": data,
+        "total": pagination.total,
+        "pages": pagination.pages,
+        "page": pagination.page,
+        "per_page": pagination.per_page,})
 
 
 #endpoint para obtener provincias unicas (GET /api/provinces)
