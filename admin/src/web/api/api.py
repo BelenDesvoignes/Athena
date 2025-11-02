@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from sqlalchemy import or_, func, desc, asc
+from sqlalchemy import or_, func, desc, asc, distinct
 from src.core.database import db
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag
@@ -78,10 +78,39 @@ def get_sites():
             "state_of_conservation": sitio.estado_conservacion,
             "registered_date": sitio.registrado.strftime('%Y-%m-%d'), 
             # Incluir tags asociados (mostrar 5 máximo, como pide la consigna)
-            "tags": [{"id": t.id, "name": t.name} for t in sitio.tags[:5]], 
+            "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]], 
             "image_url": "/img/default.jpg", # URL de imagen de portada (placeholder)
         }
         for sitio in sitios_data
     ]
 
     return jsonify({"data": data, "total": len(data)})
+
+
+#endpoint para obtener provincias unicas (GET /api/provinces)
+@api_bp.get("/provinces")
+def get_provinces():
+    # Consulta a la DB para obtener una lista de todas las provincias
+    # únicas donde hay sitios visibles
+    provinces = (
+        db.session.query(distinct(Sitio.provincia))
+        .filter(Sitio.visible == True)
+        .order_by(Sitio.provincia)
+        .all()
+    )
+    # Formatea la respuesta como una lista simple de strings
+    data = [p[0] for p in provinces]
+    
+    return jsonify(data)
+
+
+#endpoint para obtener todos los Tags (GET /api/tags)
+@api_bp.get("/tags")
+def get_all_tags():
+    # Consulta a la DB para obtener todos los tags
+    tags = db.session.query(Tag).order_by(Tag.nombre).all()
+    
+    # Formatea a la estructura {id, name}
+    data = [{"id": t.id, "name": t.nombre} for t in tags]
+    
+    return jsonify(data)
