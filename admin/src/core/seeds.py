@@ -62,89 +62,85 @@ def seed_roles_permissions():
     db.session.commit()
     print("Roles y permisos iniciales creados.")
 
+
+
 def seed_admin_user():
+    
+
     administrador_role = db.session.query(Role).filter_by(name="Admin").first()
     if not administrador_role:
-        raise ValueError(
-            "No se encontró el rol Admin, corre seed_roles_permissions primero."
-        )
-    hashed_password1 = hash_password("admin123")  
+        raise ValueError("No se encontró el rol Admin, corre seed_roles_permissions primero.")
+
     admin_role = db.session.query(Role).filter_by(name="Administrador").first()
     if not admin_role:
-        raise ValueError(
-            "No se encontró el rol System Admin, corre seed_roles_permissions primero."
-        )
-    
+        raise ValueError("No se encontró el rol Administrador, corre seed_roles_permissions primero.")
+
     editor_role = db.session.query(Role).filter_by(name="Editor").first()
     if not editor_role:
-        raise ValueError(
-            "No se encontró el rol Editor, corre seed_roles_permissions primero."
-        )
-    hashed_password2 = hash_password("editor123")  
-
-    hashed_password = hash_password("sysadmin123") 
+        raise ValueError("No se encontró el rol Editor, corre seed_roles_permissions primero.")
 
     moderador_role = db.session.query(Role).filter_by(name="Moderador").first()
     if not moderador_role:
-        raise ValueError(
-            "No se encontró el rol Moderador, corre seed_roles_permissions primero."
-        )
-    hashed_password3 = hash_password("moderador123")  
+        raise ValueError("No se encontró el rol Moderador, corre seed_roles_permissions primero.")
 
+    users_data = [
+        {
+            "nombre": "Admin",
+            "apellido": "Principal",
+            "email": "sysadmin@example.com",
+            "password": hash_password("sysadmin123").decode("utf-8"),
+            "role_id": admin_role.id,
+            "system_admin": True,
+        },
+        {
+            "nombre": "Administrador",
+            "apellido": "Principal",
+            "email": "admin@example.com",
+            "password": hash_password("admin123").decode("utf-8"),
+            "role_id": administrador_role.id,
+            "system_admin": False,
+        },
+        {
+            "nombre": "Editor",
+            "apellido": "Principal",
+            "email": "usuarioEditor@gmail.com",
+            "password": hash_password("editor123").decode("utf-8"),
+            "role_id": editor_role.id,
+            "system_admin": False,
+        },
+        {
+            "nombre": "Moderador",
+            "apellido": "Principal",
+            "email": "moderador@gmail.com",
+            "password": hash_password("moderador123").decode("utf-8"),
+            "role_id": moderador_role.id,
+            "system_admin": False,
+        },
+    ]
 
-    admin_user = User(
-        nombre="Admin", 
-        apellido="Principal",
-        email="sysadmin@example.com",
-        password=hashed_password.decode("utf-8"),
-        role_id=admin_role.id,
-        system_admin=True,
-        enabled=True,
-        eliminado=False,
-    )
+    for data in users_data:
+        existing = db.session.query(User).filter_by(email=data["email"]).first()
+        if not existing:
+            user = User(
+                nombre=data["nombre"],
+                apellido=data["apellido"],
+                email=data["email"],
+                password=data["password"],
+                role_id=data["role_id"],
+                system_admin=data["system_admin"],
+                enabled=True,
+                eliminado=False,
+            )
+            db.session.add(user)
+            print(f"✅ Usuario creado: {data['email']}")
+        else:
+            print(f"⚠️ Usuario ya existe, omitido: {data['email']}")
 
-    administrador_user = User(
-        nombre="Administrador", 
-        apellido="Principal",
-        email="admin@example.com",
-        password=hashed_password1.decode("utf-8"),
-        role_id=administrador_role.id,
-        system_admin=False,
-        enabled=True,
-        eliminado=False,
-    )
-
-    editor_user = User(
-        nombre="Editor",
-        apellido="Principal",
-        email="usuarioEditor@gmail.com",
-        password=hashed_password2.decode("utf-8"),
-        role_id=editor_role.id,
-        system_admin=False, 
-        enabled=True,
-        eliminado=False,
-    )
-
-    moderador_user = User(
-        nombre="Moderador",
-        apellido="Principal",
-        email="moderador@gmail.com",
-        password=hashed_password3.decode("utf-8"),
-        role_id=moderador_role.id,      
-        system_admin=False,
-        enabled=True,
-        eliminado=False,        
-    )
-
-    db.session.add_all([admin_user, administrador_user, editor_user, moderador_user])
     db.session.commit()
-    print("Usuario System Admin inicial creado: sysadmin@example.com / sysadmin123")
-    print("Usuario Administrador inicial creado: admin@example.com / admin123")
-    print("Usuario Editor inicial creado: usuarioEditor@gmail.com / editor123")
-    print("Usuario Moderador inicial creado: moderador@gmail.com / moderador123")
+
 
 def seed_sitios():
-    # 🔑 CORRECCIÓN: SOLO SEMBRAR SI NO HAY SITIOS
+
     if db.session.query(Sitio).count() > 0:
         print("Sitios ya existentes. Omitiendo siembra.")
         return
