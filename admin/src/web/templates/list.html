@@ -2,145 +2,155 @@
 
 {% block content %}
 
-{% if 'user_moderation' in current_user_permissions() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="container mt-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
-  <div class="container mt-5">
-    <h2>Listado de Reseñas</h2>
+<div class="container mt-5">
+    <h2>Listado de Usuarios</h2>
 
     <form method="GET" class="row g-3 mb-3">
-      <div class="col-auto">
-        <select name="status" class="form-select">
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE" {% if request.args.get('status') == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
-          <option value="APROBADA" {% if request.args.get('status') == 'APROBADA' %}selected{% endif %}>Aprobada</option>
-          <option value="RECHAZADA" {% if request.args.get('status') == 'RECHAZADA' %}selected{% endif %}>Rechazada</option>
-        </select>
-      </div>
+        <div class="col-auto">
+            <input type="text" name="search_email" class="form-control" placeholder="Buscar por email" value="{{ request.args.get('search_email','') }}">
+        </div>
+        <div class="col-auto">
+            <select name="search_enabled" class="form-select">
+                <option value="">Todos</option>
+                <option value="True" {% if request.args.get('search_enabled') == 'True' %}selected{% endif %}>Activo</option>
+                <option value="False" {% if request.args.get('search_enabled') == 'False' %}selected{% endif %}>Bloqueado</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="sort_by" class="form-select">
+                <option value="">Orden por defecto</option>
+                <option value="created" {% if request.args.get('sort_by') == 'created' %}selected{% endif %}>Fecha de creación</option>
+                <option value="modified" {% if request.args.get('sort_by') == 'modified' %}selected{% endif %}>Fecha de modificación</option>
+            </select>
+        </div>
 
-      <div class="col-auto">
-        <input type="number" name="rating_min" class="form-control" placeholder="Calif. mínima"
-               value="{{ request.args.get('rating_min','') }}">
-      </div>
-
-      <div class="col-auto">
-        <input type="number" name="rating_max" class="form-control" placeholder="Calif. máxima"
-               value="{{ request.args.get('rating_max','') }}">
-      </div>
-
-      <div class="col-auto">
-        <input type="text" name="user_search" class="form-control" placeholder="Buscar por email"
-               value="{{ request.args.get('user_search','') }}">
-      </div>
-
-      <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Filtrar</button>
-      </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
     </form>
 
     <table class="table table-striped table-hover mt-3">
-      <thead class="table-dark">
-        <tr>
-          <th>Sitio</th>
-          <th>Usuario</th>
-          <th>Calificación</th>
-          <th>Contenido</th>
-          <th>Estado</th>
-          <th>Fecha</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for review in pagination.items %}
-        <tr>
-          <td>{{ review.site.name }}</td>
-          <td>{{ review.user.email }}</td>
-          <td>{{ review.rating }}</td>
-          <td>{{ review.content | truncate(70) }}</td>
-          <td>
-            {% if review.status == 'PENDIENTE' %}
-              <span class="badge bg-warning text-dark">Pendiente</span>
-            {% elif review.status == 'APROBADA' %}
-              <span class="badge bg-success">Aprobada</span>
-            {% else %}
-              <span class="badge bg-danger">Rechazada</span>
-            {% endif %}
-          </td>
-          <td>{{ review.created_at.strftime("%d/%m/%Y") }}</td>
-          <td>
-            <div class="btn-group">
-              <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                Acciones
-              </button>
-              <ul class="dropdown-menu">
-                {% if review.status == 'PENDIENTE' %}
-                <li>
-                  <form method="POST" action="{{ url_for('reviews.review_approve', review_id=review.id) }}" style="display:inline;">
-                    <button type="submit" class="dropdown-item text-success">Aprobar</button>
-                  </form>
-                </li>
-                <li>
-                  <form method="POST" action="{{ url_for('reviews.review_reject', review_id=review.id) }}" style="display:inline;">
-                    <input type="hidden" name="reason" value="Rechazada por contenido inapropiado">
-                    <button type="submit" class="dropdown-item text-warning">Rechazar</button>
-                  </form>
-                </li>
+        <thead class="table-dark">
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+                {% if 'user_edit' in current_user_permissions() or 'user_delete' in current_user_permissions() or 'user_show' in current_user_permissions() %}
+                <th>Acciones</th>
                 {% endif %}
-                <li>
-                  <form method="POST" action="{{ url_for('reviews.review_delete', review_id=review.id) }}" 
-                        onsubmit="return confirm('¿Seguro que querés eliminar esta reseña?');" style="display:inline;">
-                    <button type="submit" class="dropdown-item text-danger">Eliminar</button>
-                  </form>
-                </li>
-              </ul>
-            </div>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="7" class="text-center text-muted">No hay reseñas que coincidan con los filtros</td>
-        </tr>
-        {% endfor %}
-      </tbody>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in pagination.items %} 
+            <tr>
+                <td>{{ user.nombre }}</td>
+                <td>{{ user.apellido }}</td>
+                <td>{{ user.email }}</td>
+
+                {% if 'user_edit' in current_user_permissions() or 'user_delete' in current_user_permissions() or 'user_show' in current_user_permissions() %}
+                <td>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            Acciones
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% if 'user_update' in current_user_permissions() %}
+                            <li>
+                                <a class="dropdown-item text-warning" href="{{ url_for('user_admin.edit', user_id=user.id) }}">
+                                    Editar
+                                </a>
+                            </li>
+                            <li>
+                                <form method="POST" action="{{ url_for('user_admin.toggle_enabled', user_id=user.id) }}" style="display:inline;">
+                                    <button type="submit" class="dropdown-item {% if user.enabled %}text-danger{% else %}text-success{% endif %}">
+                                    {% if user.enabled %}Bloquear{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                            {% if 'user_destroy' in current_user_permissions() %}
+                            <li>
+                                <form method="POST" action="{{ url_for('user_admin.delete', user_id=user.id) }}" 
+                                      onsubmit="return confirm('¿Estás seguro de que quieres eliminar a {{ user.nombre }}?');" style="display:inline;">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                            {% if 'user_show' in current_user_permissions() %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-info" type="button" data-bs-toggle="collapse" data-bs-target="#details-{{ user.id }}" aria-expanded="false">
+                                    Ver detalle
+                                </button>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+
+            {% if 'user_show' in current_user_permissions() %}
+            <tr class="collapse" id="details-{{ user.id }}">
+                <td colspan="4">
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Bloqueado:</strong> {{ 'Sí' if not user.enabled else 'No' }}</li>
+                        <li class="list-group-item"><strong>Permisos:</strong> {% for perm in user.role.permissions %}{{ perm.name }}{% if not loop.last %}, {% endif %}{% endfor %}</li>
+                        <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+                        <li class="list-group-item"><strong>Nombre:</strong> {{ user.nombre }}</li>
+                        <li class="list-group-item"><strong>Apellido:</strong> {{ user.apellido }}</li>
+                        <li class="list-group-item">
+                            <strong>Fecha de creación:</strong>
+                                {{ user.fecha_creacion.strftime("%d/%m/%Y %H:%M") if user.fecha_creacion else "No disponible" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Última modificación:</strong>
+                                {{ user.fecha_actualizacion.strftime("%d/%m/%Y %H:%M") if user.fecha_actualizacion else "No disponible" }}
+                        </li>
+                    </ul>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
     </table>
 
-    <!-- PAGINACIÓN -->
     <nav aria-label="Page navigation">
-      <ul class="pagination">
-        {% for i in range(1, pagination.pages + 1) %}
-        <li class="page-item {% if i == pagination.page %}active{% endif %}">
-          <a class="page-link" href="{{ url_for('reviews.reviews_list', page=i) }}">{{ i }}</a>
-        </li>
-        {% endfor %}
-      </ul>
+        <ul class="pagination">
+            {% for i in range(1, pagination.pages + 1) %}
+            <li class="page-item {% if i == pagination.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('user_admin.list', page=i) }}">{{ i }}</a>
+            </li>
+            {% endfor %}
+        </ul>
     </nav>
-  </div>
+</div>
 
-{% else %}
-  <div class="container mt-5 text-center">
-    <h4 class="text-danger">🚫 No tenés permisos para moderar reseñas.</h4>
-  </div>
-{% endif %}
 
 <style>
-  table tbody td {
-      color: #ccc !important;
-  }
-  .badge {
-      font-size: 0.85rem;
-  }
+    table tbody td {
+        color: #ccc !important;
+    }
+
+    table tbody tr.collapse td ul.list-group li {
+        color: #ccc !important;
+        background-color: rgba(33,37,41,0.5);
+    }
 </style>
 
 {% endblock %}

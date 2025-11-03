@@ -4,7 +4,7 @@ from src.core.models.user import User
 from src.core.bcrypt import check_password, hash_password
 from datetime import datetime, timezone
 import re
-
+from sqlalchemy.orm import selectinload
 from src.core.bcrypt import check_password, hash_password
 from src.core.models.role_permission import Role
 
@@ -230,6 +230,10 @@ def list_users(page, per_page, search_email=None, search_enabled=None, sort_by=N
         query = query.order_by(User.fecha_actualizacion.desc())
     else:
         query = query.order_by(User.id.asc())  
+
+    query = query.options(
+        selectinload(User.role).selectinload(Role.permissions)
+    )
 
    
     total = query.count()
