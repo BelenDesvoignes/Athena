@@ -20,6 +20,12 @@ bcrypt = "^5.0.0"
 geoalchemy = "^0.7.2"
 shapely = "^2.1.2"
 geoalchemy2 = "^0.18.0"
+flask-cors = "^4.0.0"
+
+[[tool.poetry.source]]
+name = "pypi-http"
+url = "http://pypi.python.org/simple/"
+priority = "supplemental"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

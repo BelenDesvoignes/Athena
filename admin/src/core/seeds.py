@@ -143,9 +143,12 @@ def seed_admin_user():
     print("Usuario Editor inicial creado: usuarioEditor@gmail.com / editor123")
     print("Usuario Moderador inicial creado: moderador@gmail.com / moderador123")
 
-
-
 def seed_sitios():
+    # 🔑 CORRECCIÓN: SOLO SEMBRAR SI NO HAY SITIOS
+    if db.session.query(Sitio).count() > 0:
+        print("Sitios ya existentes. Omitiendo siembra.")
+        return
+
     sitios = [
         Sitio(
             nombre="Cabildo de Buenos Aires",
@@ -182,6 +185,43 @@ def seed_sitios():
             categoria="Museo",
             visible=True,
             ubicacion=WKTElement('Point(-65.2226 -26.8241)', srid=4326),
+        ),
+        # --- NUEVOS SITIOS AGREGADOS ---
+        Sitio(
+            nombre="Quebrada de Humahuaca",
+            descripcion_breve="Paisaje natural y cultural en el Noroeste argentino.",
+            descripcion_completa="Es un valle de montaña de 155 km de extensión, declarado Patrimonio de la Humanidad por la UNESCO.",
+            ciudad="Humahuaca",
+            provincia="Jujuy",
+            estado_conservacion="Excelente",
+            inauguracion=1, # <--- CORREGIDO: Asignamos 1 para sitios naturales
+            categoria="Patrimonio Natural",
+            visible=True,
+            ubicacion=WKTElement('Point(-65.35 -23.35)', srid=4326),
+        ),
+        Sitio(
+            nombre="Glaciar Perito Moreno",
+            descripcion_breve="Impresionante masa de hielo en la Patagonia.",
+            descripcion_completa="Ubicado en el Parque Nacional Los Glaciares, famoso por sus rupturas cíclicas.",
+            ciudad="El Calafate",
+            provincia="Santa Cruz",
+            estado_conservacion="Excelente",
+            inauguracion=1, # <--- CORREGIDO: Asignamos 1 para sitios naturales
+            categoria="Patrimonio Natural",
+            visible=True,
+            ubicacion=WKTElement('Point(-73.04 -50.48)', srid=4326),
+        ),
+        Sitio(
+            nombre="Manzana Jesuítica",
+            descripcion_breve="Conjunto arquitectónico jesuita en Córdoba.",
+            descripcion_completa="Declarado Patrimonio de la Humanidad, incluye la Iglesia de la Compañía de Jesús y la Universidad Nacional de Córdoba.",
+            ciudad="Córdoba",
+            provincia="Córdoba",
+            estado_conservacion="Bueno",
+            inauguracion=1600,
+            categoria="Patrimonio Mundial",
+            visible=True,
+            ubicacion=WKTElement('Point(-64.1873 -31.4173)', srid=4326),
         ),
     ]
     db.session.add_all(sitios)
