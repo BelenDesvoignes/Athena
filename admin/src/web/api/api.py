@@ -7,8 +7,8 @@ from src.core.models.review import Review, ReviewStatus
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
-
-@api_bp.get("/sites")
+# Endpoint de prueba para sitios
+@api_bp.get("/sites/")
 def get_sites():
     # Usamos db.session.query() en lugar de db_session.query()
     sitios = (

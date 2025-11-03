@@ -20,7 +20,6 @@ from src.web.api.api import api_bp
 from flask_cors import CORS
 
 
-
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder,template_folder="templates")
 
@@ -29,8 +28,7 @@ def create_app(env="development", static_folder="../../static"):
 
     #inicializar la session
     Session(app) 
-    CORS(app)
-
+    CORS (app)
     db.init_app(app)
     
     with app.app_context():
