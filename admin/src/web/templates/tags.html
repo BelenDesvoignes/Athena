@@ -77,7 +77,7 @@
                         <!--SECCION EDITAR-->
                         <form id="addTag" method="post" action="{{ url_for('tag.edit_tag', tag_id=tag.id) }}">
                             <article class="mb-3 d-flex">
-                                <input type="text" class="form-control me-2" id="nombre" name="nombre" style="height: 35px">
+                                <input type="text" class="form-control me-2" id="nombre" name="nombre" style="height: 35px" placeholder="Ingrese el nombre nuevo del tag...">
                                 <button id="edit" type="submit" class="btn btn-warning" style="height: 35px" >Editar</button>
                             </article>
                         </form>
@@ -119,6 +119,10 @@
     table tbody tr.collapse td ul.list-group li {
         color: #ccc !important;
         background-color: rgba(33,37,41,0.5); /* para que contraste con fondo negro */
+    }
+
+    input::placeholder {
+        color: rgb(220, 220, 220) !important;
     }
 </style>
 
