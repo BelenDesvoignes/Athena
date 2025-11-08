@@ -1,7 +1,70 @@
+<script setup>
+import { ref, computed } from 'vue'; 
+import { useRouter } from 'vue-router';
+import FeaturedSection from '@/components/FeaturedSection.vue';
+import { GoogleLogin } from 'vue3-google-login'
+import { jwtDecode } from 'jwt-decode';
+
+const router = useRouter();
+
+const searchText = ref(''); 
+
+const performSearch = () => {
+  if (searchText.value.trim()) {
+    // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
+    router.push({ 
+      path: '/sitios', 
+      query: { name: searchText.value } 
+    });
+  }
+};
+
+const userProfile = ref(null)
+ 
+const callback = (response) => {
+  console.log("Handle the response", response)
+ 
+  // Check if we received a credential (JWT)
+  if (response?.credential) {
+    try {
+      // Decode the JWT to extract profile info
+      const decoded = jwtDecode(response.credential)
+      console.log('Decoded JWT:', decoded)
+ 
+      // Extract user profile information from decoded JWT
+      userProfile.value = {
+        name: decoded.name,
+        email: decoded.email,
+        imageUrl: decoded.picture
+      }
+
+    } catch (error) {
+      console.error('Failed to decode JWT:', error)
+    }
+  }
+}
+
+</script>
+
 <template>
   <div class="home-portal">
     
     <header class="hero-section">
+      <div>
+        <GoogleLogin :callback="callback"/>
+  
+        <div v-if="userProfile">
+          <h3>Bienvenido/a, {{ userProfile.name }}!</h3>
+          <img
+            :src="userProfile.imageUrl"
+            alt="Foto de perfil"
+            width="75"
+            style="border-radius: 50%; margin-top: 10px;"
+          />
+        </div>
+
+      </div>
+
       <h1>Athena</h1> 
       <div class="search-bar">
         <input 
@@ -47,31 +110,6 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'; 
-import { useRouter } from 'vue-router';
-import FeaturedSection from '@/components/FeaturedSection.vue';
-// 🛑 LÍNEAS ELIMINADAS: La importación de useAuthStore causa la pantalla en blanco.
-// import { useAuthStore } from '../stores/auth'; 
-
-const router = useRouter();
-
-const searchText = ref('');
-
-// 🛑 LÍNEAS ELIMINADAS: La inicialización de authStore causa la pantalla en blanco.
-// const authStore = useAuthStore(); 
-
-
-const performSearch = () => {
-  if (searchText.value.trim()) {
-    // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
-    router.push({ 
-      path: '/sitios', 
-      query: { name: searchText.value } 
-    });
-  }
-};
-</script>
 
 <style scoped>
 
@@ -144,5 +182,34 @@ const performSearch = () => {
 
 .main-content {
   margin-top: 40px;
+}
+
+.google-login {
+  margin-top: 25px;
+}
+
+.google-login button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #555;
+  background-color: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.google-login button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.google-login img {
+  width: 20px;
+  height: 20px;
 }
 </style>
