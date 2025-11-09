@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'; 
+import { ref, computed, onMounted } from 'vue'; 
 import { useRouter } from 'vue-router';
 import FeaturedSection from '@/components/FeaturedSection.vue';
-import { GoogleLogin } from 'vue3-google-login'
 import { jwtDecode } from 'jwt-decode';
 
 const router = useRouter();
@@ -19,52 +18,13 @@ const performSearch = () => {
   }
 };
 
-const userProfile = ref(null)
- 
-const callback = (response) => {
-  console.log("Handle the response", response)
- 
-  // Check if we received a credential (JWT)
-  if (response?.credential) {
-    try {
-      // Decode the JWT to extract profile info
-      const decoded = jwtDecode(response.credential)
-      console.log('Decoded JWT:', decoded)
- 
-      // Extract user profile information from decoded JWT
-      userProfile.value = {
-        name: decoded.name,
-        email: decoded.email,
-        imageUrl: decoded.picture
-      }
-
-    } catch (error) {
-      console.error('Failed to decode JWT:', error)
-    }
-  }
-}
-
 </script>
 
 <template>
   <div class="home-portal">
     
+    
     <header class="hero-section">
-      <div>
-        <GoogleLogin :callback="callback"/>
-  
-        <div v-if="userProfile">
-          <h3>Bienvenido/a, {{ userProfile.name }}!</h3>
-          <img
-            :src="userProfile.imageUrl"
-            alt="Foto de perfil"
-            width="75"
-            style="border-radius: 50%; margin-top: 10px;"
-          />
-        </div>
-
-      </div>
-
       <h1>Athena</h1> 
       <div class="search-bar">
         <input 
@@ -211,5 +171,26 @@ const callback = (response) => {
 .google-login img {
   width: 20px;
   height: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 15px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #555;
+  background-color: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 5px;
+}
+
+.btn:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
 }
 </style>
