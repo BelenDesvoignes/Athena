@@ -4,7 +4,7 @@ from src.core.database import db
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag
 from src.core.models.tag import sitios_tags
-
+from src.core.models.review import Review 
 
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
@@ -15,8 +15,20 @@ def get_sites():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int) # 10 como default
 
-    #  Preparar la consulta base (solo sitios visibles)
-    query = db.session.query(Sitio).filter(Sitio.visible == True)
+    #calculo de calificacion promedio solo resenas aprobadas 
+    # coalesce(expr, 0) asegura que sitios sin reseñas tengan rating 0, no NULL.
+    avg_rating = func.coalesce(
+        func.avg(Review.rating).filter(Review.status == 'APROBADA'), 
+        0
+    ).label('calificacion_promedio')
+
+    # Query base: Selecciona el Sitio y el promedio calculado.
+    query = db.session.query(Sitio, avg_rating).filter(Sitio.visible == True)
+    
+    # LEFT JOIN para incluir sitios que NO tienen reseñas
+    # y luego agrupamos por Sitio para calcular el promedio por ID.
+    query = query.outerjoin(Review, Sitio.id == Review.site_id).group_by(Sitio.id)
+
 
     # Manejo de Búsqueda por Texto (Aplica sobre nombre y descripción breve)
     search_term = request.args.get('search')
@@ -59,6 +71,8 @@ def get_sites():
         sort_column = Sitio.nombre
     elif order_by == 'registrado':
         sort_column = Sitio.registrado
+    elif order_by == 'calificacion':
+        sort_column = avg_rating
 
     # Aplicar la dirección del orden
     if sort_column is not None:
@@ -70,21 +84,22 @@ def get_sites():
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    data = [
-        {
+    data = []
+    for sitio, promedio_rating in pagination.items:
+        data.append({
             "id": sitio.id,
             "name": sitio.nombre,
             "short_description": sitio.descripcion_breve,
             "city": sitio.ciudad,
             "province": sitio.provincia,
             "state_of_conservation": sitio.estado_conservacion,
-            "registered_date": sitio.registrado.strftime('%Y-%m-%d'), 
+            "registered_date": sitio.registrado.strftime('%Y-%m-%d'),
+            "average_rating": round(promedio_rating, 2),
             # Incluir tags asociados (mostrar 5 máximo, como pide la consigna)
             "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]], 
             "image_url": "/img/default.jpg", # URL de imagen de portada (placeholder)
-        }
-        for sitio in pagination.items
-    ]
+        })
+    
 
     return jsonify({
         "data": data,
