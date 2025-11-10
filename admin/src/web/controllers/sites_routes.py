@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import csv
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, get_flashed_messages
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, or_
@@ -180,6 +180,34 @@ def new():
 
 """Detalle de un sitio turístico"""
 
+def get_modification_history(sitio_id, usuario_nombre="", tipo_accion="", desde="", hasta="", page=1):
+    """
+    Obtiene el historial de modificaciones de un sitio aplicando filtros opcionales.
+
+    Args:
+        sitio_id (int)
+        usuario_nombre (str)
+        tipo_accion (str)
+        desde (str, formato 'YYYY-MM-DD')
+        hasta (str, formato 'YYYY-MM-DD')
+        page (int)
+
+    Returns:
+        Pagination: objeto de paginación con los resultados.
+    """
+    query = db.session.query(ModificationHistory).filter_by(sitio_id=sitio_id)
+
+    if usuario_nombre:
+        query = query.join(User).filter(User.nombre.ilike(f"%{usuario_nombre}%"))
+    if tipo_accion:
+        query = query.filter(ModificationHistory.tipo_accion == tipo_accion)
+    if desde:
+        query = query.filter(ModificationHistory.fecha_modificacion >= desde)
+    if hasta:
+        query = query.filter(ModificationHistory.fecha_modificacion < hasta + " 23:59:59")
+
+    query = query.order_by(ModificationHistory.fecha_modificacion.desc())
+    return query.paginate(page=page, per_page=25)
 
 @bp_sitios.route("/<int:id>/detalle", methods=["GET"])
 @maintenance_protected("admin")
@@ -187,13 +215,14 @@ def new():
 @permission_required("site_detail")
 def detail(id):
     """
-    Muestra el detalle de un sitio y su historial de modificaciones paginado.
+    Muestra el detalle de un sitio y su historial de modificaciones.
 
     Args:
-        id (int): ID del sitio.
+        id (int): ID del sitio a visualizar.
 
     Returns:
-        Renderiza 'site_detail.html' con sitio, usuario actual, coordenadas e historial.
+        Response: Plantilla renderizada con los datos del sitio, sus coordenadas
+        y el historial (filtrado o completo, según la validación).
     """
     sitio = db.session.get(Sitio, id)
     if not sitio:
@@ -202,15 +231,59 @@ def detail(id):
     coordenadas = extract_coords(sitio.ubicacion)
     current_user = get_current_user()
 
-    # Obtenemos historial filtrado y paginado
-    historial = list_modifications(id)
+    desde = request.args.get("desde", "").strip()
+    hasta = request.args.get("hasta", "").strip()
+    usuario_nombre = request.args.get("usuario", "").strip()
+    tipo_accion = request.args.get("tipo_accion", "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    hoy = datetime.now().date()
+    errores = False
+    desde_dt = None
+    hasta_dt = None
+
+    if desde:
+        try:
+            desde_dt = datetime.strptime(desde, "%Y-%m-%d").date()
+            if desde_dt > hoy:
+                flash("La fecha 'Desde' no puede ser mayor a la fecha actual.", "warning")
+                errores = True
+        except ValueError:
+            flash("Formato de fecha 'Desde' inválido. Use AAAA-MM-DD.", "warning")
+            errores = True
+
+    if hasta:
+        try:
+            hasta_dt = datetime.strptime(hasta, "%Y-%m-%d").date()
+            if hasta_dt > hoy:
+                flash("La fecha 'Hasta' no puede ser mayor a la fecha actual.", "warning")
+                errores = True
+        except ValueError:
+            flash("Formato de fecha 'Hasta' inválido. Use AAAA-MM-DD.", "warning")
+            errores = True
+
+    if desde_dt and hasta_dt and desde_dt > hasta_dt:
+        flash("La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.", "warning")
+        errores = True
+
+    if not errores:
+        historial = get_modification_history(
+            sitio_id=id,
+            usuario_nombre=usuario_nombre,
+            tipo_accion=tipo_accion,
+            desde=desde,
+            hasta=hasta,
+            page=page
+        )
+    else:
+        historial = get_modification_history(sitio_id=id, page=page)
 
     return render_template(
         "site_detail.html",
         sitio=sitio,
         current_user=current_user,
         coordenadas=coordenadas,
-        historial=historial
+        historial=historial,
     )
 
 """Logica para editar un sitio turístico existente"""
@@ -420,45 +493,3 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
     db.session.add(registro)
     db.session.commit()
     
-   
-@bp_sitios.route("/<int:id>/modifications", methods=["GET"])
-@login_required
-@maintenance_protected("admin")
-def list_modifications(sitio_id):
-    """
-    Obtiene el historial de modificaciones de un sitio con filtros y paginación.
-
-    Args:
-        sitio_id (int): ID del sitio histórico cuyos registros se desean consultar.
-
-    Returns:
-        Pagination: objeto paginado con los registros que cumplen los filtros.
-    """
-    page = request.args.get("page", 1, type=int)
-    usuario_nombre = request.args.get("usuario", "").strip()
-    tipo_accion = request.args.get("tipo_accion", "").strip()
-    desde = request.args.get("desde", "").strip()
-    hasta = request.args.get("hasta", "").strip()
-
-    query = db.session.query(ModificationHistory).filter_by(sitio_id=sitio_id)
-
-    if usuario_nombre:
-        query = query.join(User).filter(User.nombre.ilike(f"%{usuario_nombre}%"))
-    if tipo_accion:
-        query = query.filter(ModificationHistory.tipo_accion == tipo_accion)
-    if desde:
-        try:
-            desde_dt = datetime.strptime(desde, "%Y-%m-%d")
-            query = query.filter(ModificationHistory.fecha_modificacion >= desde_dt)
-        except ValueError:
-            pass
-    if hasta:
-        try:
-            hasta_dt = datetime.strptime(hasta, "%Y-%m-%d") + timedelta(days=1)
-            query = query.filter(ModificationHistory.fecha_modificacion < hasta_dt)
-        except ValueError:
-            pass
-
-    query = query.order_by(ModificationHistory.fecha_modificacion.desc())
-    historial = query.paginate(page=page, per_page=25)
-    return historial

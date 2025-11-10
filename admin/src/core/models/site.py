@@ -8,7 +8,6 @@ from .tag import sitios_tags
 from src.core.database import Base
 
 
-
 class Sitio(Base):
     __tablename__ = "sitios"
     """Modelo para representar un sitio turístico."""
@@ -34,6 +33,9 @@ class Sitio(Base):
     tags: Mapped[List["Tag"]] = relationship(
         "Tag", secondary=sitios_tags, back_populates="sitios", lazy="selectin"
     )
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="site", lazy="selectin")
+
+
 
     def __repr__(self):
         return f"<Sitio(id={self.id}, nombre={self.nombre})>"

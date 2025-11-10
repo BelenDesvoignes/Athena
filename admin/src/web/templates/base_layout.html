@@ -119,8 +119,9 @@
                     {% if not feature_flags.admin_maintenance_mode %}
                         <li class="nav-item"><a class="nav-link text-light" href="{{url_for('sitios.list')}}">Gestión de sitios históricos</a></li>
                         <li class="nav-item"><a class="nav-link text-light" href="#">Validación de propuestas</a></li>
-                        <li class="nav-item"><a class="nav-link text-light" href="#">Moderación de reseñas</a></li>
-
+                            {% if 'user_moderation' in current_user_permissions() %}
+                                <li class="nav-item"><a class="nav-link text-light" href="{{url_for('reviews.reviews_list')}}">Moderación de Reseñas</a></li>
+                            {% endif %}
                             {% if 'user_index' in current_user_permissions() %}
                                 <li class="nav-item"><a class="nav-link text-light" href="{{ url_for('user_admin.list') }}">Lista de Usuarios</a></li>
                             {% endif %}

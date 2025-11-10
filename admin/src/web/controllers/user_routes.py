@@ -217,7 +217,7 @@ def new():
             "apellido": request.form.get("apellido"),
             "email": request.form.get("email"),
             "password": request.form.get("password"),
-            "rol": "Usuario público", 
+            "rol": request.form.get("rol"),
             "activo": True            
         }
         try:
@@ -262,7 +262,8 @@ def edit(user_id):
             "nombre": request.form.get("nombre"),
             "apellido": request.form.get("apellido"),
             "email": request.form.get("email"),
-            "enabled": True if request.form.get("activo") else False
+            "enabled": True if request.form.get("activo") else False,
+            "rol": request.form.get("rol")
         }
 
         password = request.form.get("password")

@@ -35,6 +35,17 @@
             <label for="password" class="form-label">Contraseña</label>
             <input type="password" class="form-control" id="password" name="password" required>
         </div>
+        <div class="mb-3">
+          <label for="rol" class="form-label">Rol</label>
+          <select class="form-select" id="rol" name="rol" required>
+            <option value="" disabled selected>Seleccionar rol</option>
+            <option value="Administrador">Administrador</option>
+            <option value="Moderador">Moderador</option>
+            <option value="Editor">Editor</option>
+            <option value="Usuario público">Usuario público</option>
+          </select>
+        </div>
+
         <button type="submit" class="btn btn-success">Crear usuario</button>
         <a href="{{ url_for('user_admin.list') }}" class="btn btn-secondary">Cancelar</a>
     </form>
