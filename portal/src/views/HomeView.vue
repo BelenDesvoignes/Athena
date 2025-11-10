@@ -1,5 +1,28 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'; 
+import { useRouter } from 'vue-router';
+import FeaturedSection from '@/components/FeaturedSection.vue';
+import { jwtDecode } from 'jwt-decode';
+
+const router = useRouter();
+
+const searchText = ref(''); 
+
+const performSearch = () => {
+  if (searchText.value.trim()) {
+    // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
+    router.push({ 
+      path: '/sitios', 
+      query: { name: searchText.value } 
+    });
+  }
+};
+
+</script>
+
 <template>
   <div class="home-portal">
+    
     
     <header class="hero-section">
       <h1>Athena</h1> 
@@ -47,31 +70,6 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'; 
-import { useRouter } from 'vue-router';
-import FeaturedSection from '@/components/FeaturedSection.vue';
-// 🛑 LÍNEAS ELIMINADAS: La importación de useAuthStore causa la pantalla en blanco.
-// import { useAuthStore } from '../stores/auth'; 
-
-const router = useRouter();
-
-const searchText = ref('');
-
-// 🛑 LÍNEAS ELIMINADAS: La inicialización de authStore causa la pantalla en blanco.
-// const authStore = useAuthStore(); 
-
-
-const performSearch = () => {
-  if (searchText.value.trim()) {
-    // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
-    router.push({ 
-      path: '/sitios', 
-      query: { name: searchText.value } 
-    });
-  }
-};
-</script>
 
 <style scoped>
 
@@ -144,5 +142,55 @@ const performSearch = () => {
 
 .main-content {
   margin-top: 40px;
+}
+
+.google-login {
+  margin-top: 25px;
+}
+
+.google-login button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #555;
+  background-color: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.google-login button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.google-login img {
+  width: 20px;
+  height: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 15px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #555;
+  background-color: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 5px;
+}
+
+.btn:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
 }
 </style>
