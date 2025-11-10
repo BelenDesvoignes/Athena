@@ -30,6 +30,7 @@ class DevelopmentConfig(Config):
     MINIO_SECRET_KEY = "grupo19secret"
     MINIO_SECURE = False    
     MINIO_BUCKET = "grupo19"
+    
     SECRET_KEY = "your_dev_secret_key"
     DB_USER = "postgres"
     DB_PASSWORD = "admin"

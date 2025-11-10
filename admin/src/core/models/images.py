@@ -18,6 +18,7 @@ class Imagen(Base):
     actualizada: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
     sitio: Mapped["Sitio"] = relationship("Sitio", back_populates="imagenes")
-
+    url: Mapped[str] = mapped_column(String(500), nullable=True)
+                                     
     def __repr__(self):
         return f"<Imagen(id={self.id}, titulo={self.titulo}, principal={self.es_portada})>"
