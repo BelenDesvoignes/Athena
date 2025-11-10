@@ -6,6 +6,7 @@ from src.core.models.feature_flags import FeatureFlag
 from src.core.models.role_permission import Permission, Role, RolePermission
 from src.core.models.site import Sitio
 from src.core.models.user import User
+from datetime import datetime
 
 
 
@@ -219,6 +220,76 @@ def seed_sitios():
             visible=True,
             ubicacion=WKTElement('Point(-64.1873 -31.4173)', srid=4326),
         ),
+        # 5 SITIOS CON FECHA EXPLÍCITA (PARA PROBAR ORDENAMIENTO) ---
+        Sitio(
+            nombre="La Recoleta (Vieja)", descripcion_breve="Cementerio con arte funerario.",
+            descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", 
+            estado_conservacion="Excelente", inauguracion=1822, categoria="Cultural", 
+            visible=True, registrado=datetime(2022, 7, 1), # <-- Fecha antigua
+            ubicacion=WKTElement('Point(-58.3800 -34.5800)', srid=4326)
+        ),
+        Sitio(
+            nombre="Sitio Arqueológico El Shincal (Viejo)", descripcion_breve="Ruinas incas en Catamarca.", 
+            descripcion_completa="...", ciudad="Londres", provincia="Catamarca", 
+            estado_conservacion="Regular", inauguracion=1400, categoria="Ruinas", 
+            visible=True, registrado=datetime(2022, 9, 10), # <-- Fecha antigua
+            ubicacion=WKTElement('Point(-67.5000 -28.0000)', srid=4326)
+        ),
+        Sitio(
+            nombre="Casa de Sarmiento (Vieja)", descripcion_breve="Casa natal del expresidente.", 
+            descripcion_completa="...", ciudad="San Juan", provincia="San Juan", 
+            estado_conservacion="Excelente", inauguracion=1811, categoria="Museo", 
+            visible=True, registrado=datetime(2022, 10, 1), # <-- Fecha antigua
+            ubicacion=WKTElement('Point(-68.5200 -31.5300)', srid=4326)
+        ),
+        Sitio(
+            nombre="Bosques Petrificados (Viejo)", descripcion_breve="Yacimientos con árboles petrificados.", 
+            descripcion_completa="...", ciudad="Jaramillo", provincia="Santa Cruz", 
+            estado_conservacion="Bueno", inauguracion=2012, categoria="Natural", 
+            visible=True, registrado=datetime(2022, 11, 15), # <-- Fecha antigua
+            ubicacion=WKTElement('Point(-69.1706 -47.7811)', srid=4326)
+        ),
+        Sitio(
+            nombre="Mausoleo de San Martín (Viejo)", descripcion_breve="Lugar de descanso final del Libertador.", 
+            descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", 
+            estado_conservacion="Excelente", inauguracion=1880, categoria="Monumento", 
+            visible=True, registrado=datetime(2022, 12, 10), # <-- Fecha antigua
+            ubicacion=WKTElement('Point(-58.3748 -34.6042)', srid=4326)
+        ),
+        Sitio(nombre="Monumento a la Bandera", descripcion_breve="Homenaje a la creación de la Bandera.", descripcion_completa="...", ciudad="Rosario", provincia="Santa Fe", estado_conservacion="Excelente", inauguracion=1957, categoria="Monumento", visible=True, ubicacion=WKTElement('Point(-60.6329 -32.9468)', srid=4326)),
+        Sitio(nombre="Glaciar Perito Moreno", descripcion_breve="Impresionante glaciar en la Patagonia.", descripcion_completa="...", ciudad="El Calafate", provincia="Santa Cruz", estado_conservacion="Excelente", inauguracion=1937, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-73.0463 -50.4859)', srid=4326)),
+        Sitio(nombre="Obelisco de Buenos Aires", descripcion_breve="Símbolo de la capital argentina.", descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", estado_conservacion="Bueno", inauguracion=1936, categoria="Monumento", visible=True, ubicacion=WKTElement('Point(-58.3816 -34.6037)', srid=4326)),
+        Sitio(nombre="Cueva de las Manos", descripcion_breve="Arte rupestre de 9.000 años.", descripcion_completa="...", ciudad="Perito Moreno", provincia="Santa Cruz", estado_conservacion="Regular", inauguracion=7300, categoria="Arqueológico", visible=True, ubicacion=WKTElement('Point(-70.6698 -47.1128)', srid=4326)),
+        Sitio(nombre="Quebrada de Humahuaca", descripcion_breve="Paisajes de cerros multicolores.", descripcion_completa="...", ciudad="Purmamarca", provincia="Jujuy", estado_conservacion="Excelente", inauguracion=0, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-65.3475 -23.2081)', srid=4326)),
+        Sitio(nombre="Manzana Jesuítica", descripcion_breve="Bloque histórico en el centro de Córdoba.", descripcion_completa="...", ciudad="Córdoba", provincia="Córdoba", estado_conservacion="Excelente", inauguracion=1622, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-64.1883 -31.4206)', srid=4326)),
+        Sitio(nombre="Pucará de Tilcara", descripcion_breve="Fortaleza prehispánica en Jujuy.", descripcion_completa="...", ciudad="Tilcara", provincia="Jujuy", estado_conservacion="Bueno", inauguracion=1000, categoria="Arqueológico", visible=True, ubicacion=WKTElement('Point(-65.3852 -23.5852)', srid=4326)),
+        Sitio(nombre="Fuerte Barragán", descripcion_breve="Restos de una fortificación de defensa costera.", descripcion_completa="...", ciudad="Ensenada", provincia="Buenos Aires", estado_conservacion="Regular", inauguracion=1730, categoria="Militar", visible=True, ubicacion=WKTElement('Point(-57.9429 -34.8693)', srid=4326)),
+        Sitio(nombre="Convento de San Francisco", descripcion_breve="Arquitectura barroca en Salta.", descripcion_completa="...", ciudad="Salta", provincia="Salta", estado_conservacion="Excelente", inauguracion=1759, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-65.4124 -24.7884)', srid=4326)),
+        Sitio(nombre="Puente del Inca", descripcion_breve="Formación natural sobre el Río Mendoza.", descripcion_completa="...", ciudad="Puente del Inca", provincia="Mendoza", estado_conservacion="Regular", inauguracion=1800, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-69.9079 -32.8258)', srid=4326)),
+        Sitio(nombre="Museo Histórico de Cuyo", descripcion_breve="Colección sobre la historia de Mendoza.", descripcion_completa="...", ciudad="Mendoza", provincia="Mendoza", estado_conservacion="Bueno", inauguracion=1910, categoria="Museo", visible=True, ubicacion=WKTElement('Point(-68.8458 -32.8879)', srid=4326)),
+        Sitio(nombre="Casa del Acuerdo", descripcion_breve="Lugar donde se firmó el Acuerdo de San Nicolás.", descripcion_completa="...", ciudad="San Nicolás de los Arroyos", provincia="Buenos Aires", estado_conservacion="Excelente", inauguracion=1852, categoria="Histórico", visible=True, ubicacion=WKTElement('Point(-60.2198 -33.3323)', srid=4326)),
+        Sitio(nombre="Talampaya", descripcion_breve="Parque Nacional de cañones y paisajes únicos.", descripcion_completa="...", ciudad="Villa Unión", provincia="La Rioja", estado_conservacion="Bueno", inauguracion=1997, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-67.8427 -30.0805)', srid=4326)),
+        Sitio(nombre="Museo de la Casa Rosada", descripcion_breve="Colección presidencial y salones históricos.", descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", estado_conservacion="Excelente", inauguracion=1890, categoria="Museo", visible=True, ubicacion=WKTElement('Point(-58.3705 -34.6083)', srid=4326)),
+        Sitio(nombre="Capilla de Candonga", descripcion_breve="Antigua capilla rural jesuítica de Córdoba.", descripcion_completa="...", ciudad="Candonga", provincia="Córdoba", estado_conservacion="Bueno", inauguracion=1730, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-64.3800 -31.0500)', srid=4326)),
+        Sitio(nombre="Torre Monumental", descripcion_breve="Torre de los Ingleses, cerca del puerto.", descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", estado_conservacion="Regular", inauguracion=1916, categoria="Monumento", visible=True, ubicacion=WKTElement('Point(-58.3748 -34.5959)', srid=4326)),
+        Sitio(nombre="Esteros del Iberá", descripcion_breve="Gran reserva de humedales en Corrientes.", descripcion_completa="...", ciudad="Colonia Carlos Pellegrini", provincia="Corrientes", estado_conservacion="Excelente", inauguracion=1982, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-57.1738 -28.0933)', srid=4326)),
+        Sitio(nombre="Faro de Ushuaia", descripcion_breve="El Faro del Fin del Mundo, en Tierra del Fuego.", descripcion_completa="...", ciudad="Ushuaia", provincia="Tierra del Fuego", estado_conservacion="Excelente", inauguracion=1884, categoria="Marítimo", visible=True, ubicacion=WKTElement('Point(-68.2750 -54.9450)', srid=4326)),
+        Sitio(nombre="Castillo San Carlos", descripcion_breve="Ruinas de un fuerte militar en Entre Ríos.", descripcion_completa="...", ciudad="Concordia", provincia="Entre Ríos", estado_conservacion="Malo", inauguracion=1778, categoria="Militar", visible=True, ubicacion=WKTElement('Point(-58.0531 -31.3934)', srid=4326)),
+        Sitio(nombre="Basílica de Luján", descripcion_breve="Principal templo mariano de Argentina.", descripcion_completa="...", ciudad="Luján", provincia="Buenos Aires", estado_conservacion="Excelente", inauguracion=1890, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-59.1062 -34.5668)', srid=4326)),
+        Sitio(nombre="Valle de la Luna", descripcion_breve="Parque Provincial Ischigualasto, paisajes jurásicos.", descripcion_completa="...", ciudad="Valle Fértil", provincia="San Juan", estado_conservacion="Bueno", inauguracion=1971, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-67.9511 -30.0638)', srid=4326)),
+        Sitio(nombre="Dique San Roque", descripcion_breve="Antigua represa de ingeniería hidráulica.", descripcion_completa="...", ciudad="Villa Carlos Paz", provincia="Córdoba", estado_conservacion="Bueno", inauguracion=1890, categoria="Ingeniería", visible=True, ubicacion=WKTElement('Point(-64.4400 -31.3500)', srid=4326)),
+        Sitio(nombre="Capilla Sagrado Corazón", descripcion_breve="Edificio gótico francés en La Plata.", descripcion_completa="...", ciudad="La Plata", provincia="Buenos Aires", estado_conservacion="Bueno", inauguracion=1903, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-57.9570 -34.9200)', srid=4326)),
+        Sitio(nombre="Península Valdés", descripcion_breve="Reserva de fauna marina y ballenas.", descripcion_completa="...", ciudad="Puerto Madryn", provincia="Chubut", estado_conservacion="Excelente", inauguracion=1999, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-64.2155 -42.4965)', srid=4326)),
+        Sitio(nombre="Museo Ernesto Che Guevara", descripcion_breve="Casa natal del famoso revolucionario.", descripcion_completa="...", ciudad="Alta Gracia", provincia="Córdoba", estado_conservacion="Bueno", inauguracion=1928, categoria="Museo", visible=True, ubicacion=WKTElement('Point(-64.4264 -31.6559)', srid=4326)),
+        Sitio(nombre="Ruinas de Epecuén", descripcion_breve="Pueblo abandonado inundado por el lago.", descripcion_completa="...", ciudad="Epecuén", provincia="Buenos Aires", estado_conservacion="Malo", inauguracion=1920, categoria="Ruinas", visible=True, ubicacion=WKTElement('Point(-62.8390 -37.1350)', srid=4326)),
+        Sitio(nombre="Fuerte San Miguel", descripcion_breve="Antigua fortificación colonial en Corrientes.", descripcion_completa="...", ciudad="Ituzaingó", provincia="Corrientes", estado_conservacion="Regular", inauguracion=1780, categoria="Militar", visible=True, ubicacion=WKTElement('Point(-56.5800 -27.5700)', srid=4326)),
+        Sitio(nombre="El Chaltén", descripcion_breve="Capital nacional del trekking, base del Fitz Roy.", descripcion_completa="...", ciudad="El Chaltén", provincia="Santa Cruz", estado_conservacion="Excelente", inauguracion=1985, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-72.8800 -49.3300)', srid=4326)),
+        Sitio(nombre="Túnel Subfluvial", descripcion_breve="Une las provincias de Santa Fe y Entre Ríos.", descripcion_completa="...", ciudad="Santa Fe", provincia="Santa Fe", estado_conservacion="Excelente", inauguracion=1969, categoria="Ingeniería", visible=True, ubicacion=WKTElement('Point(-60.6723 -31.6240)', srid=4326)),
+        Sitio(nombre="Camino de las Estancias", descripcion_breve="Ruta de antiguas estancias jesuíticas en Córdoba.", descripcion_completa="...", ciudad="Jesús María", provincia="Córdoba", estado_conservacion="Bueno", inauguracion=1600, categoria="Cultural", visible=True, ubicacion=WKTElement('Point(-64.0800 -30.9800)', srid=4326)),
+        Sitio(nombre="Basílica de Nuestra Señora del Pilar", descripcion_breve="Templo colonial de Buenos Aires.", descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", estado_conservacion="Excelente", inauguracion=1732, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-58.3800 -34.5800)', srid=4326)),
+        Sitio(nombre="Museo Provincial de Ciencias", descripcion_breve="Dedicado a la paleontología y geología de Neuquén.", descripcion_completa="...", ciudad="Neuquén", provincia="Neuquén", estado_conservacion="Bueno", inauguracion=2000, categoria="Museo", visible=True, ubicacion=WKTElement('Point(-68.0500 -38.9500)', srid=4326)),
+        Sitio(nombre="Cerro Uritorco", descripcion_breve="Montaña famosa por leyendas y avistamientos.", descripcion_completa="...", ciudad="Capilla del Monte", provincia="Córdoba", estado_conservacion="Bueno", inauguracion=0, categoria="Natural", visible=True, ubicacion=WKTElement('Point(-64.5772 -30.8583)', srid=4326)),
+        Sitio(nombre="Iglesia de Uquía", descripcion_breve="Iglesia con pinturas de ángeles arcabuceros.", descripcion_completa="...", ciudad="Uquía", provincia="Jujuy", estado_conservacion="Bueno", inauguracion=1691, categoria="Religioso", visible=True, ubicacion=WKTElement('Point(-65.3400 -23.3600)', srid=4326)),
     ]
     db.session.add_all(sitios)
     db.session.commit()
