@@ -62,7 +62,7 @@ const error = ref(null);
 const errorMessage = ref('');
 
 // Constantes
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api';
 const MAX_SITES = 4; // Límite de tarjetas a mostrar en la Home
 
 // --- Lógica de Carga ---

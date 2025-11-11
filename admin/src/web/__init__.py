@@ -8,7 +8,6 @@ from src.core.permissions_service import current_user_permissions
 from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios
 
 from src.web.config import config
-from src.web.storage import storage
 from src.web.controllers.auth import auth_bp
 from src.web.controllers.sites_routes import bp_sitios
 from src.web.controllers.tag_routes import tag_bp
@@ -30,27 +29,8 @@ def create_app(env="development", static_folder="../../static"):
     #inicializar la session
     Session(app) 
     CORS(app, resources={
-    r"/api/*": {"origins": ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]}
-})
+    r"/api/*": {"origins": ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]}})
 
-
-    import os
-    from minio import Minio
-
-    #Redeploy trigger 2
-    
-    endpoint = os.environ.get("MINIO_SERVER")
-    access_key = os.environ.get("MINIO_ACCESS_KEY")
-    secret_key = os.environ.get("MINIO_SECRET_KEY")
-
-    print("\n========== MINIO CONFIG DEBUG ==========")
-    print("MINIO_SERVER =", endpoint)
-    print("MINIO_ACCESS_KEY =", access_key)
-    print("MINIO_SECRET_KEY =", "***" if secret_key else None)
-    print("========================================\n")
-
-    storage.init_app(app)
-    
     db.init_app(app)
     
     
