@@ -33,8 +33,41 @@ def create_app(env="development", static_folder="../../static"):
     r"/api/*": {"origins": ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]}
 })
 
-    db.init_app(app)
+
+    import os
+    from minio import Minio
+
+    #Redeploy trigger 2
+    
+    endpoint = os.environ.get("MINIO_SERVER")
+    access_key = os.environ.get("MINIO_ACCESS_KEY")
+    secret_key = os.environ.get("MINIO_SECRET_KEY")
+
+    print("\n========== MINIO CONFIG DEBUG ==========")
+    print("MINIO_SERVER =", endpoint)
+    print("MINIO_ACCESS_KEY =", access_key)
+    print("MINIO_SECRET_KEY =", "***" if secret_key else None)
+    print("========================================\n")
+
+    if endpoint and access_key and secret_key:
+        try:
+            minio_client = Minio(
+                endpoint,
+                access_key=access_key,
+                secret_key=secret_key,
+                secure=True
+            )
+            
+            minio_client.list_buckets()
+            print("✅ Conexión exitosa a MinIO")
+        except Exception as e:
+            print("❌ Error conectando a MinIO:", e)
+    else:
+        print("⚠️ Variables de entorno de MinIO faltantes o incorrectas")
     storage.init_app(app)
+    
+    db.init_app(app)
+    
     
     with app.app_context():
         from src.core.models.user import User
