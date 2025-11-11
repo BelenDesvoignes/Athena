@@ -151,7 +151,7 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client):
         ext = os.path.splitext(filename)[1].lower().lstrip(".")
 
         # Generar nombre único y ruta en subcarpeta por sitio
-        object_name = f"sitios/{sitio_id}/{uuid.uuid4().hex}.{ext}"
+        object_name = f"public/{sitio_id}/{uuid.uuid4().hex}.{ext}"
 
         # Resetear posición y medir tamaño
         file.seek(0, os.SEEK_END)
