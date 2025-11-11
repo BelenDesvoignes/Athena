@@ -17,7 +17,8 @@ from src.web.handlers.maintenance import maintenance_check
 from src.web.controllers.review_routes import reviews_bp
 
 from src.web.controllers.feature_flags_routes import feature_flags_bp
-
+from src.web.api.api import api_bp
+from flask_cors import CORS
 
 
 def create_app(env="development", static_folder="../../static"):
@@ -28,6 +29,9 @@ def create_app(env="development", static_folder="../../static"):
 
     #inicializar la session
     Session(app) 
+    CORS(app, resources={
+    r"/api/*": {"origins": ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]}
+})
 
     db.init_app(app)
     storage.init_app(app)
@@ -41,8 +45,8 @@ def create_app(env="development", static_folder="../../static"):
         seed_roles_permissions() 
         seed_admin_user()        
         seed_feature_flags()
-        seed_sitios()
-
+        #seed_sitios()   SOLUCION PROVISORIA ****
+        
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
     app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
@@ -55,6 +59,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(feature_flags_bp)
     app.register_blueprint(bp_sitios, url_prefix="/sitios")
     app.register_blueprint(reviews_bp, url_prefix="/reviews")
+    app.register_blueprint(api_bp)
     #rutas principales 
     @app.route("/")
     def index():
