@@ -28,7 +28,10 @@ def create_app(env="development", static_folder="../../static"):
 
     #inicializar la session
     Session(app) 
-    CORS (app)
+    CORS(app, resources={
+    r"/api/*": {"origins": ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]}
+})
+
     db.init_app(app)
     
     with app.app_context():
