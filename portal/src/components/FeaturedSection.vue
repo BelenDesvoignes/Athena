@@ -43,7 +43,7 @@ const props = defineProps({
         type: String,
         required: true
     },
-    // Parámetro para la API: 'latest', 'visits-desc', 'rating-5-1', 'favorites'
+    // Parámetro para la API: 'registrado', 'nombre', 'calificacion', 'favorites'
     orderByParam: {
         type: String,
         required: true
@@ -91,8 +91,7 @@ const fetchSites = async () => {
         }
         
         const data = await response.json();
-        // Asume que la API devuelve los sitios en 'data.sites' o directamente en el cuerpo
-        sites.value = data.sites || data; 
+        sites.value = data.data || [];
 
     } catch (err) {
         console.error(`Fetch error for ${props.title}:`, err);
