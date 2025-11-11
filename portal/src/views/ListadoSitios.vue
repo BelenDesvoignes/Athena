@@ -38,7 +38,7 @@ const isLoading = ref(true);
 const error = ref(null);
 const errorMessage = ref('');
 
-const API_BASE_URL = 'http://localhost:5000/api'; 
+const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
 
 // --- Computed Properties para Query Params ---
 const currentOrder = computed(() => route.query.order_by || 'registrado'); 
