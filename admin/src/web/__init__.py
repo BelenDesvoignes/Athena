@@ -37,6 +37,8 @@ def create_app(env="development", static_folder="../../static"):
     import os
     from minio import Minio
 
+    #Redeploy trigger
+    
     endpoint = os.environ.get("MINIO_SERVER")
     access_key = os.environ.get("MINIO_ACCESS_KEY")
     secret_key = os.environ.get("MINIO_SECRET_KEY")
