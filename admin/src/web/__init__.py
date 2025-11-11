@@ -49,21 +49,6 @@ def create_app(env="development", static_folder="../../static"):
     print("MINIO_SECRET_KEY =", "***" if secret_key else None)
     print("========================================\n")
 
-    if endpoint and access_key and secret_key:
-        try:
-            minio_client = Minio(
-                endpoint,
-                access_key=access_key,
-                secret_key=secret_key,
-                secure=True
-            )
-            
-            minio_client.list_buckets()
-            print("✅ Conexión exitosa a MinIO")
-        except Exception as e:
-            print("❌ Error conectando a MinIO:", e)
-    else:
-        print("⚠️ Variables de entorno de MinIO faltantes o incorrectas")
     storage.init_app(app)
     
     db.init_app(app)
