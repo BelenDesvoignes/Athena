@@ -43,7 +43,7 @@ def create_app(env="development", static_folder="../../static"):
         seed_roles_permissions() 
         seed_admin_user()        
         seed_feature_flags()
-        #seed_sitios()   SOLUCION PROVISORIA ****
+        seed_sitios()
         
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions

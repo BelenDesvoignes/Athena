@@ -12,7 +12,7 @@ from src.core.models.review import Review
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
 # Endpoint de prueba para sitios
-@api_bp.get("/sites/")
+@api_bp.get("/sites")
 def get_sites():
 
     page = request.args.get('page', 1, type=int)
@@ -67,9 +67,8 @@ def get_sites():
     #  Manejo de Ordenamiento
     # 'registrado' por defecto, para cumplir el requisito de 'fecha de registro'
     order_by = request.args.get('order_by', 'registrado') 
-    order_direction = request.args.get('order', 'desc') # Por defecto: descendente (más reciente)
+    order_direction = request.args.get('order', 'desc')
 
-    sort_column = None
     if order_by == 'nombre':
         sort_column = Sitio.nombre
     elif order_by == 'registrado':

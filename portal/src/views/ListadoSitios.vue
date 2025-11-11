@@ -1,4 +1,4 @@
-<template>
+<template> 
   <div class="listado-sitios-page">
     <header>
       <h1>Listado de Sitios Históricos</h1>
@@ -21,7 +21,7 @@
             No se encontraron sitios con los filtros aplicados.
         </div>
         
-        </main>
+    </main>
   </div>
 </template>
 
@@ -41,10 +41,8 @@ const errorMessage = ref('');
 const API_BASE_URL = 'http://localhost:5000/api'; 
 
 // --- Computed Properties para Query Params ---
-// Captura el orden enviado por FeaturedSection (ej: 'latest')
-const currentOrder = computed(() => route.query.order_by || 'latest'); 
-// Captura el texto de búsqueda enviado por HomeView (ej: 'museo')
-const currentNameFilter = computed(() => route.query.name || ''); 
+const currentOrder = computed(() => route.query.order_by || 'registrado'); 
+const currentNameFilter = computed(() => route.query.search || ''); 
 
 // --- Lógica de Carga ---
 const fetchSitesList = async () => {
@@ -52,44 +50,45 @@ const fetchSitesList = async () => {
     error.value = null;
     errorMessage.value = '';
 
-    // 1. Construir la URL con todos los filtros
-    let url = `${API_BASE_URL}/sites?`;
-    
-    // Añadir el orden
-    url += `order_by=${currentOrder.value}`;
-
-    // Añadir el filtro de búsqueda por nombre/descripción (si existe)
-    if (currentNameFilter.value) {
-        url += `&name=${currentNameFilter.value}`;
-    }
-    
-    // NOTA: Aquí agregarías la paginación: `&page=${currentPage.value}&per_page=12`
-
     try {
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`Error al obtener el listado. Código: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        sites.value = data.sites || data; // Asumiendo que devuelve un array o un objeto con clave 'sites'
+        const fullUrlString = `${API_BASE_URL}/sites`;
+        const url = new URL(fullUrlString);
 
-    } catch (err) {
-        console.error('Fetch error for site list:', err);
-        errorMessage.value = err.message;
-        error.value = true;
-    } finally {
-        isLoading.value = false;
-    }
+        // Agregar parámetros de búsqueda codificados
+        url.searchParams.set('order_by', currentOrder.value);
+        
+        // Usar 'search' para el filtro de nombre, coherente con HomeView
+        if (currentNameFilter.value) {
+            url.searchParams.set('search', currentNameFilter.value);
+        }
+
+        // Opcional: agregar paginación si luego implementas currentPage/perPage
+        // url.searchParams.set('page', currentPage.value);
+        // url.searchParams.set('per_page', 12);
+
+        const response = await fetch(url.toString());
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        // Asegúrate de leer de data.data, como en FeaturedSection
+        sites.value = data.data || [];
+
+    } catch (err) {
+        console.error('Fetch error for site list:', err);
+        errorMessage.value = err.message;
+        error.value = true;
+    } finally {
+        isLoading.value = false;
+    }
 };
 
-// 3. Re-cargar al cambiar los parámetros
-// Usamos 'watch' para detectar cambios en la URL (al cambiar la búsqueda o el orden)
+// --- Re-cargar al cambiar los parámetros ---
 watch([currentOrder, currentNameFilter], () => {
     fetchSitesList();
 });
-
 
 onMounted(() => {
     fetchSitesList();
@@ -97,13 +96,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Estilos específicos del listado */
 .list-grid {
     display: grid;
-    /* Adapta el número de columnas para el listado */
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
     padding: 20px 0;
 }
 </style>
-
