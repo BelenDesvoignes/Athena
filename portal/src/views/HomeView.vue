@@ -13,7 +13,7 @@ const performSearch = () => {
     // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
     router.push({ 
       path: '/sitios', 
-      query: { name: searchText.value } 
+      query: { search: searchText.value } 
     });
   }
 };
@@ -41,17 +41,17 @@ const performSearch = () => {
       
       <FeaturedSection 
         title="🔥 Más Visitados" 
-        orderByParam="visits-desc" 
+        orderByParam="nombre" 
       />
       
       <FeaturedSection 
         title="🏆 Mejor Puntuados" 
-        orderByParam="rating-5-1" 
+        orderByParam="calificacion" 
       />
 
       <FeaturedSection 
         title="🆕 Recientemente Agregados" 
-        orderByParam="latest" 
+        orderByParam="registrado" 
       />
       
       <!-- Se ha eliminado la directiva v-if="authStore.isLoggedIn" para evitar el error. 
