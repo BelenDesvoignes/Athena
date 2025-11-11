@@ -78,8 +78,7 @@ const isFavorite = ref(false); // Requiere lógica de estado de favoritos
 
 const siteId = route.params.id; // Captura el ID desde la URL
 
-const API_BASE_URL = 'http://localhost:5000/api'; 
-
+const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api';
 // --- Funciones de Lógica ---
 
 const fetchSiteDetail = async () => {
