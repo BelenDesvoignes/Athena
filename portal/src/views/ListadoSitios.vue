@@ -53,7 +53,8 @@ const error = ref(null)
 const errorMessage = ref('')
 
 // ⚙️ URL base correcta del backend Flask
-const API_BASE_URL = 'http://localhost:5000/api/sites/'
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
+
 
 // --- Computed (vinculados a query params) ---
 const currentSearch = computed(() => route.query.search || '')
