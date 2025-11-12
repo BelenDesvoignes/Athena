@@ -82,7 +82,7 @@ const fetchSitesList = async () => {
   if (currentState.value) params.append('state', currentState.value)
   if (currentTags.value) params.append('tags', currentTags.value)
 
-  const url = `${API_BASE_URL}?${params.toString()}`
+  const url = `${API_BASE_URL}/sites?${params.toString()}`
 
   try {
     const response = await fetch(url)
