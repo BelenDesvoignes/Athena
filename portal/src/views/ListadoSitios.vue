@@ -40,7 +40,7 @@ const errorMessage = ref('');
 const currentPage = ref(1);
 const perPage = 12;
 
-const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
 
 // --- Computed Properties para Query Params ---
 const currentOrder = computed(() => route.query.order_by || 'registrado'); 
