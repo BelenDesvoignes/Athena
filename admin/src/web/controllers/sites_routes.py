@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import csv
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app, jsonify
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, or_
@@ -108,7 +108,7 @@ def list():
     )
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  
 
 
 def allowed_file(filename):
@@ -120,15 +120,16 @@ def validar_archivo_imagen(file):
     if not allowed_file(file.filename):
         return f"Formato no permitido: {file.filename}"
 
-    file.seek(0, 2)  # Ir al final para medir tamaño
+    file.seek(0, 2)  
     size = file.tell()
-    file.seek(0)     # Volver al inicio
+    file.seek(0)     
 
     if size > MAX_IMAGE_SIZE:
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-
+@login_required
+@maintenance_protected("admin")
 def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_idx=0):
     """
     Guarda las imágenes asociadas a un sitio:
@@ -141,25 +142,20 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
     bucket_name = current_app.config["MINIO_BUCKET"]
 
     for idx, file in enumerate(files):
-        # Validar archivo
         error = validar_archivo_imagen(file)
         if error:
             return None, error
 
-        # Obtener extensión y nombre seguro
         filename = secure_filename(file.filename)
         ext = os.path.splitext(filename)[1].lower().lstrip(".")
 
-        # Generar nombre único y ruta en subcarpeta por sitio
         object_name = f"public/{sitio_id}/{uuid.uuid4().hex}.{ext}"
 
-        # Resetear posición y medir tamaño
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
         file.seek(0)
 
         try:
-            # Subir al bucket de MinIO
             minio_client.put_object(
                 bucket_name=bucket_name,
                 object_name=object_name,
@@ -170,7 +166,6 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
         except S3Error as e:
             return None, f"Error al subir {filename} a MinIO: {str(e)}"
 
-        # Generar URL firmada de acceso (válida por 2 horas)
         try:
             url = minio_client.presigned_get_object(
                 bucket_name,
@@ -178,9 +173,8 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
                 expires=timedelta(hours=2)
             )
         except S3Error:
-            url = None  # Si falla, no es fatal
+            url = None 
 
-        # Crear instancia de Imagen asociada al sitio
         imagen = Imagen(
             sitio_id=sitio_id,
             titulo=filename,
@@ -190,7 +184,6 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
         )
         imagenes.append(imagen)
 
-    # Guardar en la base de datos
     db.session.add_all(imagenes)
 
     return imagenes, None
@@ -248,9 +241,8 @@ def new():
                 visible=visible,
             )
             db.session.add(sitio)
-            db.session.flush()  # Para obtener el ID antes del commit
+            db.session.flush()
 
-            # Preparar cliente MinIO
             minio_client = Minio(
                 endpoint=current_app.config["MINIO_SERVER"],
                 access_key=current_app.config["MINIO_ACCESS_KEY"],
@@ -258,7 +250,6 @@ def new():
                 secure=current_app.config["MINIO_SECURE"]
             )
 
-            # Manejo de imágenes
             archivos = request.files.getlist("imagenes")
             if archivos:
                 if len(archivos) > 10:
@@ -281,7 +272,6 @@ def new():
                     db.session.rollback()
                     return render_template("new_site.html", tags=tags, error=error_imagen)
 
-            # Confirmar todo
             db.session.commit()
             registrar_modificacion(sitio, current_user, "Creación")
             flash("Sitio creado correctamente")
@@ -297,7 +287,9 @@ def new():
 
 """Logica para editar un sitio turístico existente"""
 
-
+@permission_required("site_update")
+@login_required
+@maintenance_protected("admin")
 def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
     """
     Recupera todas las imágenes asociadas a un sitio y genera nuevas URLs firmadas.
@@ -308,14 +300,13 @@ def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
     resultados = []
     for img in imagenes:
         try:
-            # Genera una nueva URL válida por 2 horas
             url = minio_client.presigned_get_object(
                 bucket_name,
                 img.ruta,
                 expires=timedelta(hours=2)
             )
         except S3Error as e:
-            url = None  # si falla, no se interrumpe todo
+            url = None 
             print(f"Error al obtener URL de {img.ruta}: {e}")
 
         resultados.append({
@@ -341,7 +332,6 @@ def edit(id):
     coordenadas = extract_coords(sitio.ubicacion)
     error = None
 
-    # --- Cliente MinIO ---
     minio_client = Minio(
         endpoint=current_app.config["MINIO_SERVER"],
         access_key=current_app.config["MINIO_ACCESS_KEY"],
@@ -349,7 +339,6 @@ def edit(id):
         secure=current_app.config["MINIO_SECURE"],
     )
 
-    # --- Obtener imágenes actualizadas with URLs firmadas ---
     imagenes_info = obtener_imagenes_sitio(
         sitio_id=sitio.id,
         db=db,
@@ -357,7 +346,6 @@ def edit(id):
         minio_client=minio_client
     )
 
-    # --- POST: Actualización ---
     if request.method == "POST":
         sitio.nombre = request.form.get("nombre", sitio.nombre)
         sitio.descripcion_breve = request.form.get("descripcion_breve", sitio.descripcion_breve)
@@ -369,17 +357,14 @@ def edit(id):
         sitio.categoria = request.form.get("categoria", sitio.categoria)
         sitio.visible = bool(request.form.get("visible"))
 
-        # Tags
         tag_ids = request.form.getlist("tags")
         sitio.tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
 
-        # Ubicación
         latitud = request.form.get("latitud")
         longitud = request.form.get("longitud")
         if latitud and longitud:
             sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
 
-        # Validación de campos obligatorios
         if not all([
             sitio.nombre, sitio.descripcion_breve, sitio.descripcion_completa,
             sitio.ciudad, sitio.provincia, sitio.estado_conservacion,
@@ -388,21 +373,26 @@ def edit(id):
             error = "Todos los campos son obligatorios."
 
         try:
-            # --- Obtener la imagen que debe ser portada ---
             portada_valor = request.form.get("portada", "").strip() 
             # --- Eliminar imágenes marcadas para eliminación ---
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             for img_id in imagenes_eliminar:
                 imagen = db.session.query(Imagen).filter_by(id=img_id, sitio_id=sitio.id).first()
                 if imagen:
+                    # Eliminar de MinIO
+                    try:
+                        bucket_name = current_app.config["MINIO_BUCKET"]
+                        minio_client.remove_object(bucket_name, imagen.ruta)
+                        print(f"[INFO] Imagen eliminada de MinIO: {imagen.ruta}")
+                    except S3Error as e:
+                        print(f"[WARN] Error al eliminar de MinIO: {str(e)}")
+                    
+                    # Eliminar de la BD
                     db.session.delete(imagen)
 
-            # --- Subida de nuevas imágenes ---
-            # Filtrar solo archivos que tengan filename válido (no vacíos)
             archivos = [f for f in request.files.getlist("imagenes") if f.filename]
             
             if portada_valor:
-                # Primero, marcar TODAS las imágenes como no portada
                 db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
                     {Imagen.es_portada: False},
                     synchronize_session=False
@@ -413,9 +403,7 @@ def edit(id):
                 error = "No se pueden subir más de 10 imágenes en total."
                 
             print("[DEBUG] Portada seleccionada:", portada_valor) 
-            # --- Actualizar estado de portada para todas las imágenes ---
             if portada_valor:
-                # Primero, marcar TODAS las imágenes como no portada
                 db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
                     {Imagen.es_portada: False},
                     synchronize_session=False
@@ -424,11 +412,9 @@ def edit(id):
 
                 if archivos:
                     if portada_valor.startswith("nueva-"):
-                        # Determinar si alguna imagen nueva es portada
                         portada_idx = 0
                         if portada_valor and portada_valor.startswith("nueva-"):
                             portada_idx = int(portada_valor.split("-")[1])
-                            print("[DEBUG] Portada nueva en idx:", portada_idx)
                         imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                             files=archivos,
                             sitio_id=sitio.id,
@@ -440,7 +426,6 @@ def edit(id):
                         if error_imagen:
                             error = error_imagen
                 else:
-                    # Es una imagen existente - marcarla como True
                     try:
                         imagen_portada = db.session.query(Imagen).filter_by(
                             id=int(portada_valor),
@@ -451,7 +436,6 @@ def edit(id):
                     except (ValueError, TypeError):
                         pass
             else:
-                # Si no se marcó ninguna portada explícitamente, marcar todas como False
                 db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
                     {Imagen.es_portada: False},
                     synchronize_session=False

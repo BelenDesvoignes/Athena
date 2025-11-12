@@ -96,7 +96,6 @@
                 </div>
 
                 <div id="imagenes-todas" style="margin-top: 15px;">
-                    <!-- Se renderizan imágenes existentes del backend -->
                     {% for img in imagenes_info %}
                     <div class="imagen-item bg-dark p-2 rounded" 
                         data-id="{{ img.id }}" 
@@ -128,7 +127,6 @@
             });
         });
 
-        // Mapa
         var map = L.map('map').setView([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         let marker = L.marker([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}]).addTo(map);
@@ -140,17 +138,12 @@
             document.getElementById('longitud').value = e.latlng.lng;
         });
 
-        // ========================
-        //  LÓGICA DE IMÁGENES
-        // ========================
-
         const inputImagenes = document.getElementById('imagenes');
         const contenedor = document.getElementById('imagenes-todas');
         const portadaHidden = document.getElementById('portada-hidden');
         let nuevasImagenes = [];
         let imagenesExistentes = [];
 
-        // Inicializar imágenes existentes del backend
         document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
             imagenesExistentes.push({
                 id: div.dataset.id,
@@ -160,11 +153,9 @@
             });
         });
 
-        // Renderizar todas las imágenes (existentes + nuevas)
         function renderizarImagenes() {
             contenedor.innerHTML = '';
 
-            // Renderizar imágenes existentes
             imagenesExistentes.forEach((img, idx) => {
                 const div = document.createElement('div');
                 div.className = 'imagen-item bg-dark p-2 rounded';
@@ -210,7 +201,6 @@
                 contenedor.appendChild(div);
             });
 
-            // Renderizar nuevas imágenes
             nuevasImagenes.forEach((fileObj, idx) => {
                 const div = document.createElement('div');
                 div.className = 'imagen-item bg-dark p-2 rounded';
@@ -259,7 +249,6 @@
             actualizarContador();
         }
 
-        // Marcar portada
         function marcarComoPortadaNueva(idx) {
             imagenesExistentes.forEach(img => img.portada = false);
             nuevasImagenes.forEach(f => f.portada = false);
@@ -292,12 +281,14 @@
             }
 
             if (confirm("¿Deseas eliminar esta imagen existente?")) {
+                // Agregar a lista de eliminación
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = "hidden";
                 hiddenInput.name = "eliminar_imagenes[]";
                 hiddenInput.value = id;
                 document.querySelector('form').appendChild(hiddenInput);
 
+                // Eliminar del array local
                 imagenesExistentes = imagenesExistentes.filter(f => f.id !== id);
                 renderizarImagenes();
             }
@@ -310,7 +301,6 @@
                     : "";
         }
 
-        // Cargar nuevas imágenes
         inputImagenes.addEventListener('change', (e) => {
             Array.from(e.target.files).forEach(file => {
                 if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
@@ -323,7 +313,6 @@
             renderizarImagenes();
         });
 
-        // Inicializar renderizado
         renderizarImagenes();
     </script>
 
