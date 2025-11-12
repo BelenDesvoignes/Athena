@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import csv
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app, jsonify
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, or_
@@ -128,8 +128,6 @@ def validar_archivo_imagen(file):
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-@login_required
-@maintenance_protected("admin")
 def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_idx=0):
     """
     Guarda las imágenes asociadas a un sitio:
@@ -374,8 +372,10 @@ def edit(id):
 
         try:
             portada_valor = request.form.get("portada", "").strip() 
+            
             # --- Eliminar imágenes marcadas para eliminación ---
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
+            hubo_eliminaciones = False
             for img_id in imagenes_eliminar:
                 imagen = db.session.query(Imagen).filter_by(id=img_id, sitio_id=sitio.id).first()
                 if imagen:
@@ -389,44 +389,59 @@ def edit(id):
                     
                     # Eliminar de la BD
                     db.session.delete(imagen)
+                    hubo_eliminaciones = True
 
+            # --- Subida de nuevas imágenes ---
             archivos = [f for f in request.files.getlist("imagenes") if f.filename]
-            
-            if portada_valor:
-                db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
-                    {Imagen.es_portada: False},
-                    synchronize_session=False
-                )
-                db.session.flush()
-            
+            hubo_nuevas = False
+            print("[DEBUG] Archivos:", archivos)
             if archivos and len(archivos) + len(sitio.imagenes) > 10:
                 error = "No se pueden subir más de 10 imágenes en total."
+            elif archivos:
+                hubo_nuevas = True
+                portada_idx = -1 
                 
-            print("[DEBUG] Portada seleccionada:", portada_valor) 
-            if portada_valor:
-                db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
-                    {Imagen.es_portada: False},
-                    synchronize_session=False
+                if portada_valor.startswith("nueva-"):
+                    portada_idx = int(portada_valor.split("-")[1])
+                    print("[DEBUG] Portada nueva en idx:", portada_idx)
+                if portada_idx != -1:
+                    db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                        {Imagen.es_portada: False},
+                        synchronize_session=False
+                    )
+                    db.session.flush()
+                
+                imagenes_objetos, error_imagen = guardar_imagenes_sitio(
+                    files=archivos,
+                    sitio_id=sitio.id,
+                    db=db,
+                    Imagen=Imagen,
+                    minio_client=minio_client,
+                    portada_idx=portada_idx 
                 )
-                db.session.flush()
-
-                if archivos:
-                    if portada_valor.startswith("nueva-"):
-                        portada_idx = 0
-                        if portada_valor and portada_valor.startswith("nueva-"):
-                            portada_idx = int(portada_valor.split("-")[1])
-                        imagenes_objetos, error_imagen = guardar_imagenes_sitio(
-                            files=archivos,
-                            sitio_id=sitio.id,
-                            db=db,
-                            Imagen=Imagen,
-                            minio_client=minio_client,
-                            portada_idx=portada_idx
-                        )
-                        if error_imagen:
-                            error = error_imagen
+                if error_imagen:
+                    error = error_imagen
+                
+                    
+            print("[DEBUG] Portada seleccionada:", portada_valor)
+            print("[DEBUG] Hubo eliminaciones:", hubo_eliminaciones)
+            print("[DEBUG] Hubo nuevas:", hubo_nuevas)
+            
+            # --- Actualizar portada SOLO si hay cambios reales ---
+            if portada_valor and portada_valor != "0":
+                if portada_valor.startswith("nueva-"):
+                    # Es una imagen nueva - no hacer nada aquí
+                    # Ya fue marcada en guardar_imagenes_sitio()
+                    pass
                 else:
+                    # Es una imagen existente - marcarla como portada
                     try:
+                        db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                            {Imagen.es_portada: False},
+                            synchronize_session=False
+                        )
+                        db.session.flush()
+                        
                         imagen_portada = db.session.query(Imagen).filter_by(
                             id=int(portada_valor),
                             sitio_id=sitio.id
@@ -435,16 +450,14 @@ def edit(id):
                             imagen_portada.es_portada = True
                     except (ValueError, TypeError):
                         pass
-            else:
-                db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
-                    {Imagen.es_portada: False},
-                    synchronize_session=False
-                )
 
-            db.session.commit()
-            registrar_modificacion(sitio, current_user, "Edición")
-            flash("Sitio actualizado correctamente")
-            return redirect(url_for("sitios.list"))
+            if not error:
+                db.session.commit()
+                registrar_modificacion(sitio, current_user, "Edición")
+                flash("Sitio actualizado correctamente")
+                return redirect(url_for("sitios.list"))
+            else:
+                db.session.rollback()
 
         except Exception as e:
             db.session.rollback()
@@ -566,7 +579,6 @@ def detail(id):
         coordenadas=coordenadas,
         historial=historial,
     )
-
 
 """Elimina un sitio turístico"""
 
