@@ -71,13 +71,166 @@
                     <input type="hidden" name="latitud" id="latitud">
                     <input type="hidden" name="longitud" id="longitud">
                 </div>
-            </fieldset>
+
+                <fieldset>
+                    <legend>Imágenes del sitio (máx. 10)</legend>
+                    <div class="mb-3">
+                        <div class="custom-file-upload">
+                            <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
+                            <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                            <span id="file-count" class="ms-2 text-info"></span>
+                        </div>
+                    </div>
+                    <input type="hidden" name="portada" id="portada-hidden" value="0">
+                    <div id="imagenes-lista" class="d-flex flex-wrap" style="margin-top: 15px; gap: 10px;"></div>
+                </fieldset>
+
             <button type="submit" class="btn btn-success">Guardar sitio</button>
             <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
         </form>
     </article>
 </section>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#tags').select2({
+        placeholder: "Selecciona uno o más tags",
+        allowClear: true
+    });
+});
+
+var map = L.map('map').setView([-34.6, -58.4], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+let marker;
+
+map.on('click', function(e) {
+    if (marker) map.removeLayer(marker);
+    marker = L.marker(e.latlng).addTo(map);
+    document.getElementById('latitud').value = e.latlng.lat;
+    document.getElementById('longitud').value = e.latlng.lng;
+});
+
+const inputImagenes = document.getElementById('imagenes');
+const contenedor = document.getElementById('imagenes-lista');
+const portadaHidden = document.getElementById('portada-hidden');
+let archivosSeleccionados = [];
+
+function renderizarImagenes() {
+    contenedor.innerHTML = "";
+    archivosSeleccionados.forEach((fileObj, idx) => {
+        const div = document.createElement('div');
+        div.className = 'imagen-item bg-dark p-2 rounded';
+        div.style.width = "180px";
+        div.dataset.index = idx;
+
+        const imgContainer = document.createElement('div');
+        imgContainer.style.position = "relative";
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(fileObj.file);
+        img.width = 160;
+        img.height = 120;
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "4px";
+        imgContainer.appendChild(img);
+
+        // Botón eliminar
+        const botonEliminar = document.createElement('button');
+        botonEliminar.type = "button";
+        botonEliminar.textContent = "×";
+        botonEliminar.className = "btn btn-sm btn-danger";
+        botonEliminar.style.position = "absolute";
+        botonEliminar.style.top = "5px";
+        botonEliminar.style.right = "5px";
+        botonEliminar.addEventListener('click', () => eliminarImagen(idx));
+        imgContainer.appendChild(botonEliminar);
+
+        // Radio portada
+        const portadaLabel = document.createElement('label');
+        portadaLabel.className = "text-light mt-1";
+        const portadaRadio = document.createElement('input');
+        portadaRadio.type = "radio";
+        portadaRadio.name = "portada_radio";
+        portadaRadio.value = idx;
+        portadaRadio.checked = !!fileObj.portada;
+        portadaRadio.addEventListener('change', () => {
+            archivosSeleccionados.forEach(f => f.portada = false);
+            fileObj.portada = true;
+            portadaHidden.value = idx;
+            renderizarImagenes();
+        });
+        portadaLabel.appendChild(portadaRadio);
+        portadaLabel.append(" Portada");
+
+        // Descripción
+        const descripcion = document.createElement('input');
+        descripcion.type = "text";
+        descripcion.className = "form-control form-control-sm mt-2";
+        descripcion.placeholder = "Descripción..."; 
+        descripcion.value = fileObj.descripcion || "";
+        descripcion.addEventListener('input', e => {
+            fileObj.descripcion = e.target.value;
+        });
+
+        // Input oculto para enviar la descripción
+        const hiddenDesc = document.createElement('input');
+        hiddenDesc.type = "hidden";
+        hiddenDesc.name = "descripciones[]";
+        hiddenDesc.value = fileObj.descripcion || "";
+        div.appendChild(hiddenDesc);
+
+        // Actualiza el valor oculto cada vez que cambia
+        descripcion.addEventListener('input', () => {
+            hiddenDesc.value = descripcion.value;
+        });
+
+        // Orden visual
+        const orden = document.createElement('div');
+        orden.className = "text-center text-secondary mt-1";
+
+        div.appendChild(imgContainer);
+        div.appendChild(portadaLabel);
+        div.appendChild(descripcion);
+        div.appendChild(orden);
+        contenedor.appendChild(div);
+    });
+
+    actualizarInputFiles();
+}
+
+function eliminarImagen(idx) {
+    const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
+    if (idx === portadaIdx) {
+        alert("No se puede eliminar la imagen marcada como portada.");
+        return;
+    }
+    archivosSeleccionados.splice(idx, 1);
+    renderizarImagenes();
+}
+
+function actualizarInputFiles() {
+    const dt = new DataTransfer();
+    archivosSeleccionados.forEach(f => dt.items.add(f.file));
+    inputImagenes.files = dt.files;
+}
+
+inputImagenes.addEventListener('change', e => {
+    Array.from(e.target.files).forEach(file => {
+        if (archivosSeleccionados.length < 10) {
+            archivosSeleccionados.push({ file, portada: archivosSeleccionados.length === 0, descripcion: "" });
+        }
+    });
+    renderizarImagenes();
+    document.getElementById('file-count').textContent =
+        archivosSeleccionados.length > 0
+            ? `${archivosSeleccionados.length} imagen(es) seleccionada(s)`
+            : "";
+});
+
+</script>
 
 <style>
     #tag-selector {
@@ -150,9 +303,34 @@
         cursor: pointer;
     }
 
-    .tag-option:hover {
-        background: #222;
-    }
+.custom-file-upload input[type="file"] {
+    display: none;
+}
+
+.custom-file-upload .btn {
+    cursor: pointer;
+    background-color: #0d6efd;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.custom-file-upload .btn:hover {
+    background-color: #0b5ed7;
+}
+
+#file-count {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+::placeholder {
+    color: #fff !important;
+    opacity: 1;
+}
 </style>
 
 

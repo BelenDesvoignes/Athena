@@ -103,6 +103,90 @@ def list():
         tags=tags,
     )
 
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def validar_archivo_imagen(file):
+    """Valida extensión y tamaño máximo permitido."""
+    if not allowed_file(file.filename):
+        return f"Formato no permitido: {file.filename}"
+
+    file.seek(0, 2)  
+    size = file.tell()
+    file.seek(0)     
+
+    if size > MAX_IMAGE_SIZE:
+        return f"Archivo demasiado grande: {file.filename}"
+    return None
+
+def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_idx=0, descripciones=None, orden_base=0):
+    """
+    Guarda las imágenes asociadas a un sitio:
+      - Valida formato y tamaño
+      - Sube al bucket de MinIO
+      - Crea instancias de Imagen asociadas al sitio
+      - Genera URL firmada de acceso temporal
+      - Almacena descripción y orden
+    """
+    imagenes = []
+    bucket_name = current_app.config["MINIO_BUCKET"]
+    if descripciones is None:
+        descripciones = {}
+
+    for idx, file in enumerate(files):
+        error = validar_archivo_imagen(file)
+        if error:
+            return None, error
+
+        filename = secure_filename(file.filename)
+        ext = os.path.splitext(filename)[1].lower().lstrip(".")
+
+        object_name = f"public/{sitio_id}/{uuid.uuid4().hex}.{ext}"
+
+        file.seek(0, os.SEEK_END)
+        file_length = file.tell()
+        file.seek(0)
+
+        try:
+            minio_client.put_object(
+                bucket_name=bucket_name,
+                object_name=object_name,
+                data=file,
+                length=file_length,
+                content_type=file.content_type
+            )
+        except S3Error as e:
+            return None, f"Error al subir {filename} a MinIO: {str(e)}"
+
+        try:
+            url = minio_client.presigned_get_object(
+                bucket_name,
+                object_name,
+                expires=timedelta(hours=2)
+            )
+        except S3Error:
+            url = None 
+
+        imagen = Imagen(
+            sitio_id=sitio_id,
+            titulo=filename,
+            ruta=object_name,
+            descripcion=descripciones.get(str(idx), ""),
+            orden=orden_base + idx,
+            es_portada=(idx == portada_idx),
+            url=url
+        )
+        imagenes.append(imagen)
+
+    db.session.add_all(imagenes)
+
+    return imagenes, None
+
 
 """Procedimiento para crear un nuevo sitio turístico"""
 
@@ -163,22 +247,293 @@ def new():
                 visible=visible,
             )
             db.session.add(sitio)
-            db.session.commit()
-            flash("Sitio creado correctamente")
+            db.session.flush()
+
+            minio_client = Minio(
+                endpoint=current_app.config["MINIO_SERVER"],
+                access_key=current_app.config["MINIO_ACCESS_KEY"],
+                secret_key=current_app.config["MINIO_SECRET_KEY"],
+                secure=current_app.config["MINIO_SECURE"]
+            )
+
+            archivos = request.files.getlist("imagenes")
             
-            registrar_modificacion(sitio, current_user, "Creación")
+            # Primero validar que hay al menos una imagen
+            if not archivos:
+                db.session.rollback()
+                error = "Debes subir al menos una imagen para el sitio."
+                return render_template("new_site.html", tags=tags, error=error)
             
-            return redirect(url_for("sitios.list"))
+            # Luego validar cantidad máxima
+            if len(archivos) > 10:
+                db.session.rollback()
+                error = "No se pueden subir más de 10 imágenes."
+                return render_template("new_site.html", tags=tags, error=error)
+
+            # Finalmente validar formato de cada imagen antes de guardar
+            portada_idx = request.form.get("portada", type=int) or 0
+
+            # Obtener descripciones de cada imagen
+            descripciones = {}
+            descripciones_list = request.form.getlist("descripciones[]")
+            for i in range(len(archivos)):
+                if i < len(descripciones_list):
+                    desc = descripciones_list[i]
+                    if desc:
+                        descripciones[str(i)] = desc
+
+            imagenes_objetos, error_imagen = guardar_imagenes_sitio(
+                archivos,
+                sitio.id,
+                db,
+                Imagen,
+                minio_client,
+                portada_idx=portada_idx,
+                descripciones=descripciones,
+                orden_base=0
+            )
+
+            if error_imagen:
+                db.session.rollback()
+                return render_template("new_site.html", tags=tags, error=error_imagen)
+            else:
+                db.session.commit()
+                registrar_modificacion(sitio, current_user, "Creación")
+                flash("Sitio creado correctamente")
+                return redirect(url_for("sitios.list"))
+
         except Exception as e:
             error = f"Error al crear el sitio: {str(e)}"
-            db.session.rollback()
-
             return render_template("new_site.html", tags=tags, error=error)
 
     return render_template("new_site.html", tags=tags, current_user=current_user)
 
 
-"""Detalle de un sitio turístico"""
+"""Logica para editar un sitio turístico existente"""
+
+@permission_required("site_update")
+@login_required
+@maintenance_protected("admin")
+def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
+    """
+    Recupera todas las imágenes asociadas a un sitio y genera nuevas URLs firmadas.
+    Ordena por el campo 'orden' para mantener el orden definido.
+    """
+    bucket_name = current_app.config["MINIO_BUCKET"]
+    imagenes = db.session.query(Imagen).filter_by(sitio_id=sitio_id).order_by(Imagen.orden.asc()).all()
+
+    resultados = []
+    for img in imagenes:
+        try:
+            url = minio_client.presigned_get_object(
+                bucket_name,
+                img.ruta,
+                expires=timedelta(hours=2)
+            )
+        except S3Error as e:
+            url = None 
+            print(f"Error al obtener URL de {img.ruta}: {e}")
+
+        resultados.append({
+            "id": img.id,
+            "titulo": img.titulo,
+            "url": url,
+            "descripcion": img.descripcion,
+            "es_portada": img.es_portada
+        })
+
+    return resultados
+
+@login_required
+@permission_required("site_update")
+@maintenance_protected("admin")
+@bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
+def edit(id):
+    sitio = db.session.get(Sitio, id)
+    if not sitio:
+        abort(404, "Sitio no encontrado.")
+
+    current_user = get_current_user()
+    tags = db.session.query(Tag).all()
+    coordenadas = extract_coords(sitio.ubicacion)
+    error = None
+
+    minio_client = Minio(
+        endpoint=current_app.config["MINIO_SERVER"],
+        access_key=current_app.config["MINIO_ACCESS_KEY"],
+        secret_key=current_app.config["MINIO_SECRET_KEY"],
+        secure=current_app.config["MINIO_SECURE"],
+    )
+
+    imagenes_info = obtener_imagenes_sitio(
+        sitio_id=sitio.id,
+        db=db,
+        Imagen=Imagen,
+        minio_client=minio_client
+    )
+
+    if request.method == "POST":
+        sitio.nombre = request.form.get("nombre", sitio.nombre)
+        sitio.descripcion_breve = request.form.get("descripcion_breve", sitio.descripcion_breve)
+        sitio.descripcion_completa = request.form.get("descripcion_completa", sitio.descripcion_completa)
+        sitio.ciudad = request.form.get("ciudad", sitio.ciudad)
+        sitio.provincia = request.form.get("provincia", sitio.provincia)
+        sitio.estado_conservacion = request.form.get("estado_conservacion", sitio.estado_conservacion)
+        sitio.inauguracion = int(request.form.get("inauguracion", sitio.inauguracion))
+        sitio.categoria = request.form.get("categoria", sitio.categoria)
+        sitio.visible = bool(request.form.get("visible"))
+
+        tag_ids = request.form.getlist("tags")
+        sitio.tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+
+        latitud = request.form.get("latitud")
+        longitud = request.form.get("longitud")
+        if latitud and longitud:
+            sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
+
+        if not all([
+            sitio.nombre, sitio.descripcion_breve, sitio.descripcion_completa,
+            sitio.ciudad, sitio.provincia, sitio.estado_conservacion,
+            sitio.inauguracion, sitio.categoria, sitio.ubicacion,
+        ]):
+            error = "Todos los campos son obligatorios."
+
+        try:
+            portada_valor = request.form.get("portada", "").strip() 
+            
+            # --- Actualizar descripciones de imágenes existentes ---
+            descripciones_existentes = request.form.getlist("descripciones_existentes[]")
+            imagenes_existentes_bd = db.session.query(Imagen).filter_by(sitio_id=sitio.id).order_by(Imagen.orden.asc()).all()
+            
+            for idx, imagen in enumerate(imagenes_existentes_bd):
+                if idx < len(descripciones_existentes):
+                    imagen.descripcion = descripciones_existentes[idx]
+            
+            # --- Eliminar imágenes marcadas para eliminación ---
+            imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
+            hubo_eliminaciones = False
+            for img_id in imagenes_eliminar:
+                imagen = db.session.query(Imagen).filter_by(id=img_id, sitio_id=sitio.id).first()
+                if imagen:
+                    # Eliminar de MinIO
+                    try:
+                        bucket_name = current_app.config["MINIO_BUCKET"]
+                        minio_client.remove_object(bucket_name, imagen.ruta)
+                        print(f"[INFO] Imagen eliminada de MinIO: {imagen.ruta}")
+                    except S3Error as e:
+                        print(f"[WARN] Error al eliminar de MinIO: {str(e)}")
+                    
+                    # Eliminar de la BD
+                    db.session.delete(imagen)
+                    hubo_eliminaciones = True
+
+            # --- Subida de nuevas imágenes ---
+            archivos = [f for f in request.files.getlist("imagenes") if f.filename]
+            hubo_nuevas = False
+            print("[DEBUG] Archivos:", archivos)
+            
+            # Validar que siempre haya al menos una imagen en total
+            imagenes_existentes_bd = db.session.query(Imagen).filter_by(sitio_id=sitio.id).all()
+            imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
+            imagenes_despues_eliminacion = [img for img in imagenes_existentes_bd if str(img.id) not in imagenes_eliminar]
+            
+            # Primero: validar cantidad total
+            if archivos and len(archivos) + len(imagenes_despues_eliminacion) > 10:
+                error = "No se pueden subir más de 10 imágenes en total."
+            # Segundo: validar que quede al menos una imagen
+            elif not archivos and not imagenes_despues_eliminacion:
+                error = "Debes tener al menos una imagen en el sitio. No puedes eliminar todas las imágenes sin agregar nuevas."
+            # Tercero: procesar las imágenes nuevas (la validación de formato ocurre en guardar_imagenes_sitio)
+            elif archivos:
+                hubo_nuevas = True
+                portada_idx = -1 
+                
+                if portada_valor.startswith("nueva-"):
+                    portada_idx = int(portada_valor.split("-")[1])
+                    print("[DEBUG] Portada nueva en idx:", portada_idx)
+                if portada_idx != -1:
+                    db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                        {Imagen.es_portada: False},
+                        synchronize_session=False
+                    )
+                    db.session.flush()
+                
+                # Obtener descripciones de cada imagen nueva
+                descripciones = {}
+                descripciones_nuevas = request.form.getlist("descripciones_nuevas[]")
+                for i in range(len(archivos)):
+                    if i < len(descripciones_nuevas):
+                        desc = descripciones_nuevas[i]
+                        if desc:
+                            descripciones[str(i)] = desc
+                
+                # Calcular orden base (después de las imágenes existentes)
+                orden_base = len(imagenes_despues_eliminacion)
+                
+                imagenes_objetos, error_imagen = guardar_imagenes_sitio(
+                    files=archivos,
+                    sitio_id=sitio.id,
+                    db=db,
+                    Imagen=Imagen,
+                    minio_client=minio_client,
+                    portada_idx=portada_idx,
+                    descripciones=descripciones,
+                    orden_base=orden_base
+                )
+                if error_imagen:
+                    error = error_imagen
+                
+                    
+            print("[DEBUG] Portada seleccionada:", portada_valor)
+            print("[DEBUG] Hubo eliminaciones:", hubo_eliminaciones)
+            print("[DEBUG] Hubo nuevas:", hubo_nuevas)
+            
+            # --- Actualizar portada SOLO si hay cambios reales ---
+            if portada_valor and portada_valor != "0":
+                if portada_valor.startswith("nueva-"):
+                    # Es una imagen nueva - no hacer nada aquí
+                    # Ya fue marcada en guardar_imagenes_sitio()
+                    pass
+                else:
+                    # Es una imagen existente - marcarla como portada
+                    try:
+                        db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                            {Imagen.es_portada: False},
+                            synchronize_session=False
+                        )
+                        db.session.flush()
+                        
+                        imagen_portada = db.session.query(Imagen).filter_by(
+                            id=int(portada_valor),
+                            sitio_id=sitio.id
+                        ).first()
+                        if imagen_portada:
+                            imagen_portada.es_portada = True
+                    except (ValueError, TypeError):
+                        pass
+
+            if not error:
+                db.session.commit()
+                registrar_modificacion(sitio, current_user, "Edición")
+                flash("Sitio actualizado correctamente")
+                return redirect(url_for("sitios.list"))
+            else:
+                db.session.rollback()
+
+        except Exception as e:
+            db.session.rollback()
+            error = f"Error al actualizar el sitio: {str(e)}"
+
+    return render_template(
+        "edit_site.html",
+        sitio=sitio,
+        tags=tags,
+        coordenadas=coordenadas,
+        current_user=current_user,
+        imagenes_info=imagenes_info,
+        error=error
+    )
+
 
 def get_modification_history(sitio_id, usuario_nombre="", tipo_accion="", desde="", hasta="", page=1):
     """
@@ -285,87 +640,6 @@ def detail(id):
         coordenadas=coordenadas,
         historial=historial,
     )
-
-"""Logica para editar un sitio turístico existente"""
-
-@bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
-@login_required
-@permission_required("site_update")
-@maintenance_protected("admin")
-def edit(id):
-    sitio = db.session.get(Sitio, id)
-    if not sitio:
-        abort(404, "Sitio no encontrado.")
-    current_user = get_current_user()
-    error = None
-
-    tags = db.session.query(Tag).all()
-
-    if request.method == "POST":
-        sitio.nombre = request.form.get("nombre", sitio.nombre)
-        sitio.descripcion_breve = request.form.get(
-            "descripcion_breve", sitio.descripcion_breve
-        )
-        sitio.descripcion_completa = request.form.get(
-            "descripcion_completa", sitio.descripcion_completa
-        )
-        sitio.ciudad = request.form.get("ciudad", sitio.ciudad)
-        sitio.provincia = request.form.get("provincia", sitio.provincia)
-        sitio.estado_conservacion = request.form.get(
-            "estado_conservacion", sitio.estado_conservacion
-        )
-        sitio.inauguracion = int(request.form.get("inauguracion", sitio.inauguracion))
-        sitio.categoria = request.form.get("categoria", sitio.categoria)
-        tag_ids = request.form.getlist("tags")
-        sitio.tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-        sitio.visible = bool(request.form.get("visible", sitio.visible))
-
-        latitud = request.form.get("latitud", None)
-        longitud = request.form.get("longitud", None)
-        if latitud and longitud:
-            sitio.ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
-
-        """Validación de campos obligatorios"""
-        if not all(
-            [
-                sitio.nombre,
-                sitio.descripcion_breve,
-                sitio.descripcion_completa,
-                sitio.ciudad,
-                sitio.provincia,
-                sitio.estado_conservacion,
-                sitio.inauguracion,
-                sitio.categoria,
-                sitio.ubicacion,
-            ]
-        ):
-            error = "Todos los campos son obligatorios."
-            return render_template(
-                "edit_site.html",
-                sitio=sitio,
-                tags=tags,
-                error=error,
-                latitud=latitud or sitio.latitud,
-                longitud=longitud or sitio.longitud,
-                current_user=current_user,
-            )
-
-        db.session.commit()
-        
-        registrar_modificacion(sitio, current_user, "Edición")
-        
-        flash("Sitio actualizado correctamente")
-        return redirect(url_for("sitios.list"))
-
-    coordenadas = extract_coords(sitio.ubicacion)
-    return render_template(
-        "edit_site.html",
-        sitio=sitio,
-        tags=tags,
-        coordenadas=coordenadas,
-        current_user=current_user,
-    )
-
 
 """Elimina un sitio turístico"""
 
@@ -492,4 +766,3 @@ def registrar_modificacion(sitio, usuario, tipo_accion):
     )
     db.session.add(registro)
     db.session.commit()
-    
