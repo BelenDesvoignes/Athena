@@ -100,6 +100,7 @@
                     <div class="imagen-item bg-dark p-2 rounded" 
                         data-id="{{ img.id }}" 
                         data-url="{{ img.url }}" 
+                        data-descripcion="{{ img.descripcion or '' }}"
                         data-portada="{{ 'true' if img.es_portada else 'false' }}"
                         data-nueva="false"
                         style="display:inline-block; margin:10px; text-align:center; position:relative; vertical-align:top;">
@@ -119,202 +120,256 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    <script>
-        $(document).ready(function() {
-            $('#tags').select2({
-                placeholder: "Selecciona uno o más tags",
-                allowClear: true
-            });
+<script>
+    $(document).ready(function() {
+        $('#tags').select2({
+            placeholder: "Selecciona uno o más tags",
+            allowClear: true
         });
+    });
 
-        var map = L.map('map').setView([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-        let marker = L.marker([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}]).addTo(map);
+    var map = L.map('map').setView([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+    let marker = L.marker([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}]).addTo(map);
 
-        map.on('click', function(e) {
-            if (marker) map.removeLayer(marker);
-            marker = L.marker(e.latlng).addTo(map);
-            document.getElementById('latitud').value = e.latlng.lat;
-            document.getElementById('longitud').value = e.latlng.lng;
+    map.on('click', function(e) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker(e.latlng).addTo(map);
+        document.getElementById('latitud').value = e.latlng.lat;
+        document.getElementById('longitud').value = e.latlng.lng;
+    });
+
+    const inputImagenes = document.getElementById('imagenes');
+    const contenedor = document.getElementById('imagenes-todas');
+    const portadaHidden = document.getElementById('portada-hidden');
+    let nuevasImagenes = [];
+    let imagenesExistentes = [];
+
+    document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
+        imagenesExistentes.push({
+            id: div.dataset.id,
+            url: div.dataset.url,
+            descripcion: div.dataset.descripcion || "",
+            portada: div.dataset.portada === 'true',
+            nueva: false
         });
+    });
 
-        const inputImagenes = document.getElementById('imagenes');
-        const contenedor = document.getElementById('imagenes-todas');
-        const portadaHidden = document.getElementById('portada-hidden');
-        let nuevasImagenes = [];
-        let imagenesExistentes = [];
+    function renderizarImagenes() {
+        contenedor.innerHTML = '';
 
-        document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
-            imagenesExistentes.push({
-                id: div.dataset.id,
-                url: div.dataset.url,
-                portada: div.dataset.portada === 'true',
-                nueva: false
-            });
-        });
+        // Imágenes existentes
+        imagenesExistentes.forEach((img, idx) => {
+            const div = document.createElement('div');
+            div.className = 'imagen-item bg-dark p-3 rounded';
+            div.style.display = "inline-block";
+            div.style.margin = "10px";
+            div.style.textAlign = "center";
+            div.style.position = "relative";
+            div.style.verticalAlign = "top";
+            div.style.width = "220px";
 
-        function renderizarImagenes() {
-            contenedor.innerHTML = '';
+            const imgEl = document.createElement('img');
+            imgEl.src = img.url;
+            imgEl.width = 200;
+            imgEl.height = 150;
+            imgEl.style.objectFit = "cover";
+            imgEl.style.borderRadius = "6px";
+            div.appendChild(imgEl);
 
-            imagenesExistentes.forEach((img, idx) => {
-                const div = document.createElement('div');
-                div.className = 'imagen-item bg-dark p-2 rounded';
-                div.style.display = "inline-block";
-                div.style.margin = "10px";
-                div.style.textAlign = "center";
-                div.style.position = "relative";
-                div.style.verticalAlign = "top";
-
-                const imgEl = document.createElement('img');
-                imgEl.src = img.url;
-                imgEl.width = 150;
-                imgEl.height = 150;
-                imgEl.style.objectFit = "cover";
-                imgEl.style.borderRadius = "4px";
-                div.appendChild(imgEl);
-
-                if (!img.portada) {
-                    const boton = document.createElement('button');
-                    boton.type = "button";
-                    boton.textContent = "×";
-                    boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
-                    boton.addEventListener('click', () => eliminarImagenExistente(img.id));
-                    div.appendChild(boton);
-                }
-
-                const label = document.createElement('label');
-                label.style.display = "block";
-                label.style.marginTop = "5px";
-                label.style.textAlign = "center";
-                label.style.color = "white";
-                label.innerText = "Portada ";
-
-                const radio = document.createElement('input');
-                radio.type = "radio";
-                radio.name = "portada_radio";
-                radio.value = img.id;
-                radio.checked = img.portada;
-                radio.addEventListener('change', () => marcarComoPortadaExistente(img.id));
-
-                label.appendChild(radio);
-                div.appendChild(label);
-                contenedor.appendChild(div);
-            });
-
-            nuevasImagenes.forEach((fileObj, idx) => {
-                const div = document.createElement('div');
-                div.className = 'imagen-item bg-dark p-2 rounded';
-                div.style.display = "inline-block";
-                div.style.margin = "10px";
-                div.style.textAlign = "center";
-                div.style.position = "relative";
-                div.style.verticalAlign = "top";
-
-                const imgEl = document.createElement('img');
-                imgEl.src = URL.createObjectURL(fileObj.file);
-                imgEl.width = 150;
-                imgEl.height = 150;
-                imgEl.style.objectFit = "cover";
-                imgEl.style.borderRadius = "4px";
-                div.appendChild(imgEl);
-
-                if (!fileObj.portada) {
-                    const boton = document.createElement('button');
-                    boton.type = "button";
-                    boton.textContent = "×";
-                    boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
-                    boton.addEventListener('click', () => eliminarNueva(idx));
-                    div.appendChild(boton);
-                }
-
-                const label = document.createElement('label');
-                label.style.display = "block";
-                label.style.marginTop = "5px";
-                label.style.textAlign = "center";
-                label.style.color = "white";
-                label.innerText = "Portada ";
-
-                const radio = document.createElement('input');
-                radio.type = "radio";
-                radio.name = "portada_radio";
-                radio.value = "nueva-" + idx;
-                radio.checked = fileObj.portada;
-                radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
-
-                label.appendChild(radio);
-                div.appendChild(label);
-                contenedor.appendChild(div);
-            });
-
-            actualizarContador();
-        }
-
-        function marcarComoPortadaNueva(idx) {
-            imagenesExistentes.forEach(img => img.portada = false);
-            nuevasImagenes.forEach(f => f.portada = false);
-            nuevasImagenes[idx].portada = true;
-            portadaHidden.value = "nueva-" + idx;
-            renderizarImagenes();
-        }
-
-        function marcarComoPortadaExistente(id) {
-            imagenesExistentes.forEach(img => img.portada = (img.id === id));
-            nuevasImagenes.forEach(f => f.portada = false);
-            portadaHidden.value = id;
-            renderizarImagenes();
-        }
-
-        function eliminarNueva(idx) {
-            if (nuevasImagenes[idx].portada) {
-                alert("No se puede eliminar la imagen marcada como portada.");
-                return;
-            }
-            nuevasImagenes.splice(idx, 1);
-            renderizarImagenes();
-        }
-
-        function eliminarImagenExistente(id) {
-            const img = imagenesExistentes.find(f => f.id === id);
-            if (img?.portada) {
-                alert("No se puede eliminar la imagen marcada como portada.");
-                return;
+            if (!img.portada) {
+                const boton = document.createElement('button');
+                boton.type = "button";
+                boton.textContent = "×";
+                boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
+                boton.addEventListener('click', () => eliminarImagenExistente(img.id));
+                div.appendChild(boton);
             }
 
-            if (confirm("¿Deseas eliminar esta imagen existente?")) {
-                // Agregar a lista de eliminación
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = "hidden";
-                hiddenInput.name = "eliminar_imagenes[]";
-                hiddenInput.value = id;
-                document.querySelector('form').appendChild(hiddenInput);
+            const label = document.createElement('label');
+            label.style.display = "block";
+            label.style.marginTop = "8px";
+            label.style.textAlign = "center";
+            label.style.color = "white";
+            label.innerText = "Portada ";
 
-                // Eliminar del array local
-                imagenesExistentes = imagenesExistentes.filter(f => f.id !== id);
-                renderizarImagenes();
-            }
-        }
+            const radio = document.createElement('input');
+            radio.type = "radio";
+            radio.name = "portada_radio";
+            radio.value = img.id;
+            radio.checked = img.portada;
+            radio.addEventListener('change', () => marcarComoPortadaExistente(img.id));
+            label.appendChild(radio);
+            div.appendChild(label);
 
-        function actualizarContador() {
-            document.getElementById('file-count').textContent =
-                (nuevasImagenes.length + imagenesExistentes.length) > 0
-                    ? `${nuevasImagenes.length + imagenesExistentes.length} imagen(es) en total`
-                    : "";
-        }
-
-        inputImagenes.addEventListener('change', (e) => {
-            Array.from(e.target.files).forEach(file => {
-                if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
-                    nuevasImagenes.push({
-                        file,
-                        portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada)
-                    });
-                }
+            // Campo de descripción (editable)
+            const descripcion = document.createElement('input');
+            descripcion.type = "text";
+            descripcion.className = "form-control form-control-sm mt-2";
+            descripcion.placeholder = "Descripción...";
+            descripcion.value = img.descripcion || "";
+            descripcion.style.backgroundColor = "#222";
+            descripcion.style.color = "#fff";
+            descripcion.style.border = "1px solid #555";
+            descripcion.addEventListener('input', e => {
+                img.descripcion = e.target.value;
             });
-            renderizarImagenes();
+
+            // Input oculto que se enviará al backend
+            const hiddenDesc = document.createElement('input');
+            hiddenDesc.type = "hidden";
+            hiddenDesc.name = "descripciones_existentes[]";
+            hiddenDesc.value = img.descripcion || "";
+            descripcion.addEventListener('input', () => {
+                hiddenDesc.value = descripcion.value;
+            });
+
+            div.appendChild(descripcion);
+            div.appendChild(hiddenDesc);
+
+            contenedor.appendChild(div);
         });
 
+        // Imágenes nuevas
+        nuevasImagenes.forEach((fileObj, idx) => {
+            const div = document.createElement('div');
+            div.className = 'imagen-item bg-dark p-3 rounded';
+            div.style.display = "inline-block";
+            div.style.margin = "10px";
+            div.style.textAlign = "center";
+            div.style.position = "relative";
+            div.style.verticalAlign = "top";
+            div.style.width = "220px";
+
+            const imgEl = document.createElement('img');
+            imgEl.src = URL.createObjectURL(fileObj.file);
+            imgEl.width = 200;
+            imgEl.height = 150;
+            imgEl.style.objectFit = "cover";
+            imgEl.style.borderRadius = "6px";
+            div.appendChild(imgEl);
+
+            if (!fileObj.portada) {
+                const boton = document.createElement('button');
+                boton.type = "button";
+                boton.textContent = "×";
+                boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
+                boton.addEventListener('click', () => eliminarNueva(idx));
+                div.appendChild(boton);
+            }
+
+            const label = document.createElement('label');
+            label.style.display = "block";
+            label.style.marginTop = "8px";
+            label.style.textAlign = "center";
+            label.style.color = "white";
+            label.innerText = "Portada ";
+
+            const radio = document.createElement('input');
+            radio.type = "radio";
+            radio.name = "portada_radio";
+            radio.value = "nueva-" + idx;
+            radio.checked = fileObj.portada;
+            radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
+            label.appendChild(radio);
+            div.appendChild(label);
+
+            // Campo de descripción (editable)
+            const descripcion = document.createElement('input');
+            descripcion.type = "text";
+            descripcion.className = "form-control form-control-sm mt-2";
+            descripcion.placeholder = "Descripción...";
+            descripcion.value = fileObj.descripcion || "";
+            descripcion.style.backgroundColor = "#222";
+            descripcion.style.color = "#fff";
+            descripcion.style.border = "1px solid #555";
+            descripcion.addEventListener('input', e => {
+                fileObj.descripcion = e.target.value;
+            });
+
+            // Input oculto que se enviará al backend
+            const hiddenDesc = document.createElement('input');
+            hiddenDesc.type = "hidden";
+            hiddenDesc.name = "descripciones_nuevas[]";
+            hiddenDesc.value = fileObj.descripcion || "";
+            descripcion.addEventListener('input', () => {
+                hiddenDesc.value = descripcion.value;
+            });
+
+            div.appendChild(descripcion);
+            div.appendChild(hiddenDesc);
+
+            contenedor.appendChild(div);
+        });
+
+        actualizarContador();
+    }
+
+    function marcarComoPortadaNueva(idx) {
+        imagenesExistentes.forEach(img => img.portada = false);
+        nuevasImagenes.forEach(f => f.portada = false);
+        nuevasImagenes[idx].portada = true;
+        portadaHidden.value = "nueva-" + idx;
         renderizarImagenes();
-    </script>
+    }
+
+    function marcarComoPortadaExistente(id) {
+        imagenesExistentes.forEach(img => img.portada = (img.id === id));
+        nuevasImagenes.forEach(f => f.portada = false);
+        portadaHidden.value = id;
+        renderizarImagenes();
+    }
+
+    function eliminarNueva(idx) {
+        if (nuevasImagenes[idx].portada) {
+            alert("No se puede eliminar la imagen marcada como portada.");
+            return;
+        }
+        nuevasImagenes.splice(idx, 1);
+        renderizarImagenes();
+    }
+
+    function eliminarImagenExistente(id) {
+        const img = imagenesExistentes.find(f => f.id === id);
+        if (img?.portada) {
+            alert("No se puede eliminar la imagen marcada como portada.");
+            return;
+        }
+
+        if (confirm("¿Deseas eliminar esta imagen existente?")) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = "hidden";
+            hiddenInput.name = "eliminar_imagenes[]";
+            hiddenInput.value = id;
+            document.querySelector('form').appendChild(hiddenInput);
+
+            imagenesExistentes = imagenesExistentes.filter(f => f.id !== id);
+            renderizarImagenes();
+        }
+    }
+
+    function actualizarContador() {
+        document.getElementById('file-count').textContent =
+            (nuevasImagenes.length + imagenesExistentes.length) > 0
+                ? `${nuevasImagenes.length + imagenesExistentes.length} imagen(es) en total`
+                : "";
+    }
+
+    inputImagenes.addEventListener('change', (e) => {
+        Array.from(e.target.files).forEach(file => {
+            if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
+                nuevasImagenes.push({
+                    file,
+                    portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada),
+                    descripcion: ""
+                });
+            }
+        });
+        renderizarImagenes();
+    });
+
+    renderizarImagenes();
+</script>
 
     <style>
         body, label, legend, input, select, textarea {
@@ -402,6 +457,10 @@
         #file-count {
             font-size: 0.9rem;
             color: #aaa;
+        }
+        ::placeholder {
+            color: #fff !important;
+            opacity: 1;
         }
     </style>
 {% endblock %}
