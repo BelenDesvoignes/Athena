@@ -33,8 +33,6 @@ def create_app(env="development", static_folder="../../static"):
 
     db.init_app(app)
     
-<<<<<<< HEAD
-=======
     try:
         minio_server = app.config.get("MINIO_SERVER")
         access_key = app.config.get("MINIO_ACCESS_KEY")
@@ -56,7 +54,6 @@ def create_app(env="development", static_folder="../../static"):
     except Exception as e:
         app.logger.error(f"❌ Fallo al inicializar MinIO: {str(e)}")
     
->>>>>>> feature/imagenes_sitios
     
     with app.app_context():
         from src.core.models.user import User
