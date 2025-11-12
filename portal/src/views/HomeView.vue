@@ -54,17 +54,7 @@ const performSearch = () => {
         orderByParam="registrado" 
       />
       
-      <!-- Se ha eliminado la directiva v-if="authStore.isLoggedIn" para evitar el error. 
-           Esta sección estará oculta/deshabilitada en FeaturedSection si se usa 
-           el orderByParam="favorites" sin token. -->
-      <!-- Si la quieres ver, puedes ponerla sin el v-if por ahora, pero sabes que fallará 
-           la llamada a la API si no existe el Store. Por ahora la dejo comentada 
-           ya que no tienes la lógica de login/token activa: -->
-      <!-- <FeaturedSection 
-        title="⭐ Tus Favoritos" 
-        orderByParam="favorites" 
-        listRoute="/me/favorites"
-      /> -->
+  
 
     </main>
   </div>

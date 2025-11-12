@@ -2,8 +2,17 @@
   <div class="listado-sitios-page">
     <header>
       <h1>Listado de Sitios Históricos</h1>
-      <p v-if="currentOrder">Orden actual: **{{ currentOrder }}**</p>
-      <p v-if="currentNameFilter">Filtro de búsqueda: **{{ currentNameFilter }}**</p>
+      <FiltersSite />
+
+      <p v-if="currentSearch" class="status-info">
+        Filtro de búsqueda: <strong>{{ currentSearch }}</strong>
+      </p>
+      <p v-if="currentProvince" class="status-info">
+        Provincia: <strong>{{ currentProvince }}</strong>
+      </p>
+      <p v-if="currentOrder" class="status-info">
+        Orden actual: <strong>{{ currentOrder }}</strong>
+      </p>
     </header>
 
     <main>
@@ -22,82 +31,118 @@
         </div>
     </main>
   </div>
+
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import SiteCard from '@/components/SiteCard.vue';
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import FiltersSite from '@/components/FiltersSite.vue'
+import SiteCard from '@/components/SiteCard.vue'
 
-const route = useRoute();
+const route = useRoute()
 
-// --- Estados ---
-const sites = ref([]);
-const isLoading = ref(true);
-const error = ref(null);
-const errorMessage = ref('');
+const sites = ref([])
+const isLoading = ref(true)
+const error = ref(null)
+const errorMessage = ref('')
 
-const currentPage = ref(1);
-const perPage = 12;
 
-const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
+//  URL base correcta del backend Flask
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
 
-// --- Computed Properties para Query Params ---
-const currentOrder = computed(() => route.query.order_by || 'registrado'); 
-const currentNameFilter = computed(() => route.query.name || ''); 
 
-// --- Lógica de Carga ---
+// --- Computed (vinculados a query params) ---
+const currentSearch = computed(() => route.query.search || '')
+const currentProvince = computed(() => route.query.province || '')
+const currentOrder = computed(() => route.query.order_by || 'registrado')
+const currentOrderDirection = computed(() => route.query.order || 'desc')
+const currentCity = computed(() => route.query.city || '')
+const currentState = computed(() => route.query.state || '')
+const currentTags = computed(() => route.query.tags || '')
+const currentPage = computed(() => route.query.page || 1)
+const perPage = computed(() => route.query.per_page || 10)
+
+// --- Fetch principal ---
 const fetchSitesList = async () => {
-    isLoading.value = true;
-    error.value = null;
-    errorMessage.value = '';
+  isLoading.value = true
+  error.value = null
+  errorMessage.value = ''
 
-    let url = `${API_BASE_URL}/sites?order_by=${currentOrder.value}&page=${currentPage.value}&per_page=${perPage}`;
+  // 🔗 Construcción de URL dinámica con todos los filtros válidos
+  const params = new URLSearchParams({
+    order_by: currentOrder.value,
+    order: currentOrderDirection.value,
+    page: currentPage.value,
+    per_page: perPage.value
+  })
 
-    if (currentNameFilter.value) {
-        url += `&search=${encodeURIComponent(currentNameFilter.value)}`;
-    }
+  if (currentSearch.value) params.append('search', currentSearch.value)
+  if (currentProvince.value) params.append('province', currentProvince.value)
+  if (currentCity.value) params.append('city', currentCity.value)
+  if (currentState.value) params.append('state', currentState.value)
+  if (currentTags.value) params.append('tags', currentTags.value)
 
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  const url = `${API_BASE_URL}?${params.toString()}`
 
-        const data = await response.json();
-        // Extraemos la lista de sitios desde data.data
-        sites.value = data.data || [];
-    } catch (err) {
-        console.error('Fetch error for site list:', err);
-        errorMessage.value = err.message;
-        error.value = true;
-    } finally {
-        isLoading.value = false;
-    }
-};
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Error al obtener el listado (${response.status})`)
 
-// --- Watchers: recargar al cambiar filtros ---
-watch([currentOrder, currentNameFilter], () => {
-    currentPage.value = 1; // Reinicia la página al cambiar filtros
-    fetchSitesList();
-});
+    const data = await response.json()
+    sites.value = data.data || []
+  } catch (err) {
+    console.error('Error al cargar sitios:', err)
+    error.value = true
+    errorMessage.value = err.message
+  } finally {
+    isLoading.value = false
+  }
+}
 
-onMounted(() => {
-    fetchSitesList();
-});
+// 🔄 Actualiza automáticamente si cambian filtros o búsqueda
+watch(
+  [currentSearch, currentProvince, currentOrder, currentOrderDirection, currentCity, currentState, currentTags, currentPage],
+  fetchSitesList
+)
+
+onMounted(fetchSitesList)
 </script>
 
 <style scoped>
-.list-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 20px 0;
+h1 {
+  margin-bottom: 10px;
 }
-
+.status-info {
+  color: #666;
+  font-size: 0.9rem;
+}
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
 .status-message,
 .error-message,
 .empty-message {
-    padding: 20px;
-    text-align: center;
-    font-size: 1.1em;
+  text-align: center;
+  margin-top: 40px;
+  color: #666;
+}
+.loader {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ddd;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
