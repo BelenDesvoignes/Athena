@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'; 
 import { useRouter } from 'vue-router';
 import FeaturedSection from '@/components/FeaturedSection.vue';
-import { jwtDecode } from 'jwt-decode';
+
 
 const router = useRouter();
 
@@ -13,7 +13,7 @@ const performSearch = () => {
     // Redirige al Listado (/sitios) pasando el texto de búsqueda como parámetro 'query'
     router.push({ 
       path: '/sitios', 
-      query: { name: searchText.value } 
+      query: { search: searchText.value } 
     });
   }
 };
@@ -41,30 +41,20 @@ const performSearch = () => {
       
       <FeaturedSection 
         title="🔥 Más Visitados" 
-        orderByParam="visits-desc" 
+        orderByParam="nombre" 
       />
       
       <FeaturedSection 
         title="🏆 Mejor Puntuados" 
-        orderByParam="rating-5-1" 
+        orderByParam="calificacion" 
       />
 
       <FeaturedSection 
         title="🆕 Recientemente Agregados" 
-        orderByParam="latest" 
+        orderByParam="registrado" 
       />
       
-      <!-- Se ha eliminado la directiva v-if="authStore.isLoggedIn" para evitar el error. 
-           Esta sección estará oculta/deshabilitada en FeaturedSection si se usa 
-           el orderByParam="favorites" sin token. -->
-      <!-- Si la quieres ver, puedes ponerla sin el v-if por ahora, pero sabes que fallará 
-           la llamada a la API si no existe el Store. Por ahora la dejo comentada 
-           ya que no tienes la lógica de login/token activa: -->
-      <!-- <FeaturedSection 
-        title="⭐ Tus Favoritos" 
-        orderByParam="favorites" 
-        listRoute="/me/favorites"
-      /> -->
+  
 
     </main>
   </div>

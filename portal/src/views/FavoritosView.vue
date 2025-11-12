@@ -11,7 +11,9 @@
       </div>
       <div v-else-if="error" class="error-message message-box">
         ❌ Error al cargar favoritos: **{{ errorMessage }}**
-        <p v-if="errorStatusCode === 401">Por favor, <router-link to="/login">inicia sesión</router-link> para ver esta sección.</p>
+        <p v-if="errorStatusCode === 401">
+          Por favor, <router-link to="/login">inicia sesión</router-link> para ver esta sección.
+        </p>
       </div>
       
       <div v-else-if="sites.length > 0" class="list-grid">
@@ -30,7 +32,6 @@
 </template>
 
 <script setup>
-// Lógica que ya teníamos...
 import { ref, onMounted } from 'vue';
 import SiteCard from '@/components/SiteCard.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -45,7 +46,7 @@ const error = ref(null);
 const errorMessage = ref('');
 const errorStatusCode = ref(null);
 
-const API_BASE_URL = 'http://localhost:5000/api'; 
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
 
 const fetchFavorites = async () => {
     if (!authStore.isLoggedIn) {
@@ -81,7 +82,8 @@ const fetchFavorites = async () => {
         }
         
         const data = await response.json();
-        sites.value = data.sites || data;
+        // Extraemos la lista de favoritos desde data.data
+        sites.value = data.data || [];
 
     } catch (err) {
         console.error('Fetch error for favorites:', err);
@@ -98,14 +100,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Contenedor principal de la página */
 .favoritos-page {
     padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
 }
 
-/* Encabezado */
 .page-header {
     text-align: center;
     margin-bottom: 40px;
@@ -113,7 +113,7 @@ onMounted(() => {
     border-bottom: 2px solid #f0f0f0;
 }
 .page-header h1 {
-    color: #3f51b5; /* Color primario */
+    color: #3f51b5;
     font-size: 2.2em;
     margin-bottom: 5px;
 }
@@ -122,28 +122,24 @@ onMounted(() => {
     font-size: 1.1em;
 }
 
-/* Contenido (Grid de tarjetas) */
 .list-grid {
     display: grid;
-    /* Mobile First: 1 columna, mínimo 300px */
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 25px;
     padding: 20px 0;
 }
 
-/* Media Queries para Tablets y Escritorios */
 @media (min-width: 768px) {
     .list-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 columnas en tablet */
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 @media (min-width: 1024px) {
     .list-grid {
-        grid-template-columns: repeat(3, 1fr); /* 3 columnas en escritorio */
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
-/* Estilos de mensajes de estado */
 .message-box {
     text-align: center;
     padding: 30px;
