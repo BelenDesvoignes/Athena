@@ -48,7 +48,6 @@ const error = ref(null)
 const errorMessage = ref('')
 
 
-//  URL base correcta del backend Flask
 const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
 
 
