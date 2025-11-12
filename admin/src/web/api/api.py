@@ -61,9 +61,13 @@ def get_sites():
         # Convierte los IDs de tags separados por coma a una lista de enteros
         tag_ids = [int(tid) for tid in tags_param.split(',') if tid.isdigit()]
         if tag_ids:
-            # Hace un JOIN y filtra los sitios que contienen CUALQUIERA de los IDs
-            query = query.join(Sitio.tags).filter(Tag.id.in_(tag_ids))
-            
+            subquery = db.session.query(sitios_tags.c.sitio_id).filter(
+                sitios_tags.c.tag_id.in_(tag_ids)
+            ).group_by(sitios_tags.c.sitio_id).having(
+                func.count(sitios_tags.c.tag_id) == len(tag_ids)
+            ).subquery()
+            query = query.filter(Sitio.id.in_(subquery))     
+           
     #  Manejo de Ordenamiento
     # 'registrado' por defecto, para cumplir el requisito de 'fecha de registro'
     order_by = request.args.get('order_by', 'registrado') 
