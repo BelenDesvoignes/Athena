@@ -18,7 +18,7 @@
 
         <div v-else-if="error" class="status-message error-box">
             ❌ Error al cargar los sitios: {{ errorMessage }}
-            <p v-if="orderByParam === 'favorites'">Por favor, inicie sesión para ver sus favoritos.</p>
+            <p v-if="props.orderByParam === 'favorites'">Por favor, inicia sesión para ver tus favoritos.</p>
         </div>
 
         <div v-else-if="sites.length > 0" class="site-list">
@@ -37,61 +37,44 @@ import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import SiteCard from './SiteCard.vue';
 
-// Define Props
 const props = defineProps({
-    title: {
-        type: String,
-        required: true
-    },
-    // Parámetro para la API: 'registrado', 'nombre', 'calificacion', 'favorites'
-    orderByParam: {
-        type: String,
-        required: true
-    },
-    // Ruta a la que enlaza el botón "Ver todos"
-    listRoute: {
-        type: String,
-        default: '/sitios'
-    }
+    title: { type: String, required: true },
+    orderByParam: { type: String, required: true },
+    listRoute: { type: String, default: '/sitios' }
 });
 
-// --- Estados ---
 const sites = ref([]);
 const isLoading = ref(true);
-const error = ref(null);
+const error = ref(false);
 const errorMessage = ref('');
 
-// Constantes
 const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api';
-const MAX_SITES = 4; // Límite de tarjetas a mostrar en la Home
+const MAX_SITES = 4;
 
-// --- Lógica de Carga ---
 const fetchSites = async () => {
     isLoading.value = true;
-    error.value = null;
+    error.value = false;
     errorMessage.value = '';
 
-    // Como estamos en modo PÚBLICO (sin auth.js), deshabilitamos 'favorites'
+    // Si se quiere mostrar favoritos pero no hay auth, mostramos mensaje
     if (props.orderByParam === 'favorites') {
         errorMessage.value = 'Esta funcionalidad requiere iniciar sesión.';
         isLoading.value = false;
+        error.value = true;
         return;
     }
 
-    // 1. 🚧 Construcción de la URL
     const url = `${API_BASE_URL}/sites?order_by=${props.orderByParam}&per_page=${MAX_SITES}`;
-    
-    // 2. 📡 Realizar la Petición
+
     try {
         const response = await fetch(url);
 
         if (!response.ok) {
-            // Manejo de errores HTTP específicos (ej: 404, 500)
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        sites.value = data.data || [];
+        sites.value = data.data || data || [];
 
     } catch (err) {
         console.error(`Fetch error for ${props.title}:`, err);
@@ -129,24 +112,20 @@ onMounted(() => {
 
 .btn-ver-todos {
     text-decoration: none;
-    color: #3f51b5; /* Color primario */
+    color: #3f51b5;
     font-weight: bold;
     transition: color 0.3s;
 }
-
 .btn-ver-todos:hover {
     color: #ffc107;
 }
 
-/* Grid de sitios */
 .site-list {
     display: grid;
-    /* Mobile First: Mínimo 1 columna, máximo 4 */
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
 }
 
-/* Mensajes de estado */
 .status-message {
     padding: 20px;
     text-align: center;
@@ -171,7 +150,6 @@ onMounted(() => {
     color: #757575;
 }
 
-/* Ajustes para tablet/desktop */
 @media (max-width: 768px) {
     .site-list {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));

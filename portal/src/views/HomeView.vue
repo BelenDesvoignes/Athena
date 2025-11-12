@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'; 
 import { useRouter } from 'vue-router';
 import FeaturedSection from '@/components/FeaturedSection.vue';
-import { jwtDecode } from 'jwt-decode';
+
 
 const router = useRouter();
 
