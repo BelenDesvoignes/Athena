@@ -85,38 +85,34 @@
                 </div>
 
                 <fieldset>
-                    <legend>Imágenes del sitio (máx. 10)</legend>
+                <legend>Imágenes del sitio (máx. 10)</legend>
 
-                    <div class="mb-3 mt-2">
-                        <div class="custom-file-upload">
-                            <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
-                            <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
-                            <span id="file-count" class="ms-2 text-info"></span>
-                        </div>
+                <div class="mb-3 mt-2">
+                    <div class="custom-file-upload">
+                        <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
+                        <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                        <span id="file-count" class="ms-2 text-info"></span>
                     </div>
+                </div>
 
-                    <div id="imagenes-todas" style="margin-top: 15px;">
-                        {% for img in imagenes_info %}
-                        <div class="imagen-item bg-dark p-2 rounded" data-id="{{ img.id }}" style="display:inline-block; margin:10px; text-align:center; position:relative; vertical-align:top;">
-                            <div style="position:relative;">
-                                <img src="{{ img.url }}" width="150" height="150" style="object-fit:cover; border-radius:4px; border:2px solid #555;">
-                                {% if not img.portada %}
-                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 eliminar-existente">×</button>
-                                {% endif %}
-                            </div>
-                            <label style="display:block; margin-top:5px; text-align:center; color:white;">
-                                Portada
-                                <input type="radio" name="portada_radio" value="{{ img.id }}" {% if img.portada %}checked{% endif %}>
-                            </label>
-                        </div>
-                        {% endfor %}
+                <div id="imagenes-todas" style="margin-top: 15px;">
+                    <!-- Se renderizan imágenes existentes del backend -->
+                    {% for img in imagenes_info %}
+                    <div class="imagen-item bg-dark p-2 rounded" 
+                        data-id="{{ img.id }}" 
+                        data-url="{{ img.url }}" 
+                        data-portada="{{ 'true' if img.es_portada else 'false' }}"
+                        data-nueva="false"
+                        style="display:inline-block; margin:10px; text-align:center; position:relative; vertical-align:top;">
                     </div>
+                    {% endfor %}
+                </div>
 
-                    <input type="hidden" name="portada" id="portada-hidden" value="0">
-                </fieldset>
+                <input type="hidden" name="portada" id="portada-hidden" value="0">
+            </fieldset>
 
-                <button type="submit" class="btn btn-success">Guardar cambios</button>
-                <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success">Guardar cambios</button>
+            <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
             </form>
         </article>
     </section>
@@ -124,259 +120,299 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<script>
-$(document).ready(function() {
-    $('#tags').select2({
-        placeholder: "Selecciona uno o más tags",
-        allowClear: true
-    });
-});
-
-var map = L.map('map').setView([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-let marker = L.marker([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}]).addTo(map);
-
-map.on('click', function(e) {
-    if (marker) map.removeLayer(marker);
-    marker = L.marker(e.latlng).addTo(map);
-    document.getElementById('latitud').value = e.latlng.lat;
-    document.getElementById('longitud').value = e.latlng.lng;
-});
-
-const inputImagenes = document.getElementById('imagenes');
-const contenedor = document.getElementById('imagenes-todas');
-const portadaHidden = document.getElementById('portada-hidden');
-let nuevasImagenes = [];
-let imagenesExistentes = Array.from(document.querySelectorAll('.imagen-item[data-id]')).map(div => ({
-    id: div.dataset.id,
-    portada: div.querySelector('input[type="radio"]').checked
-}));
-
-function renderizarNuevas() {
-    contenedor.querySelectorAll('.nueva').forEach(el => el.remove());
-
-    nuevasImagenes.forEach((fileObj, idx) => {
-        const div = document.createElement('div');
-        div.className = 'imagen-item bg-dark p-2 rounded nueva';
-        div.style.display = "inline-block";
-        div.style.margin = "10px";
-        div.style.textAlign = "center";
-        div.style.position = "relative";
-        div.style.verticalAlign = "top";
-
-        const imgContainer = document.createElement('div');
-        imgContainer.style.position = "relative";
-
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(fileObj.file);
-        img.width = 150;
-        img.height = 150;
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "4px";
-        imgContainer.appendChild(img);
-
-        if (!fileObj.portada) {
-            const botonEliminar = document.createElement('button');
-            botonEliminar.type = "button";
-            botonEliminar.textContent = "×";
-            botonEliminar.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
-            botonEliminar.addEventListener('click', () => eliminarNueva(idx));
-            imgContainer.appendChild(botonEliminar);
-        }
-
-        const label = document.createElement('label');
-        label.style.display = "block";
-        label.style.marginTop = "5px";
-        label.style.textAlign = "center";
-        label.style.color = "white";
-        label.innerText = "Portada ";
-
-        const radio = document.createElement('input');
-        radio.type = "radio";
-        radio.name = "portada_radio";
-        radio.value = "nueva-" + idx;
-        radio.checked = !!fileObj.portada;
-        radio.addEventListener('change', () => {
-            marcarComoPortadaNueva(idx);
+    <script>
+        $(document).ready(function() {
+            $('#tags').select2({
+                placeholder: "Selecciona uno o más tags",
+                allowClear: true
+            });
         });
 
-        label.appendChild(radio);
-        div.appendChild(imgContainer);
-        div.appendChild(label);
-        contenedor.appendChild(div);
-    });
+        // Mapa
+        var map = L.map('map').setView([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+        let marker = L.marker([{{ coordenadas.latitud }}, {{ coordenadas.longitud }}]).addTo(map);
 
-    actualizarContador();
-}
+        map.on('click', function(e) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('latitud').value = e.latlng.lat;
+            document.getElementById('longitud').value = e.latlng.lng;
+        });
 
-function marcarComoPortadaNueva(idx) {
-    nuevasImagenes.forEach(f => f.portada = false);
-    imagenesExistentes.forEach(f => f.portada = false);
+        // ========================
+        //  LÓGICA DE IMÁGENES
+        // ========================
 
-    nuevasImagenes[idx].portada = true;
-    portadaHidden.value = "nueva-" + idx;
+        const inputImagenes = document.getElementById('imagenes');
+        const contenedor = document.getElementById('imagenes-todas');
+        const portadaHidden = document.getElementById('portada-hidden');
+        let nuevasImagenes = [];
+        let imagenesExistentes = [];
 
-    renderizarNuevas();
-    actualizarBotonesExistentes();
-}
+        // Inicializar imágenes existentes del backend
+        document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
+            imagenesExistentes.push({
+                id: div.dataset.id,
+                url: div.dataset.url,
+                portada: div.dataset.portada === 'true',
+                nueva: false
+            });
+        });
 
-function marcarComoPortadaExistente(id) {
-    nuevasImagenes.forEach(f => f.portada = false);
-    imagenesExistentes.forEach(f => f.portada = (f.id === id));
-    portadaHidden.value = id;
-    renderizarNuevas();
-    actualizarBotonesExistentes();
-}
+        // Renderizar todas las imágenes (existentes + nuevas)
+        function renderizarImagenes() {
+            contenedor.innerHTML = '';
 
-function actualizarBotonesExistentes() {
-    document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
-        const id = div.dataset.id;
-        const boton = div.querySelector('.eliminar-existente');
-        const esPortada = imagenesExistentes.find(f => f.id === id)?.portada;
-        if (boton) boton.style.display = esPortada ? "none" : "block";
-    });
-}
+            // Renderizar imágenes existentes
+            imagenesExistentes.forEach((img, idx) => {
+                const div = document.createElement('div');
+                div.className = 'imagen-item bg-dark p-2 rounded';
+                div.style.display = "inline-block";
+                div.style.margin = "10px";
+                div.style.textAlign = "center";
+                div.style.position = "relative";
+                div.style.verticalAlign = "top";
 
-function eliminarNueva(idx) {
-    const esPortada = nuevasImagenes[idx].portada;
-    if (esPortada) {
-        alert("No se puede eliminar la imagen marcada como portada.");
-        return;
-    }
-    nuevasImagenes.splice(idx, 1);
-    renderizarNuevas();
-}
+                const imgEl = document.createElement('img');
+                imgEl.src = img.url;
+                imgEl.width = 150;
+                imgEl.height = 150;
+                imgEl.style.objectFit = "cover";
+                imgEl.style.borderRadius = "4px";
+                div.appendChild(imgEl);
 
-function eliminarImagenExistente(id) {
-    const img = imagenesExistentes.find(f => f.id === id);
-    if (img?.portada) {
-        alert("No se puede eliminar la imagen marcada como portada.");
-        return;
-    }
+                if (!img.portada) {
+                    const boton = document.createElement('button');
+                    boton.type = "button";
+                    boton.textContent = "×";
+                    boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
+                    boton.addEventListener('click', () => eliminarImagenExistente(img.id));
+                    div.appendChild(boton);
+                }
 
-    if (confirm("¿Deseas eliminar esta imagen existente?")) {
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = "hidden";
-        hiddenInput.name = "eliminar_imagenes[]";
-        hiddenInput.value = id;
-        document.querySelector('form').appendChild(hiddenInput);
+                const label = document.createElement('label');
+                label.style.display = "block";
+                label.style.marginTop = "5px";
+                label.style.textAlign = "center";
+                label.style.color = "white";
+                label.innerText = "Portada ";
 
-        imagenesExistentes = imagenesExistentes.filter(f => f.id !== id);
-        document.querySelector(`.imagen-item[data-id="${id}"]`).remove();
-        actualizarContador();
-    }
-}
-inputImagenes.addEventListener('change', (e) => {
-    Array.from(e.target.files).forEach(file => {
-        if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
-            nuevasImagenes.push({ file, portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada) });
+                const radio = document.createElement('input');
+                radio.type = "radio";
+                radio.name = "portada_radio";
+                radio.value = img.id;
+                radio.checked = img.portada;
+                radio.addEventListener('change', () => marcarComoPortadaExistente(img.id));
+
+                label.appendChild(radio);
+                div.appendChild(label);
+                contenedor.appendChild(div);
+            });
+
+            // Renderizar nuevas imágenes
+            nuevasImagenes.forEach((fileObj, idx) => {
+                const div = document.createElement('div');
+                div.className = 'imagen-item bg-dark p-2 rounded';
+                div.style.display = "inline-block";
+                div.style.margin = "10px";
+                div.style.textAlign = "center";
+                div.style.position = "relative";
+                div.style.verticalAlign = "top";
+
+                const imgEl = document.createElement('img');
+                imgEl.src = URL.createObjectURL(fileObj.file);
+                imgEl.width = 150;
+                imgEl.height = 150;
+                imgEl.style.objectFit = "cover";
+                imgEl.style.borderRadius = "4px";
+                div.appendChild(imgEl);
+
+                if (!fileObj.portada) {
+                    const boton = document.createElement('button');
+                    boton.type = "button";
+                    boton.textContent = "×";
+                    boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
+                    boton.addEventListener('click', () => eliminarNueva(idx));
+                    div.appendChild(boton);
+                }
+
+                const label = document.createElement('label');
+                label.style.display = "block";
+                label.style.marginTop = "5px";
+                label.style.textAlign = "center";
+                label.style.color = "white";
+                label.innerText = "Portada ";
+
+                const radio = document.createElement('input');
+                radio.type = "radio";
+                radio.name = "portada_radio";
+                radio.value = "nueva-" + idx;
+                radio.checked = fileObj.portada;
+                radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
+
+                label.appendChild(radio);
+                div.appendChild(label);
+                contenedor.appendChild(div);
+            });
+
+            actualizarContador();
         }
-    });
-    renderizarNuevas();
-});
 
-function actualizarContador() {
-    document.getElementById('file-count').textContent =
-        (nuevasImagenes.length + imagenesExistentes.length) > 0
-            ? `${nuevasImagenes.length + imagenesExistentes.length} imagen(es) seleccionada(s)`
-            : "";
-}
+        // Marcar portada
+        function marcarComoPortadaNueva(idx) {
+            imagenesExistentes.forEach(img => img.portada = false);
+            nuevasImagenes.forEach(f => f.portada = false);
+            nuevasImagenes[idx].portada = true;
+            portadaHidden.value = "nueva-" + idx;
+            renderizarImagenes();
+        }
 
-document.querySelectorAll('.imagen-item[data-id] input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-        marcarComoPortadaExistente(radio.value);
-    });
-});
+        function marcarComoPortadaExistente(id) {
+            imagenesExistentes.forEach(img => img.portada = (img.id === id));
+            nuevasImagenes.forEach(f => f.portada = false);
+            portadaHidden.value = id;
+            renderizarImagenes();
+        }
 
-actualizarBotonesExistentes();
-</script>>
+        function eliminarNueva(idx) {
+            if (nuevasImagenes[idx].portada) {
+                alert("No se puede eliminar la imagen marcada como portada.");
+                return;
+            }
+            nuevasImagenes.splice(idx, 1);
+            renderizarImagenes();
+        }
 
-<style>
-body, label, legend, input, select, textarea {
-    color: #fff !important;
-}
+        function eliminarImagenExistente(id) {
+            const img = imagenesExistentes.find(f => f.id === id);
+            if (img?.portada) {
+                alert("No se puede eliminar la imagen marcada como portada.");
+                return;
+            }
 
-fieldset {
-    border: 1px solid #666;
-    padding: 15px;
-    border-radius: 10px;
-}
+            if (confirm("¿Deseas eliminar esta imagen existente?")) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "eliminar_imagenes[]";
+                hiddenInput.value = id;
+                document.querySelector('form').appendChild(hiddenInput);
 
-.form-control, .form-select {
-    background-color: #222 !important;
-    color: #fff !important;
-    border: 1px solid #555 !important;
-}
+                imagenesExistentes = imagenesExistentes.filter(f => f.id !== id);
+                renderizarImagenes();
+            }
+        }
 
-.form-control:focus, .form-select:focus {
-    background-color: #333 !important;
-    color: #fff !important;
-    border-color: #0dcaf0 !important;
-    box-shadow: none !important;
-}
+        function actualizarContador() {
+            document.getElementById('file-count').textContent =
+                (nuevasImagenes.length + imagenesExistentes.length) > 0
+                    ? `${nuevasImagenes.length + imagenesExistentes.length} imagen(es) en total`
+                    : "";
+        }
 
-.select2-container--default .select2-selection--multiple {
-    background-color: #222 !important;
-    border: 1px solid #555 !important;
-    color: #fff !important;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #0d6efd !important;
-    color: #fff !important;
-    border: none !important;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #fff !important;
-    margin-right: 4px;
-}
-.select2-dropdown {
-    background-color: #222 !important;
-    color: #fff !important;
-    border: 1px solid #555 !important;
-}
-.select2-results__option--highlighted {
-    background-color: #0d6efd !important;
-    color: #fff !important;
-}
+        // Cargar nuevas imágenes
+        inputImagenes.addEventListener('change', (e) => {
+            Array.from(e.target.files).forEach(file => {
+                if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
+                    nuevasImagenes.push({
+                        file,
+                        portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada)
+                    });
+                }
+            });
+            renderizarImagenes();
+        });
 
-.imagen-item {
-    background-color: #1e1e1e;
-    border: 1px solid #444;
-}
-.imagen-item img {
-    border: 2px solid #555;
-}
-.imagen-item img:hover {
-    border-color: #0d6efd;
-}
+        // Inicializar renderizado
+        renderizarImagenes();
+    </script>
 
-.custom-file-upload {
-    position: relative;
-    display: inline-block;
-}
+    <style>
+        body, label, legend, input, select, textarea {
+            color: #fff !important;
+        }
 
-.custom-file-upload input[type="file"] {
-    display: none;
-}
+        fieldset {
+            border: 1px solid #666;
+            padding: 15px;
+            border-radius: 10px;
+        }
 
-.custom-file-upload .btn {
-    cursor: pointer;
-    background-color: #0d6efd;
-    border: none;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 5px;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-}
+        .form-control, .form-select {
+            background-color: #222 !important;
+            color: #fff !important;
+            border: 1px solid #555 !important;
+        }
 
-.custom-file-upload .btn:hover {
-    background-color: #0b5ed7;
-}
+        .form-control:focus, .form-select:focus {
+            background-color: #333 !important;
+            color: #fff !important;
+            border-color: #0dcaf0 !important;
+            box-shadow: none !important;
+        }
 
-#file-count {
-    font-size: 0.9rem;
-    color: #aaa;
-}
-</style>
+        .select2-container--default .select2-selection--multiple {
+            background-color: #222 !important;
+            border: 1px solid #555 !important;
+            color: #fff !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #0d6efd !important;
+            color: #fff !important;
+            border: none !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #fff !important;
+            margin-right: 4px;
+        }
+        .select2-dropdown {
+            background-color: #222 !important;
+            color: #fff !important;
+            border: 1px solid #555 !important;
+        }
+        .select2-results__option--highlighted {
+            background-color: #0d6efd !important;
+            color: #fff !important;
+        }
+
+        .imagen-item {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+        }
+        .imagen-item img {
+            border: 2px solid #555;
+        }
+        .imagen-item img:hover {
+            border-color: #0d6efd;
+        }
+
+        .custom-file-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .custom-file-upload input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload .btn {
+            cursor: pointer;
+            background-color: #0d6efd;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        .custom-file-upload .btn:hover {
+            background-color: #0b5ed7;
+        }
+
+        #file-count {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
 {% endblock %}
