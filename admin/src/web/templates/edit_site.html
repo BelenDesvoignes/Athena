@@ -1,106 +1,88 @@
 {% extends 'base_layout.html' %}
+
+{% block title %}Editar Sitio Histórico{% endblock %}
+
+{% block content %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-{% block content %}
 <section class="container mt-5">
     <article>
         <h2>Editar Sitio Histórico</h2>
-        <form method="post">
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('sitios.edit', id=sitio.id) }}">
             <fieldset>
                 <legend>Datos del sitio</legend>
+
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre</label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" value="{{ sitio.nombre }}"
-                        required>
+                    <input type="text" class="form-control" id="nombre" name="nombre" value="{{ sitio.nombre }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="descripcion_breve" class="form-label">Descripción breve</label>
-                    <input type="text" class="form-control" id="descripcion_breve" name="descripcion_breve"
-                        value="{{ sitio.descripcion_breve }}" required>
+                    <input type="text" class="form-control" id="descripcion_breve" name="descripcion_breve" value="{{ sitio.descripcion_breve }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="descripcion_completa" class="form-label">Descripción completa</label>
-                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3"
-                        required>{{ sitio.descripcion_completa }}</textarea>
+                    <textarea class="form-control" id="descripcion_completa" name="descripcion_completa" rows="3" required>{{ sitio.descripcion_completa }}</textarea>
                 </div>
+
                 <div class="mb-3">
                     <label for="ciudad" class="form-label">Ciudad</label>
-                    <input type="text" class="form-control" id="ciudad" name="ciudad" value="{{ sitio.ciudad }}"
-                        required>
+                    <input type="text" class="form-control" id="ciudad" name="ciudad" value="{{ sitio.ciudad }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="provincia" class="form-label">Provincia</label>
-                    <input type="text" class="form-control" id="provincia" name="provincia"
-                        value="{{ sitio.provincia }}" required>
+                    <input type="text" class="form-control" id="provincia" name="provincia" value="{{ sitio.provincia }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="estado_conservacion" class="form-label">Estado de conservación</label>
                     <select class="form-select" id="estado_conservacion" name="estado_conservacion" required>
-                        <option value="Bueno" {% if sitio.estado_conservacion=="Bueno" %}selected{% endif %}>Bueno
-                        </option>
-                        <option value="Regular" {% if sitio.estado_conservacion=="Regular" %}selected{% endif %}>Regular
-                        </option>
+                        <option value="Bueno" {% if sitio.estado_conservacion=="Bueno" %}selected{% endif %}>Bueno</option>
+                        <option value="Regular" {% if sitio.estado_conservacion=="Regular" %}selected{% endif %}>Regular</option>
                         <option value="Malo" {% if sitio.estado_conservacion=="Malo" %}selected{% endif %}>Malo</option>
                     </select>
                 </div>
+
                 <div class="mb-3">
                     <label for="inauguracion" class="form-label">Año de inauguración</label>
-                    <input type="number" class="form-control" id="inauguracion" name="inauguracion"
-                        value="{{ sitio.inauguracion }}" required>
+                    <input type="number" class="form-control" id="inauguracion" name="inauguracion" value="{{ sitio.inauguracion }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="categoria" class="form-label">Categoría</label>
-                    <input type="text" class="form-control" id="categoria" name="categoria"
-                        value="{{ sitio.categoria }}" required>
+                    <input type="text" class="form-control" id="categoria" name="categoria" value="{{ sitio.categoria }}" required>
                 </div>
 
-                <label for="tag-input">Tags:</label>
-                <div id="tag-selector">
-
-                    <input type="text" id="tag-input" placeholder="Buscar o seleccionar tags...">
-
-                    <div id="selected-tags">
+                <div class="mb-3">
+                    <label for="tags" class="form-label">Tags</label>
+                    <select id="tags" name="tags" class="form-select" multiple="multiple" style="width: 100%;">
                         {% for tag in tags %}
-                        {% if tag in sitio.tags %}
-                        <div class="tag-chip">
-                            {{ tag.nombre }}
-                            <span onclick="removeTag({{ tag.id }})">&times;</span>
-                            <input type="hidden" name="tags" value="{{ tag.id }}">
-                            
-                        </div>
-                        {% endif %}
+                        <option value="{{ tag.id }}" {% if tag in sitio.tags %}selected{% endif %}>{{ tag.nombre }}</option>
                         {% endfor %}
-                    </div>
-
-                    <div id="tag-list">
-                        {% for tag in tags %}
-                        {% if tag not in sitio.tags %}
-                        <div class="tag-option" data-id="{{ tag.id }}" data-nombre="{{ tag.nombre }}">{{ tag.nombre }}
-                        </div>
-                        {%endif%}
-                        {% endfor %}
-                    </div>
+                    </select>
                 </div>
 
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1" {% if
-                        sitio.visible %}checked{% endif %}>
+                <div class="mb-3 form-check mt-3">
+                    <input type="checkbox" class="form-check-input" id="visible" name="visible" value="1" {% if sitio.visible %}checked{% endif %}>
                     <label class="form-check-label" for="visible">Visible</label>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label">Ubicación en el mapa</label>
                     <div id="map" style="height: 400px; width: 100%;"></div>
-                    <input type="hidden" name="latitud" id="latitud" value="{{ latitud }}">
-                    <input type="hidden" name="longitud" id="longitud" value="{{ longitud }}">
+                    <input type="hidden" name="latitud" id="latitud" value="{{ coordenadas.latitud }}">
+                    <input type="hidden" name="longitud" id="longitud" value="{{ coordenadas.longitud }}">
                 </div>
-            </fieldset>
-            <button type="submit" class="btn btn-success">Guardar cambios</button>
-            <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
-        </form>
-    </article>
-</section>
 
                 <fieldset>
                 <legend>Imágenes del sitio (máx. 10)</legend>

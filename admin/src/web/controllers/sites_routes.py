@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 import csv
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, get_flashed_messages
+from flask import Blueprint, abort, flash, redirect, render_template, request, Response, session, url_for, current_app
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, or_
@@ -12,9 +12,13 @@ from src.core.models.modification_history import ModificationHistory
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
+from src.core.models.images import Imagen
 from src.web.handlers.auth import login_required, permission_required
 from src.web.handlers.maintenance import maintenance_protected
-
+from minio import Minio
+from minio.error import S3Error
+from werkzeug.utils import secure_filename
+import uuid, os
 
 
 """Controlador para la gestión de sitios turísticos."""
@@ -212,27 +216,20 @@ def new():
         categoria = request.form.get("categoria")
         tag_ids = request.form.getlist("tags")
         visible = bool(request.form.get("visible"))
-        ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
-        """ Validaciones básicas de los campos """
-        if not all(
-            [
-                nombre,
-                descripcion_breve,
-                descripcion_completa,
-                ciudad,
-                provincia,
-                estado_conservacion,
-                inauguracion,
-                categoria,
-                ubicacion,
-            ]
-        ):
+
+        # Validación de campos obligatorios
+        if not all([
+            nombre, descripcion_breve, descripcion_completa, ciudad, provincia,
+            estado_conservacion, inauguracion, categoria, latitud, longitud
+        ]):
             error = "No completaste todos los campos obligatorios."
             return render_template("new_site.html", tags=tags, error=error)
 
         try:
+            # Crear punto geográfico
             ubicacion = WKTElement(f"POINT({longitud} {latitud})", srid=4326)
 
+            # Crear instancia del sitio
             sitio = Sitio(
                 nombre=nombre,
                 descripcion_breve=descripcion_breve,
@@ -303,6 +300,7 @@ def new():
                 return redirect(url_for("sitios.list"))
 
         except Exception as e:
+            db.session.rollback()
             error = f"Error al crear el sitio: {str(e)}"
             return render_template("new_site.html", tags=tags, error=error)
 
