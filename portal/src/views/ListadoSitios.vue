@@ -1,4 +1,4 @@
-<template> 
+<template>
   <div class="listado-sitios-page">
     <header>
       <h1>Listado de Sitios Históricos</h1>
@@ -20,7 +20,6 @@
         <div v-else class="empty-message">
             No se encontraron sitios con los filtros aplicados.
         </div>
-        
     </main>
   </div>
 </template>
@@ -38,11 +37,14 @@ const isLoading = ref(true);
 const error = ref(null);
 const errorMessage = ref('');
 
+const currentPage = ref(1);
+const perPage = 12;
+
 const API_BASE_URL = 'https://grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
 
 // --- Computed Properties para Query Params ---
 const currentOrder = computed(() => route.query.order_by || 'registrado'); 
-const currentNameFilter = computed(() => route.query.search || ''); 
+const currentNameFilter = computed(() => route.query.name || ''); 
 
 // --- Lógica de Carga ---
 const fetchSitesList = async () => {
@@ -50,43 +52,31 @@ const fetchSitesList = async () => {
     error.value = null;
     errorMessage.value = '';
 
+    let url = `${API_BASE_URL}/sites?order_by=${currentOrder.value}&page=${currentPage.value}&per_page=${perPage}`;
+
+    if (currentNameFilter.value) {
+        url += `&search=${encodeURIComponent(currentNameFilter.value)}`;
+    }
+
     try {
-        const fullUrlString = `${API_BASE_URL}/sites`;
-        const url = new URL(fullUrlString);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        // Agregar parámetros de búsqueda codificados
-        url.searchParams.set('order_by', currentOrder.value);
-        
-        // Usar 'search' para el filtro de nombre, coherente con HomeView
-        if (currentNameFilter.value) {
-            url.searchParams.set('search', currentNameFilter.value);
-        }
-
-        // Opcional: agregar paginación si luego implementas currentPage/perPage
-        // url.searchParams.set('page', currentPage.value);
-        // url.searchParams.set('per_page', 12);
-
-        const response = await fetch(url.toString());
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        // Asegúrate de leer de data.data, como en FeaturedSection
-        sites.value = data.data || [];
-
-    } catch (err) {
-        console.error('Fetch error for site list:', err);
-        errorMessage.value = err.message;
-        error.value = true;
-    } finally {
-        isLoading.value = false;
-    }
+        const data = await response.json();
+        // Extraemos la lista de sitios desde data.data
+        sites.value = data.data || [];
+    } catch (err) {
+        console.error('Fetch error for site list:', err);
+        errorMessage.value = err.message;
+        error.value = true;
+    } finally {
+        isLoading.value = false;
+    }
 };
 
-// --- Re-cargar al cambiar los parámetros ---
+// --- Watchers: recargar al cambiar filtros ---
 watch([currentOrder, currentNameFilter], () => {
+    currentPage.value = 1; // Reinicia la página al cambiar filtros
     fetchSitesList();
 });
 
@@ -101,5 +91,13 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
     padding: 20px 0;
+}
+
+.status-message,
+.error-message,
+.empty-message {
+    padding: 20px;
+    text-align: center;
+    font-size: 1.1em;
 }
 </style>
