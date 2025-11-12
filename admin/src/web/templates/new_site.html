@@ -94,10 +94,8 @@
                         </div>
                     </div>
                     <input type="hidden" name="portada" id="portada-hidden" value="0">
-                    <div id="imagenes-lista" style="margin-top: 15px;"></div>
+                    <div id="imagenes-lista" class="d-flex flex-wrap" style="margin-top: 15px; gap: 10px;"></div>
                 </fieldset>
-
-            </fieldset>
 
             <button type="submit" class="btn btn-success">Guardar sitio</button>
             <a href="{{ url_for('sitios.list') }}" class="btn btn-secondary">Cancelar</a>
@@ -137,69 +135,82 @@ function renderizarImagenes() {
     archivosSeleccionados.forEach((fileObj, idx) => {
         const div = document.createElement('div');
         div.className = 'imagen-item bg-dark p-2 rounded';
-        div.style.display = "inline-block";
-        div.style.margin = "10px";
-        div.style.textAlign = "center";
-        div.style.position = "relative";
-        div.style.verticalAlign = "top";
+        div.style.width = "180px";
+        div.dataset.index = idx;
 
         const imgContainer = document.createElement('div');
         imgContainer.style.position = "relative";
 
         const img = document.createElement('img');
         img.src = URL.createObjectURL(fileObj.file);
-        img.width = 150;
-        img.height = 150;
+        img.width = 160;
+        img.height = 120;
         img.style.objectFit = "cover";
         img.style.borderRadius = "4px";
         imgContainer.appendChild(img);
 
-        if (!fileObj.portada) {
-            const botonEliminar = document.createElement('button');
-            botonEliminar.type = "button";
-            botonEliminar.textContent = "×";
-            botonEliminar.style.position = "absolute";
-            botonEliminar.style.top = "5px";
-            botonEliminar.style.right = "5px";
-            botonEliminar.style.backgroundColor = "#dc3545";
-            botonEliminar.style.color = "white";
-            botonEliminar.style.border = "none";
-            botonEliminar.style.borderRadius = "50%";
-            botonEliminar.style.width = "24px";
-            botonEliminar.style.height = "24px";
-            botonEliminar.style.cursor = "pointer";
-            botonEliminar.addEventListener('click', () => eliminarImagen(idx));
-            imgContainer.appendChild(botonEliminar);
-        }
+        // Botón eliminar
+        const botonEliminar = document.createElement('button');
+        botonEliminar.type = "button";
+        botonEliminar.textContent = "×";
+        botonEliminar.className = "btn btn-sm btn-danger";
+        botonEliminar.style.position = "absolute";
+        botonEliminar.style.top = "5px";
+        botonEliminar.style.right = "5px";
+        botonEliminar.addEventListener('click', () => eliminarImagen(idx));
+        imgContainer.appendChild(botonEliminar);
 
-        const label = document.createElement('label');
-        label.style.display = "block";
-        label.style.marginTop = "5px";
-        label.style.textAlign = "center";
-        label.style.color = "white";
-        label.innerText = "Portada ";
-
-        const radio = document.createElement('input');
-        radio.type = "radio";
-        radio.name = "portada_radio";
-        radio.value = idx;
-        radio.checked = !!fileObj.portada;
-        radio.addEventListener('change', () => {
+        // Radio portada
+        const portadaLabel = document.createElement('label');
+        portadaLabel.className = "text-light mt-1";
+        const portadaRadio = document.createElement('input');
+        portadaRadio.type = "radio";
+        portadaRadio.name = "portada_radio";
+        portadaRadio.value = idx;
+        portadaRadio.checked = !!fileObj.portada;
+        portadaRadio.addEventListener('change', () => {
             archivosSeleccionados.forEach(f => f.portada = false);
             fileObj.portada = true;
             portadaHidden.value = idx;
             renderizarImagenes();
         });
+        portadaLabel.appendChild(portadaRadio);
+        portadaLabel.append(" Portada");
 
-        label.appendChild(radio);
+        // Descripción
+        const descripcion = document.createElement('input');
+        descripcion.type = "text";
+        descripcion.className = "form-control form-control-sm mt-2";
+        descripcion.placeholder = "Descripción..."; 
+        descripcion.value = fileObj.descripcion || "";
+        descripcion.addEventListener('input', e => {
+            fileObj.descripcion = e.target.value;
+        });
+
+        // Input oculto para enviar la descripción
+        const hiddenDesc = document.createElement('input');
+        hiddenDesc.type = "hidden";
+        hiddenDesc.name = "descripciones[]";
+        hiddenDesc.value = fileObj.descripcion || "";
+        div.appendChild(hiddenDesc);
+
+        // Actualiza el valor oculto cada vez que cambia
+        descripcion.addEventListener('input', () => {
+            hiddenDesc.value = descripcion.value;
+        });
+
+        // Orden visual
+        const orden = document.createElement('div');
+        orden.className = "text-center text-secondary mt-1";
+
         div.appendChild(imgContainer);
-        div.appendChild(label);
+        div.appendChild(portadaLabel);
+        div.appendChild(descripcion);
+        div.appendChild(orden);
         contenedor.appendChild(div);
     });
 
     actualizarInputFiles();
-    const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
-    portadaHidden.value = portadaIdx === -1 ? 0 : portadaIdx;
 }
 
 function eliminarImagen(idx) {
@@ -209,9 +220,6 @@ function eliminarImagen(idx) {
         return;
     }
     archivosSeleccionados.splice(idx, 1);
-    if (portadaIdx > idx) {
-        archivosSeleccionados[portadaIdx - 1].portada = true;
-    }
     renderizarImagenes();
 }
 
@@ -221,10 +229,10 @@ function actualizarInputFiles() {
     inputImagenes.files = dt.files;
 }
 
-inputImagenes.addEventListener('change', (e) => {
+inputImagenes.addEventListener('change', e => {
     Array.from(e.target.files).forEach(file => {
         if (archivosSeleccionados.length < 10) {
-            archivosSeleccionados.push({ file, portada: archivosSeleccionados.length === 0 });
+            archivosSeleccionados.push({ file, portada: archivosSeleccionados.length === 0, descripcion: "" });
         }
     });
     renderizarImagenes();
@@ -233,6 +241,7 @@ inputImagenes.addEventListener('change', (e) => {
             ? `${archivosSeleccionados.length} imagen(es) seleccionada(s)`
             : "";
 });
+
 </script>
 
 <style>
@@ -321,6 +330,11 @@ fieldset {
 #file-count {
     font-size: 0.9rem;
     color: #aaa;
+}
+
+::placeholder {
+    color: #fff !important;
+    opacity: 1;
 }
 </style>
 {% endblock %}
