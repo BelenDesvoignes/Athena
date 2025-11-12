@@ -34,7 +34,27 @@ def create_app(env="development", static_folder="../../static"):
 })
 
     db.init_app(app)
-    storage.init_app(app)
+    try:
+        minio_server = app.config.get("MINIO_SERVER")
+        access_key = app.config.get("MINIO_ACCESS_KEY")
+        secret_key = app.config.get("MINIO_SECRET_KEY")
+        secure = app.config.get("MINIO_SECURE")
+
+        app.logger.info(f"🔧 Configuración MinIO detectada:")
+        app.logger.info(f"    ➜ Server: {minio_server}")
+        app.logger.info(f"    ➜ Secure: {secure}")
+        app.logger.info(f"    ➜ Access Key: {access_key[:3]}***" if access_key else "    ➜ Access Key: NO DEFINIDA")
+        app.logger.info(f"    ➜ Secret Key: {secret_key[:3]}***" if secret_key else "    ➜ Secret Key: NO DEFINIDA")
+    except Exception as e:
+        app.logger.warning(f"⚠️ No se pudieron registrar las credenciales de MinIO: {str(e)}")
+
+    # Inicializar cliente de MinIO (maneja errores internamente)
+    try:
+        storage.init_app(app)
+    except Exception as e:
+        app.logger.error(f"❌ Fallo al inicializar MinIO: {str(e)}")
+
+    return app
     
     with app.app_context():
         from src.core.models.user import User
