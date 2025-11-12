@@ -35,12 +35,18 @@
       <option value="MALO">Malo</option>
     </select>
 
-    <select v-model="orderBy" @change="handleOrderChange" class="select-filtro">
-      <option value="registrado">Más recientes</option>
-      <option value="nombre">Nombre (A-Z)</option>
-      <option value="calificacion">Mejor calificados</option>
+    <select v-model="orderByCombined" @change="handleCombinedOrderChange" class="select-filtro">
+      <option value="">Ordenar por...</option>
+      
+      <option value="registrado_desc">Más recientes</option>
+      <option value="registrado_asc">Más antiguos</option>
+      
+      <option value="nombre_asc">Nombre (A-Z)</option>
+      <option value="nombre_desc">Nombre (Z-A)</option>
+      
+      <option value="calificacion_desc">Mejor calificados</option>
+      <option value="calificacion_asc">Peor calificados</option>
     </select>
-
     <div class="tag-filter-group">
         <label>Tags:</label>
         <div class="tags-list">
@@ -68,17 +74,26 @@ const route = useRoute()
 // Inicialización de filtros desde los Query Params
 const searchTerm = ref(route.query.search || '')
 const province = ref(route.query.province || '')
-const city = ref(route.query.city || '') // Nuevo
-const state = ref(route.query.state || '') // Nuevo
+const city = ref(route.query.city || '')
+const state = ref(route.query.state || '')
+
+// Variables que se envían al router
 const orderBy = ref(route.query.order_by || 'registrado')
 const orderDirection = ref(route.query.order || 'desc')
-// Tags
-const availableTags = ref([]) // Lista de todos los tags posibles
-const selectedTags = ref([]) // IDs de los tags seleccionados
+
+// 🟢 NUEVA: Variable combinada para el Select de la UI
+const orderByCombined = ref(
+  (route.query.order_by && route.query.order) 
+  ? `${route.query.order_by}_${route.query.order}` 
+  : 'registrado_desc' // Valor por defecto para la UI
+)
+
+const availableTags = ref([])
+const selectedTags = ref([]) 
 
 const provinces = ref([])
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 
 // Función para cargar provincias (existente)
@@ -113,22 +128,28 @@ const initSelectedTags = () => {
 }
 
 
-// Manejo especial para el cambio de orden (para fijar la dirección 'desc' o 'asc')
-const handleOrderChange = () => {
-    // Si se ordena por nombre, la dirección debe ser 'asc' (A-Z)
-    if (orderBy.value === 'nombre') {
-        orderDirection.value = 'asc';
-    } 
-    // Para 'registrado' (más reciente) y 'calificacion' (mejor calificados) es 'desc'
-    else {
-        orderDirection.value = 'desc';
+// 🟢 NUEVA FUNCIÓN: Maneja el valor combinado (ej: 'nombre_asc')
+// Reemplaza la vieja handleOrderChange
+const handleCombinedOrderChange = () => {
+  const value = orderByCombined.value;
+  
+  if (value) {
+    // Separa el criterio y la dirección (ej: ['nombre', 'asc'])
+    const parts = value.split('_');
+    if (parts.length === 2) {
+      orderBy.value = parts[0];
+      orderDirection.value = parts[1];
     }
-    updateFilters();
+  } else {
+    // Si se selecciona "Ordenar por..." (valor vacío)
+    orderBy.value = 'registrado';
+    orderDirection.value = 'desc';
+  }
+  updateFilters();
 }
 
 // Actualizar filtros: empuja los query params al router
 const updateFilters = () => {
-  // Concatena los IDs de los tags seleccionados en una cadena separada por comas
   const tagsParam = selectedTags.value.length > 0 ? selectedTags.value.join(',') : undefined;
 
   router.push({
@@ -136,37 +157,62 @@ const updateFilters = () => {
     query: {
       search: searchTerm.value || undefined,
       province: province.value || undefined,
-      city: city.value || undefined, // Nuevo
-      state: state.value || undefined, // Nuevo
-      tags: tagsParam, // Nuevo
+      city: city.value || undefined,
+      state: state.value || undefined,
+      tags: tagsParam,
       
+      // Usa las variables separadas para la URL
       order_by: orderBy.value || 'registrado',
       order: orderDirection.value || 'desc',
-      page: 1 // Reinicia a la primera página cada vez que cambian los filtros
+      page: 1
     }
   })
 }
 
-// Observa el cambio en los query params externos (por si el usuario navega con URL)
+// Función para resetear todas las variables del formulario
+const resetForm = () => {
+    // 1. Resetear todas las variables de los campos de texto/select
+    searchTerm.value = '';
+    province.value = '';
+    city.value = '';
+    state.value = '';
+    // 2. Resetear los checkboxes (tags)
+    selectedTags.value = [];
+    // 3. Resetear el ordenamiento a los valores por defecto
+    orderBy.value = 'registrado';
+    orderDirection.value = 'desc';
+    // 🟢 Resetear la variable de UI combinada
+    orderByCombined.value = 'registrado_desc';
+}
+
+// Exponer la función resetForm al componente padre (ListadoSitios.vue)
+defineExpose({
+    resetForm
+})
+
+// Observa el cambio en los query params externos
 watch(
     () => route.query.tags, 
     initSelectedTags, 
     { immediate: true }
 );
+
+// 🟢 Watch para sincronizar la UI (orderByCombined) si los filtros cambian por URL externa
 watch(
-    () => route.query.order_by, 
-    (newVal) => { 
-        orderBy.value = newVal || 'registrado';
-        // Ajusta la dirección al cambiar el orden para mantener la consistencia
-        if (newVal === 'nombre') orderDirection.value = 'asc';
-        else orderDirection.value = 'desc';
+    [() => route.query.order_by, () => route.query.order], 
+    ([newOrderBy, newOrder]) => { 
+        // Actualiza las variables internas
+        orderBy.value = newOrderBy || 'registrado';
+        orderDirection.value = newOrder || 'desc';
+        // Sincroniza la UI
+        orderByCombined.value = `${orderBy.value}_${orderDirection.value}`;
     }
 );
 
 
 onMounted(() => {
     fetchProvinces();
-    fetchTags(); // Cargar los tags al montar el componente
+    fetchTags();
     initSelectedTags();
 });
 </script>
@@ -177,7 +223,7 @@ onMounted(() => {
   gap: 10px;
   margin: 20px 0;
   flex-wrap: wrap;
-  align-items: flex-start; /* Para alinear el grupo de tags */
+  align-items: flex-start;
 }
 .input-filtro,
 .select-filtro {
