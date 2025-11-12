@@ -53,8 +53,9 @@ def get_sites():
     if provincia:
         query = query.filter(Sitio.provincia == provincia)
     if estado:
-        query = query.filter(Sitio.estado_conservacion == estado)
-        
+        valor_busqueda = estado.capitalize()
+        query = query.filter(Sitio.estado_conservacion.ilike(valor_busqueda))        
+   
     # Manejo de Tags (Filtro por multiselección)
     tags_param = request.args.get('tags')
     if tags_param:
