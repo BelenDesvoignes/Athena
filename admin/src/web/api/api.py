@@ -8,15 +8,33 @@ from src.core.models.site import Sitio
 from src.core.models.tag import Tag
 from src.core.models.tag import sitios_tags
 from src.core.models.review import Review 
+from src.core.api_validations import validate_api_params, SiteListParams 
+
 
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
+def get_sort_column(order_by_param):
+
+    if order_by_param == 'nombre': return Sitio.nombre
+    if order_by_param == 'registrado': return Sitio.registrado
+    # 'calificacion' se maneja como el alias avg_rating
+    return None
+
 # Endpoint de prueba para sitios
 @api_bp.get("/sites")
-def get_sites():
+@validate_api_params(SiteListParams)
+def get_sites(validated_params):
 
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int) # 10 como default
+    #se usan los parametros validados 
+    page = validated_params.page
+    per_page = validated_params.per_page
+    order_by = validated_params.order_by
+    order_direction = validated_params.order
+    search_term = validated_params.search
+    ciudad = validated_params.city
+    provincia = validated_params.province
+    estado = validated_params.state
+    tags_param = validated_params.tags
 
     #calculo de calificacion promedio solo resenas aprobadas 
     # coalesce(expr, 0) asegura que sitios sin reseñas tengan rating 0, no NULL.
@@ -33,47 +51,36 @@ def get_sites():
     query = query.outerjoin(Review, Sitio.id == Review.site_id).group_by(Sitio.id)
 
 
-    # Manejo de Búsqueda por Texto (Aplica sobre nombre y descripción breve)
-    search_term = request.args.get('search')
+    # busqueda por texto (aplica sobre nombre y descripcion breve)
     if search_term:
         search_like = f"%{search_term}%"
-        # Usa 'or_' para buscar el término en cualquiera de los dos campos
+        # 'or_' para buscar el termino en cualquiera de los dos campos
         query = query.filter(or_(
             Sitio.nombre.ilike(search_like),
             Sitio.descripcion_breve.ilike(search_like)
         ))
 
-    #  Manejo de Filtros
-    ciudad = request.args.get('city')
-    provincia = request.args.get('province')
-    estado = request.args.get('state') # Estado de conservación
-    
+    #filtros
     if ciudad:
         query = query.filter(Sitio.ciudad.ilike(f"%{ciudad}%"))
     if provincia:
         query = query.filter(Sitio.provincia == provincia)
     if estado:
-        valor_busqueda = estado.capitalize()
-        query = query.filter(Sitio.estado_conservacion.ilike(valor_busqueda))        
+        query = query.filter(Sitio.estado_conservacion == estado)        
    
-    # Manejo de Tags (Filtro por multiselección)
-    tags_param = request.args.get('tags')
+    #tags 
     if tags_param:
-        # Convierte los IDs de tags separados por coma a una lista de enteros
-        tag_ids = [int(tid) for tid in tags_param.split(',') if tid.isdigit()]
+        tag_ids = tags_param 
         if tag_ids:
             subquery = db.session.query(sitios_tags.c.sitio_id).filter(
                 sitios_tags.c.tag_id.in_(tag_ids)
             ).group_by(sitios_tags.c.sitio_id).having(
                 func.count(sitios_tags.c.tag_id) == len(tag_ids)
             ).subquery()
-            query = query.filter(Sitio.id.in_(subquery))     
+            query = query.filter(Sitio.id.in_(subquery)) 
            
-    #  Manejo de Ordenamiento
-    # 'registrado' por defecto, para cumplir el requisito de 'fecha de registro'
-    order_by = request.args.get('order_by', 'registrado') 
-    order_direction = request.args.get('order', 'desc')
-
+    # ordenamiento 
+    sort_column = None
     if order_by == 'nombre':
         sort_column = Sitio.nombre
     elif order_by == 'registrado':

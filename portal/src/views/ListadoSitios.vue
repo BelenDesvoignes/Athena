@@ -68,7 +68,6 @@ const isLoading = ref(true)
 const error = ref(null)
 const errorMessage = ref('')
 
-// 🟢 NUEVO ESTADO: Objeto para guardar la metadata de paginación
 const pagination = ref({
     page: 1,
     pages: 1,
@@ -96,7 +95,6 @@ const currentTags = computed(() => route.query.tags || '')
 const currentPage = computed(() => route.query.page || 1) // 👈 Es importante que tome el 'page' de la URL
 const perPage = computed(() => route.query.per_page || 10)
 
-// 🟢 NUEVA FUNCIÓN: Mueve la página actual en la URL
 const goToPage = (pageNumber) => {
     // Asegura que el número de página sea válido
     if (pageNumber < 1 || pageNumber > pagination.value.pages) {
@@ -124,7 +122,6 @@ const fetchSitesList = async () => {
     page: currentPage.value,
     per_page: perPage.value
   })
-  // ... (otros filtros: search, province, city, state, tags)
 
   if (currentSearch.value) params.append('search', currentSearch.value)
   if (currentProvince.value) params.append('province', currentProvince.value)
@@ -141,7 +138,6 @@ const fetchSitesList = async () => {
     const data = await response.json()
     sites.value = data.data || []
     
-    // 🟢 ACTUALIZAR LA METADATA DE PAGINACIÓN con la respuesta del backend
     pagination.value = {
         page: data.page,
         pages: data.pages,

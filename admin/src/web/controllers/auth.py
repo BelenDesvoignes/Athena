@@ -4,7 +4,7 @@ from src.core.permissions_service import get_role_by_name
 from src.core.user_service import authenticate_user, create_user
 from src.web.handlers.auth import login_required
 from src.web.handlers.maintenance import maintenance_protected
-
+from src.web.user_validations import UserForm
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -76,66 +76,52 @@ def authenticate():
 @auth_bp.route("/register", methods=['GET', 'POST'])
 @maintenance_protected("admin")
 def register():
-    """Maneja el registro de nuevos usuarios públicos en el sistema.
-
-    Esta función gestiona las peticiones GET para mostrar el formulario de registro y
-    las peticiones POST para procesar la creación de una nueva cuenta. Está protegida
-    por el decorador `maintenance_protected` para el rol "admin", lo que implica 
-    que el registro se bloquea si el modo de mantenimiento está activo para ese rol.
-
-    Flujo de la Función:
-    1.  **Verificación de Sesión:** Si el usuario ya tiene un 'user_id' en la sesión, 
-        se le redirige a la página de inicio (`user_admin.home`).
-    2.  **Petición POST (Registro):**
-        a.  Recupera `nombre`, `apellido`, `email` y `password` del formulario.
-        b.  Obtiene el objeto `Role` correspondiente a "Usuario público" para asignar su `role_id` por defecto.
-        c.  Intenta llamar a la función de servicio `create_user` con los datos, incluyendo `enabled=True`.
-    3.  **Manejo de Errores:**
-        a.  Si `create_user` tiene éxito, se muestra un mensaje flash de éxito y se redirige al login.
-        b.  Si ocurre un `ValueError` (ej: email existente, validación de contraseña), se muestra el error específico al usuario.
-        c.  Si ocurre cualquier otra `Exception`, se muestra un mensaje de error genérico.
-    4.  **Petición GET:** Simplemente renderiza el formulario de registro (`register.html`).
-
-    Returns:
-        str: Redirección a la página de inicio si ya está autenticado, 
-             redirección a la página de login en caso de registro exitoso, 
-             o la plantilla 'register.html' (con o sin mensajes flash).
-    """
+    """Maneja el registro de nuevos usuarios públicos, con validación de WTForms."""
+    
+    # Redirigir si ya está logueado
     if 'user_id' in session:
         return redirect(url_for("user_admin.home"))
-        
+
+    #  Instanciar el formulario
+    form = UserForm(request.form)
+
+    #  Deshabilitar validadores para campos que no están en el formulario de registro 
+    # (role_id y enabled se asignan por defecto y no son enviados por el formulario)
+    form.role_id.validators = [] 
+    form.enabled.validators = []
+    
     if request.method == 'POST':
-        nombre = request.form.get("nombre")
-        apellido = request.form.get("apellido")
-        email = request.form.get("email")
-        password = request.form.get("password")
-        role_obj = get_role_by_name("Usuario público") 
-        role_id = role_obj.id 
-        print(role_id)
-        try:
-            # Chequeo de que el email no exista y creación del usuario.
-            # La función create_user se encarga de hashear la contraseña.
-            create_user({
-                "nombre": nombre,
-                "apellido": apellido,
-                "email": email,
-                "password": password,
-                "role_id": role_id, # Asignación de rol por defecto
-                "enabled": True
-            })
-            
-            flash("Registro exitoso. ¡Inicia sesión!", "success")
-            return redirect(url_for("auth.login"))
+        # Ejecutar la validación de WTForms
+        if form.validate_on_submit():
+            # Los datos son válidos. Ahora intenta crear el usuario.
+            try:
+                # Obtener el rol por defecto (Usuario público)
+                role_obj = get_role_by_name("Usuario público") 
+                role_id = role_obj.id 
 
-        except ValueError as e:
-            # Captura errores como 'Email ya registrado' o validaciones internas
-            flash(str(e), "danger") 
-            return render_template("register.html")
-        except Exception:
-            flash("Ocurrió un error al intentar registrar el usuario.", "danger")
-            return render_template("register.html")
+                # Llama al servicio con los datos VALIDADOS del formulario
+                create_user({
+                    "nombre": form.nombre.data,
+                    "apellido": form.apellido.data,
+                    "email": form.email.data,
+                    "password": form.password.data,
+                    "role_id": role_id, # Asignado por defecto
+                    "enabled": True
+                })
+                
+                flash("Registro exitoso. ¡Inicia sesión!", "success")
+                return redirect(url_for("auth.login"))
 
-    return render_template("register.html")
+            except ValueError as e:
+                # Captura errores del servicio (ej: unicidad del email a nivel DB)
+                flash(str(e), "danger") 
+                # Si falla el servicio, se pasa el formulario al template para mostrar los datos ingresados.
+            except Exception:
+                flash("Ocurrió un error al intentar registrar el usuario.", "danger")
+                
+    #  Renderiza la plantilla (GET o POST fallido)
+    # Pasa el objeto 'form' a la plantilla para que pueda mostrar los campos y los errores.
+    return render_template("register.html", form=form)
 
 
 @auth_bp.route("/logout")
