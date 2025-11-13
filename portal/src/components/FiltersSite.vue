@@ -152,21 +152,23 @@ const handleCombinedOrderChange = () => {
 const updateFilters = () => {
   const tagsParam = selectedTags.value.length > 0 ? selectedTags.value.join(',') : undefined;
 
+  const query = {
+    search: searchTerm.value || undefined,
+    province: province.value || undefined,
+    city: city.value || undefined,
+    state: state.value || undefined,
+    tags: tagsParam,
+    order_by: orderBy.value || 'registrado',
+    order: orderDirection.value || 'desc',
+    page: 1
+  };
+
+  console.log("🔹 Query params que se envían:", query);
+
   router.push({
     path: '/sitios',
-    query: {
-      search: searchTerm.value || undefined,
-      province: province.value || undefined,
-      city: city.value || undefined,
-      state: state.value || undefined,
-      tags: tagsParam,
-      
-      // Usa las variables separadas para la URL
-      order_by: orderBy.value || 'registrado',
-      order: orderDirection.value || 'desc',
-      page: 1
-    }
-  })
+    query
+  });
 }
 
 // Función para resetear todas las variables del formulario
