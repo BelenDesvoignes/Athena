@@ -123,6 +123,41 @@ def get_sites(validated_params):
         "per_page": pagination.per_page,})
 
 
+@api_bp.get("/sites/<int:site_id>")
+def get_site_detail(site_id):
+    # Buscar el sitio visible por ID
+    sitio = db.session.query(Sitio).filter_by(id=site_id, visible=True).first()
+
+    if not sitio:
+        return jsonify({"error": "Sitio no encontrado"}), 404
+
+    # Calcular promedio de reseñas aprobadas
+    promedio = (
+        db.session.query(func.avg(Review.rating))
+        .filter(Review.site_id == sitio.id, Review.status == 'APROBADA')
+        .scalar()
+    )
+    promedio = round(promedio, 2) if promedio else 0
+
+    # Devolver los datos del sitio
+    data = {
+        "id": sitio.id,
+        "name": sitio.nombre,
+        "description": sitio.descripcion_completa,
+        "short_description": sitio.descripcion_breve,
+        "city": sitio.ciudad,
+        "province": sitio.provincia,
+        "state_of_conservation": sitio.estado_conservacion,
+        "registered_date": sitio.registrado.strftime('%Y-%m-%d'),
+        "average_rating": promedio,
+        "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags],
+        "image_url": "/img/default.jpg",  # default por ahora
+    }
+
+    return jsonify(data)
+
+
+
 #endpoint para obtener provincias unicas (GET /api/provinces)
 @api_bp.get("/provinces")
 def get_provinces():

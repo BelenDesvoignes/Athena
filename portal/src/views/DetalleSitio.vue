@@ -1,6 +1,6 @@
 <template>
   <div class="site-detail-page">
-    
+
     <div v-if="isLoading" class="status-message">
       Cargando detalles del sitio...
     </div>
@@ -10,7 +10,7 @@
     </div>
 
     <section v-else-if="site" class="site-content">
-      
+
       <header class="detail-header">
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
@@ -19,37 +19,36 @@
         </div>
       </header>
       
+      <hr>
+
       <div class="main-info-grid">
+        
         <div class="image-container">
           <img :src="site.image_url || '/default-cover.jpg'" :alt="site.name" class="site-cover-image">
         </div>
-        
+
         <div class="description-section">
-          <h2>Descripción</h2>
-          <p>{{ site.short_description }}</p>
+          <h2>Descripción Breve</h2>
+          <p>{{ site.short_description }}</p> 
 
           <div v-if="site.tags && site.tags.length" class="tags-section">
             <span v-for="tag in site.tags" :key="tag.id" class="tag-badge">{{ tag.name }}</span>
           </div>
-          
+
           <div class="action-buttons">
-             <button 
-              @click="toggleFavorite" 
-              :class="{ 'is-favorite': isFavorite }" 
-              :disabled="!authStore.isLoggedIn" 
-              class="btn-favorite"
-            >
-              {{ isFavorite ? '❤️ Quitar de Favoritos' : '🤍 Agregar a Favoritos' }}
-              <span v-if="!authStore.isLoggedIn" class="login-prompt"> (Inicia sesión)</span>
-            </button>
-            
-            <button @click="navigateToReviews" class="btn-reviews">
-              ✍️ Ver Reseñas
-            </button>
-          </div>
+             </div>
         </div>
       </div>
       
+      <hr>
+
+      <section class="full-description-section">
+        <h2>Detalle del Sitio</h2>
+        <p>{{ site.description || site.short_description }}</p>
+      </section>
+
+      <hr>
+
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
         <p>Esta sección cargará las reseñas usando GET /sites/{{ site.id }}/reviews.</p>
@@ -78,7 +77,7 @@ const isFavorite = ref(false);
 const siteId = route.params.id;
 
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
 
 
 const fetchSiteDetail = async () => {
@@ -100,10 +99,8 @@ const fetchSiteDetail = async () => {
         }
         
         const data = await response.json();
-        // Tomamos data.data si tu backend usa ese formato
         site.value = data.data || data;
 
-        // Estado de favorito
         if (site.value.is_favorite !== undefined) {
             isFavorite.value = site.value.is_favorite;
         }
@@ -123,7 +120,7 @@ const toggleFavorite = async () => {
         router.push('/login');
         return;
     }
-
+    // Lógica para marcar/desmarcar favorito
     const method = isFavorite.value ? 'DELETE' : 'PUT';
     const url = `${API_BASE_URL}/sites/${siteId}/favorite`;
 
@@ -140,7 +137,7 @@ const toggleFavorite = async () => {
         });
 
         if (response.status === 204) {
-            // Éxito, no hacer nada
+             // Éxito
         } else if (response.status === 401) {
             alert("Tu sesión ha expirado.");
             authStore.logout();
@@ -156,6 +153,7 @@ const toggleFavorite = async () => {
     }
 };
 
+// Se mantiene la función pero no se usa el botón
 const navigateToReviews = () => {
     router.push({ name: 'reviews-list', params: { siteId } });
 };
@@ -177,21 +175,32 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+/* 1. Ajuste del encabezado para alineación izquierda */
 .detail-header {
-  text-align: center;
+  text-align: left; /* Alineamos el texto a la izquierda por defecto */
   margin-bottom: 20px;
+}
+
+.rating-badge {
+  display: inline-block;
+  margin-top: 10px;
 }
 
 .site-cover-image {
   width: 100%;
   height: auto;
-  max-height: 300px;
+  max-height: 400px; /* Aumentamos la altura máxima para mejor visualización */
   object-fit: cover;
   border-radius: 8px;
 }
 
 .description-section {
-  padding: 15px 0;
+  padding: 0; /* Eliminamos el padding vertical para que se alinee mejor */
+}
+
+.full-description-section {
+    margin-top: 20px;
+    padding: 15px 0;
 }
 
 .tags-section {
@@ -208,6 +217,11 @@ onMounted(() => {
   margin-right: 5px;
 }
 
+.action-buttons {
+    /* Mantenido para el futuro, pero vacío */
+    margin-top: 20px;
+}
+
 .action-buttons button {
   padding: 10px 15px;
   border: none;
@@ -216,27 +230,26 @@ onMounted(() => {
   margin-right: 10px;
   transition: background-color 0.2s;
 }
+/* No necesitamos los estilos de .btn-favorite y .btn-reviews ya que los botones fueron removidos */
 
-.btn-favorite {
-  background-color: #f0f0f0;
-}
-.btn-favorite.is-favorite {
-  background-color: #ffcccc;
-  color: #e30000;
-}
-.btn-reviews {
-  background-color: #3f51b5;
-  color: white;
-}
 
+/* 2. Media Query para pantallas grandes (> 768px) */
 @media (min-width: 768px) {
-  .main-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 30px;
-  }
-  .detail-header {
-    text-align: left;
-  }
+    .site-content > .detail-header {
+        margin-bottom: 30px;
+    }
+    
+    /* Disposición de dos columnas para Imagen y Descripción */
+    .main-info-grid {
+      display: grid;
+      /* 1fr para la imagen, 2fr para la descripción breve/tags */
+      grid-template-columns: 1fr 2fr; 
+      gap: 40px; 
+    }
+
+    /* Aseguramos que la cabecera quede a la izquierda */
+    .detail-header {
+      text-align: left;
+    }
 }
 </style>
