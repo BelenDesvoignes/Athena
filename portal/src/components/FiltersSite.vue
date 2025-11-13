@@ -81,7 +81,6 @@ const state = ref(route.query.state || '')
 const orderBy = ref(route.query.order_by || 'registrado')
 const orderDirection = ref(route.query.order || 'desc')
 
-// 🟢 NUEVA: Variable combinada para el Select de la UI
 const orderByCombined = ref(
   (route.query.order_by && route.query.order) 
   ? `${route.query.order_by}_${route.query.order}` 

@@ -95,7 +95,7 @@ class SiteListParams:
             normalized_state = self.state.upper()
             if normalized_state not in ALLOWED_STATES:
                 raise ValueError(f"El estado de conservación '{self.state}' no es válido. Opciones: {', '.join(ALLOWED_STATES)}.")
-            self.state = normalized_state 
+            self.state = self.state.capitalize()
 
         # limpiar cadenas de texto
         if self.search: self.search = self.search.strip()
