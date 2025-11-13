@@ -17,14 +17,16 @@
       <div v-else-if="error" class="error-message">❌ Error al cargar el listado: {{ errorMessage }}</div>
       
       <div v-else-if="sites.length > 0" class="list-grid">
-          <SiteCard 
-              v-for="site in sites" 
-              :key="site.id" 
-              :site="site" 
-          />
+        <SiteCard 
+          v-for="site in sites" 
+          :key="site.id" 
+          :site="site" 
+          :user-favorites="userFavorites"
+          :auth-store="authStore"
+        />
       </div>
       <div v-else class="empty-message">
-          No se encontraron sitios con los filtros aplicados.
+        No se encontraron sitios con los filtros aplicados.
       </div>
     </main>
     
@@ -58,32 +60,20 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
-const router = useRouter()
-const filtersSiteRef = ref(null) 
+const authStore = useAuthStore()
 
 const sites = ref([])
 const isLoading = ref(true)
 const error = ref(null)
 const errorMessage = ref('')
 
-const pagination = ref({
-    page: 1,
-    pages: 1,
-    total: 0,
-    per_page: 10
-})
+// Array de favoritos del usuario logueado
+const userFavorites = ref([])
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
-
-
-const clearFilters = () => {
-    if (filtersSiteRef.value && filtersSiteRef.value.resetForm) {
-        filtersSiteRef.value.resetForm()
-    }
-    router.push({ query: {} })
-}
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'
 
 // --- Computed (vinculados a query params) ---
 const currentSearch = computed(() => route.query.search || '')
@@ -123,7 +113,6 @@ const fetchSitesList = async () => {
     page: currentPage.value,
     per_page: perPage.value
   })
-
   if (currentSearch.value) params.append('search', currentSearch.value)
   if (currentProvince.value) params.append('province', currentProvince.value)
   if (currentCity.value) params.append('city', currentCity.value)
@@ -154,52 +143,31 @@ const fetchSitesList = async () => {
   }
 }
 
-// 🔄 El watcher observa cambios en CUALQUIER query param para recargar
+// 🔹 Traer favoritos del usuario logueado
+const fetchFavorites = async () => {
+  if (!authStore.isLoggedIn || !authStore.token) return
+  try {
+    const res = await fetch(`${API_BASE_URL}/me/favorites`, {
+      headers: {
+        "Authorization": `Bearer ${authStore.token}`
+      }
+    })
+    if (!res.ok) throw new Error(`Error ${res.status} al cargar favoritos`)
+    const data = await res.json()
+    userFavorites.value = data
+  } catch (err) {
+    console.error('Error al cargar favoritos:', err)
+  }
+}
+
+// 🔄 Actualiza automáticamente si cambian filtros o búsqueda
 watch(
   [currentSearch, currentProvince, currentOrder, currentOrderDirection, currentCity, currentState, currentTags, currentPage],
   fetchSitesList
 )
 
-onMounted(fetchSitesList)
+onMounted(async () => {
+  await fetchFavorites()
+  fetchSitesList()
+})
 </script>
-
-<style scoped>
-/* Estilos existentes */
-h1 { margin-bottom: 10px; }
-.list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
-.status-message, .error-message, .empty-message { text-align: center; margin-top: 40px; color: #666; }
-.clear-filters-button { background-color: #f87171; color: white; border: none; padding: 8px 15px; margin-bottom: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
-.clear-filters-button:hover { background-color: #ef4444; }
-
-.pagination-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    padding: 20px 0;
-    margin-top: 20px;
-    border-top: 1px solid #eee;
-}
-.pagination-info {
-    color: #555;
-    font-size: 1em;
-    font-weight: 500;
-}
-.pagination-button {
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
-}
-.pagination-button:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
-}
-.pagination-button:not(:disabled):hover {
-    background-color: #2563eb;
-}
-</style>

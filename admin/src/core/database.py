@@ -19,7 +19,7 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 
-import src.core.models
+
 
 
 def init_db(app):
