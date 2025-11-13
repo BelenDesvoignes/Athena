@@ -75,7 +75,8 @@ const pagination = ref({
     per_page: 10
 })
 
-const API_BASE_URL = 'http://localhost:5000/api/sites';
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
+
 
 const clearFilters = () => {
     if (filtersSiteRef.value && filtersSiteRef.value.resetForm) {
@@ -129,7 +130,7 @@ const fetchSitesList = async () => {
   if (currentState.value) params.append('state', currentState.value)
   if (currentTags.value) params.append('tags', currentTags.value)
 
-  const url = `${API_BASE_URL}?${params.toString()}`
+  const url = `${API_BASE_URL}/sites?${params.toString()}`
 
   try {
     const response = await fetch(url)
@@ -170,7 +171,6 @@ h1 { margin-bottom: 10px; }
 .clear-filters-button { background-color: #f87171; color: white; border: none; padding: 8px 15px; margin-bottom: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
 .clear-filters-button:hover { background-color: #ef4444; }
 
-/* 🟢 NUEVOS ESTILOS PARA PAGINACIÓN */
 .pagination-controls {
     display: flex;
     justify-content: center;

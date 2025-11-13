@@ -93,7 +93,8 @@ const selectedTags = ref([])
 
 const provinces = ref([])
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
+
 
 
 // Función para cargar provincias (existente)
