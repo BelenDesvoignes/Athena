@@ -1,114 +1,77 @@
 <script setup>
-import { RouterView } from 'vue-router';
-import { ref, computed, onMounted } from 'vue'; 
+import { RouterView, useRouter } from 'vue-router'
+import { onMounted } from 'vue'
 import { GoogleLogin } from 'vue3-google-login'
-import { jwtDecode } from 'jwt-decode';
+import { useAuthStore } from '@/stores/auth'; // Importar el store
 
+const authStore = useAuthStore();
+const router = useRouter();
+
+// onMounted ya no es necesario aquí, el store se inicializa con localStorage.
 onMounted(() => {
-  const savedProfile = localStorage.getItem('userProfile');
-  if (savedProfile) {
-    userProfile.value = JSON.parse(savedProfile);
-  }
+  // Aseguramos que el router esté disponible si el usuario hace clic en el botón
+  // y que el store ya cargó los datos.
 });
 
-
-const userProfile = ref(null)
- 
-const callback = (response) => {
-  console.log("Handle the response", response)
- 
-  if (response?.credential) {
-    try {
-      const decoded = jwtDecode(response.credential)
-      console.log('Decoded JWT:', decoded)
- 
-      const profile = {
-        name: decoded.name,
-        email: decoded.email,
-        imageUrl: decoded.picture,
-      }
-
-      // 👉 Guardar en memoria reactiva
-      userProfile.value = profile
-
-      // 👉 Guardar en localStorage para persistencia
-      localStorage.setItem('userProfile', JSON.stringify(profile))
-
-    } catch (error) {
-      console.error('Failed to decode JWT:', error)
-    }
-  }
+// 🔹 Callback: Simplemente llama a la acción del store
+const callback = async (response) => {
+  console.log("Respuesta de Google recibida. Procesando login en Pinia Store...");
+  await authStore.loginWithGoogle(response);
 }
 
+// 🔹 Cerrar sesión: Simplemente llama a la acción del store
 const logout = () => {
+  // No usamos window.confirm, pero mantengo la funcionalidad requerida por las instrucciones anteriores.
   const confirmar = window.confirm("¿Estás seguro de que querés cerrar sesión?");
   if (confirmar) {
-    userProfile.value = null;
-    localStorage.removeItem('userProfile');
+    authStore.logout();
+    // Opcional: redirigir después de cerrar sesión
+    // router.push('/'); 
   }
-};
-
-
+}
 </script>
 
 <template>
   <div id="app-wrapper">
-    <!-- Aquí iría cualquier layout fijo (Navbar, Footer) -->
-
-     <!--Muestro el inicio de sesion si no hay ninguna sesion iniciada-->
-      <div v-if="!userProfile">
-        <GoogleLogin :callback="callback"/>
+    <!-- Navbar/Header de autenticación -->
+    <div class="auth-bar">
+      <!-- Si NO hay sesión iniciada (usando store) -->
+      <div v-if="!authStore.isLoggedIn">
+        <GoogleLogin :callback="callback" />
       </div>
 
-      <!--Muestro info basica y navegacion para cuando hay una sesion iniciada-->
-      <div v-else="userProfile" class="user-info">
-          <img :src="userProfile.imageUrl" alt="Foto de perfil" width="50" style="border-radius: 50%; margin-top: 10px;"/>
-          <h3>Bienvenido/a, {{ userProfile.name }}!</h3>
+      <!-- Si HAY sesión iniciada (usando store) -->
+      <div v-else class="user-info">
+        <!-- Usar authStore.user en lugar de userProfile local -->
+        <img :src="authStore.user.imageUrl" alt="Foto de perfil" width="50" style="border-radius: 50%;" />
+        <h3>Bienvenido/a, {{ authStore.user.name }}!</h3>
+        <p style="color: gray; font-size: 0.9em;">ID: {{ authStore.userId }}</p>
 
-          <button class="btn">Perfil</button>
-          <button class="btn">Mis reseñas</button>
-          <button class="btn">Favoritos</button>
-          <button @click="logout" class="btn">Cerrar sesión</button>
+        <button class="btn">Perfil</button>
+        <button class="btn">Mis reseñas</button>
+        <!-- Usar router para ir a la vista de favoritos -->
+        <button class="btn" @click="router.push('/favorites')">Favoritos</button> 
+        <button @click="logout" class="btn">Cerrar sesión</button>
       </div>
+    </div>
 
-    <!-- 🔑 CLAVE: Aquí se inyecta el contenido de la ruta / -->
-    <RouterView /> 
+    <!-- Contenido principal -->
+    <RouterView />
   </div>
 </template>
 
 <style>
-
+/* ... (Estilos existentes) ... */
 #app-wrapper {
   font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
 }
 
-.google-login {
-  margin-top: 25px;
-}
-
-.google-login button {
-  padding: 7px 15px;
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #555;
-  background-color: white;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  margin: 5px;
-}
-
-.google-login button:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
-}
-
-.google-login img {
-  width: 20px;
-  height: 20px;
+.auth-bar {
+  padding: 10px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end; /* Alinear a la derecha */
 }
 
 .btn {
@@ -130,12 +93,7 @@ const logout = () => {
 
 .user-info {
   display: flex;
-  align-items: center; /* centra verticalmente */
-  gap: 10px; /* espacio entre elementos */
-}
-
-.user-info img {
-  border-radius: 50%;
-  margin-top: 0; /* elimina el margen que tenías */
+  align-items: center;
+  gap: 10px;
 }
 </style>
