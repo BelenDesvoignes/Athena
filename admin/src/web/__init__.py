@@ -19,7 +19,7 @@ from src.web.controllers.review_routes import reviews_bp
 from src.web.controllers.feature_flags_routes import feature_flags_bp
 from src.web.api.api import api_bp
 from src.web.controllers.public_user_routes import public_users_bp
-from src.web.controllers.favorites_routes import favorites_bp
+
 
 
 from flask_cors import CORS
@@ -87,7 +87,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(reviews_bp, url_prefix="/reviews")
     app.register_blueprint(api_bp)
     app.register_blueprint(public_users_bp)
-    app.register_blueprint(favorites_bp)
+
 
     #rutas principales 
     @app.route("/")
