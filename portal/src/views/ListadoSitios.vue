@@ -73,7 +73,7 @@ const errorMessage = ref('')
 // Array de favoritos del usuario logueado
 const userFavorites = ref([])
 
-const API_BASE_URL = 'http://localhost:5000/api'
+const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'
 
 // --- Computed (vinculados a query params) ---
 const currentSearch = computed(() => route.query.search || '')
