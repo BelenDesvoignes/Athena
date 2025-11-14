@@ -2,7 +2,7 @@
   <div class="listado-sitios-page">
     <header>
       <h1>Listado de Sitios Históricos</h1>
-      <FiltersSite ref="filtersSiteRef" /> 
+      <FiltersSite ref="filtersSiteRef" />
 
       <div class="map-controls">
         <button 
@@ -13,18 +13,9 @@
           Ver Mapa de Sitios
         </button>
 
-        <button 
-          @click="applyProximityFilter" 
-          :disabled="isProximityFilterActive"
-          :class="{'btn-active': isProximityFilterActive}" 
-          class="proximity-filter-button"
-        >
-          Filtrar a 1000 km de CABA
-        </button>
-
         <button v-if="Object.keys(route.query).length > 0" 
-              @click="clearAllFilters" 
-              class="clear-filters-button">
+                @click="clearAllFilters" 
+                class="clear-filters-button">
           Limpiar Filtros
         </button>
       </div>
@@ -32,8 +23,8 @@
 
     <main>
       <div v-if="isLoading" class="status-message">Cargando sitios...</div>
-      <div v-else-if="error" class="error-message">❌ Error al cargar el listado: {{ errorMessage }}</div>
-      
+      <div v-else-if="error" class="error-message">❌ Error al cargar el listado</div>
+
       <div v-else-if="sites.length > 0" class="list-grid">
         <SiteCard 
           v-for="site in sites" 
@@ -41,48 +32,51 @@
           :site="site" 
         />
       </div>
+
       <div v-else class="empty-message">
         No se encontraron sitios con los filtros aplicados.
       </div>
     </main>
-    
+
+    <!-- PAGINACIÓN -->
     <nav v-if="pagination.total > 0" class="pagination-controls">
-        <p class="pagination-info">
-          Página {{ pagination.page }} de {{ pagination.pages }} 
-          (Total de sitios: {{ pagination.total }})
-        </p>
+      <p class="pagination-info">
+        Página {{ pagination.page }} de {{ pagination.pages }}
+      </p>
 
-        <button 
-          @click="goToPage(pagination.page - 1)" 
-          :disabled="pagination.page === 1"
-          class="pagination-button"
-        >
-          &larr; Anterior
-        </button>
+      <button @click="goToPage(pagination.page - 1)" 
+              :disabled="pagination.page === 1"
+              class="pagination-button">
+        ← Anterior
+      </button>
 
-        <button 
-          @click="goToPage(pagination.page + 1)" 
-          :disabled="pagination.page === pagination.pages"
-          class="pagination-button"
-        >
-          Siguiente &rarr;
-        </button>
+      <button @click="goToPage(pagination.page + 1)" 
+              :disabled="pagination.page === pagination.pages"
+              class="pagination-button">
+        Siguiente →
+      </button>
     </nav>
 
-    <!-- MODAL DEL MAPA -->
+    <!-- MODAL MAPA -->
     <div v-if="isModalOpen" class="modal-overlay" @click.self="isModalOpen = false">
       <div class="modal-content">
         <div class="modal-header">
-            <h2>Mapa de Sitios Históricos</h2>
-            <button class="close-button" @click="isModalOpen = false">&times;</button>
+          <h2>Mapa de Sitios Históricos</h2>
+          <button class="close-button" @click="isModalOpen = false">&times;</button>
         </div>
+
         <div class="modal-body">
-            <!-- Referencia al mapa para llamar a forceUpdate -->
-            <SiteMap ref="siteMapRef" :sites="sites" />
+          <SiteMap 
+            ref="siteMapRef"
+            :sites="sites"
+            :lat="currentLat"
+            :lon="currentLon"
+            :radius="currentRadius"
+            @filterByLocation="applyUserLocationFilter"
+          />
         </div>
       </div>
     </div>
-    <!-- FIN MODAL DEL MAPA -->
   </div>
 </template>
 
@@ -91,27 +85,53 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
-import SiteMap from '@/components/SiteMap.vue' 
-
-const filtersSiteRef = ref(null)
-const siteMapRef = ref(null)
+import SiteMap from '@/components/SiteMap.vue'
 
 const route = useRoute()
 const router = useRouter()
 
+const filtersSiteRef = ref(null)
+const siteMapRef = ref(null)
+
 const sites = ref([])
 const isLoading = ref(true)
-const error = ref(null)
-const errorMessage = ref('')
+const error = ref(false)
 
 const isModalOpen = ref(false)
 
-const FIXED_GEO_PARAMS = {
-    lat: -34.6037, 
-    lon: -58.3816, 
-    radius: 1000,
+const currentLat = computed(() => route.query.lat || null)
+const currentLon = computed(() => route.query.lon || null)
+const currentRadius = computed(() => route.query.radius || null)
+
+// CLEAN FILTERS
+const clearAllFilters = () => {
+  filtersSiteRef.value?.resetForm?.()
+  router.push({ query: {} })
 }
 
+// OPEN MAP
+const openMapModal = async () => {
+  isModalOpen.value = true
+  await nextTick()
+  siteMapRef.value?.forceUpdate()
+}
+
+// Cuando el usuario clickea en el mapa
+const applyUserLocationFilter = ({ lat, lon, radius }) => {
+  router.push({
+    query: {
+      ...route.query,
+      lat,
+      lon,
+      radius,
+      order_by: "distancia",
+      order: "asc",
+      page: 1
+    }
+  })
+}
+
+// PAGINACIÓN
 const pagination = ref({
   page: 1,
   pages: 1,
@@ -119,114 +139,47 @@ const pagination = ref({
   per_page: 10
 })
 
-const clearAllFilters = () => {
-    if (filtersSiteRef.value && filtersSiteRef.value.resetForm) {
-        filtersSiteRef.value.resetForm()
-    }
-    router.push({ query: {} }) 
+const goToPage = (p) => {
+  if (p < 1 || p > pagination.value.pages) return
+  router.push({ query: { ...route.query, page: p } })
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-const currentLat = computed(() => route.query.lat || null)
-const currentLon = computed(() => route.query.lon || null)
-const currentRadius = computed(() => route.query.radius || null)
-const isProximityFilterActive = computed(() => !!currentLat.value && !!currentLon.value && !!currentRadius.value)
-
-const currentSearch = computed(() => route.query.search || '')
-const currentProvince = computed(() => route.query.province || '')
-const currentOrder = computed(() => route.query.order_by || 'registrado')
-const currentOrderDirection = computed(() => route.query.order || 'desc')
-const currentCity = computed(() => route.query.city || '')
-const currentState = computed(() => route.query.state || '')
-const currentTags = computed(() => route.query.tags || '')
-const currentPage = computed(() => route.query.page || 1)
-const perPage = computed(() => route.query.per_page || 10)
-
-const openMapModal = async () => {
-    isModalOpen.value = true;
-    await nextTick();
-    if (siteMapRef.value && siteMapRef.value.forceUpdate) {
-        siteMapRef.value.forceUpdate();
-    }
-}
-
-const applyProximityFilter = () => {
-  router.push({
-    query: {
-      ...route.query, 
-      lat: FIXED_GEO_PARAMS.lat,
-      lon: FIXED_GEO_PARAMS.lon,
-      radius: FIXED_GEO_PARAMS.radius,
-      order_by: 'distancia', 
-      order: 'asc', 
-      page: 1
-    }
-  });
-}
-
-const goToPage = (pageNumber) => {
-    if (pageNumber < 1 || pageNumber > pagination.value.pages) return;
-
-    router.push({
-        query: {
-            ...route.query,
-            page: pageNumber
-        }
-    })
-}
+// API CALL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const fetchSitesList = async () => {
   isLoading.value = true
-  error.value = null
-  errorMessage.value = ''
+  error.value = false
 
   const params = new URLSearchParams({
-    order_by: currentOrder.value,
-    order: currentOrderDirection.value,
-    page: currentPage.value,
-    per_page: perPage.value
+    order_by: route.query.order_by || "registrado",
+    order: route.query.order || "desc",
+    page: route.query.page || 1,
+    per_page: route.query.per_page || 10,
   })
 
-  if (currentSearch.value) params.append('search', currentSearch.value)
-  if (currentProvince.value) params.append('province', currentProvince.value)
-  if (currentCity.value) params.append('city', currentCity.value)
-  if (currentState.value) params.append('state', currentState.value)
-  if (currentTags.value) params.append('tags', currentTags.value)
-  if (currentLat.value) params.append('lat', currentLat.value)
-  if (currentLon.value) params.append('lon', currentLon.value)
-  if (currentRadius.value) params.append('radius', currentRadius.value)
-
-  const url = `${API_BASE_URL}/sites?${params.toString()}`
+  const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius"]
+  dynamic.forEach(p => route.query[p] && params.append(p, route.query[p]))
 
   try {
-    const response = await fetch(url)
-    if (!response.ok) throw new Error(`Error al obtener el listado (${response.status})`)
+    const res = await fetch(`${API_BASE_URL}/sites?${params}`)
+    const data = await res.json()
 
-    const data = await response.json()
-    sites.value = data.data || [] 
-    
+    sites.value = data.data || []
     pagination.value = {
-        page: data.page,
-        pages: data.pages,
-        total: data.total,
-        per_page: data.per_page
+      page: data.page,
+      pages: data.pages,
+      total: data.total,
+      per_page: data.per_page,
     }
-  } catch (err) {
-    console.error('Error al cargar sitios:', err)
+  } catch {
     error.value = true
-    errorMessage.value = err.message
   } finally {
     isLoading.value = false
   }
 }
 
-watch(
-  [() => route.query.search, () => route.query.province, () => route.query.order_by, () => route.query.order, () => route.query.city, () => route.query.state, () => route.query.tags, () => route.query.page, () => route.query.lat, () => route.query.lon, () => route.query.radius], 
-  fetchSitesList,
-  { immediate: true }
-)
-
+watch(() => route.query, fetchSitesList, { immediate: true })
 onMounted(fetchSitesList)
 </script>
 
@@ -299,6 +252,6 @@ h1 { margin-bottom: 10px; }
 
 .modal-body {
     flex-grow: 1;
-    min-height: 500px; /* important: define min-height so map has space */
+    min-height: 500px;
 }
 </style>
