@@ -46,8 +46,7 @@ const error = ref(null);
 const errorMessage = ref('');
 const errorStatusCode = ref(null);
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const fetchFavorites = async () => {
     if (!authStore.isLoggedIn) {

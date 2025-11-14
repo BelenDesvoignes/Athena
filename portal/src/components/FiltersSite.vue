@@ -92,8 +92,7 @@ const selectedTags = ref([])
 
 const provinces = ref([])
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 // Función para cargar provincias (existente)

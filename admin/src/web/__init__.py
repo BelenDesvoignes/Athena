@@ -31,9 +31,15 @@ def create_app(env="development", static_folder="../../static"):
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
 
+    allowed_origins = ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]
+    if env == "development":
+        # Nota: Usamos http y el puerto de tu frontend (5173)
+        allowed_origins.append("http://localhost:5173")
+        allowed_origins.append("http://127.0.0.1:5173") 
+
     #inicializar la session
     Session(app) 
-    CORS(app, origins=["https://grupo19.proyecto2025.linti.unlp.edu.ar"])
+    CORS(app, origins=allowed_origins)
 
 
     db.init_app(app)

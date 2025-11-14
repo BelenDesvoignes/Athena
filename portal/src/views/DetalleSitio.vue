@@ -77,8 +77,7 @@ const isFavorite = ref(false);
 const siteId = route.params.id;
 
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'; 
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const fetchSiteDetail = async () => {
     isLoading.value = true;

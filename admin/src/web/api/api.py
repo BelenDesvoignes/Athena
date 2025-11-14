@@ -22,6 +22,7 @@ def get_sort_column(order_by_param):
 
 # Endpoint de prueba para sitios
 @api_bp.get("/sites")
+@api_bp.route("/sites/", methods=["GET"]) #***
 @validate_api_params(SiteListParams)
 def get_sites(validated_params):
 

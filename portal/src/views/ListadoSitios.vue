@@ -82,8 +82,7 @@ const clearFilters = () => {
     router.push({ query: {} })
 }
 
-const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // --- Computed (vinculados a query params) ---
 const currentSearch = computed(() => route.query.search || '')
 const currentProvince = computed(() => route.query.province || '')
