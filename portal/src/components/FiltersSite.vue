@@ -128,7 +128,7 @@ const initSelectedTags = () => {
 }
 
 
-// 🟢 NUEVA FUNCIÓN: Maneja el valor combinado (ej: 'nombre_asc')
+//  NUEVA FUNCIÓN: Maneja el valor combinado (ej: 'nombre_asc')
 // Reemplaza la vieja handleOrderChange
 const handleCombinedOrderChange = () => {
   const value = orderByCombined.value;
@@ -183,7 +183,7 @@ const resetForm = () => {
     // 3. Resetear el ordenamiento a los valores por defecto
     orderBy.value = 'registrado';
     orderDirection.value = 'desc';
-    // 🟢 Resetear la variable de UI combinada
+    //  Resetear la variable de UI combinada
     orderByCombined.value = 'registrado_desc';
 }
 

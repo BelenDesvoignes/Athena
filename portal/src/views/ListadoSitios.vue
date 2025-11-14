@@ -73,6 +73,13 @@ const pagination = ref({
   per_page: 10
 })
 
+const clearFilters = () => {
+    if (filtersSiteRef.value && filtersSiteRef.value.resetForm) {
+        filtersSiteRef.value.resetForm()
+    }
+    router.push({ query: {} })
+}
+
 const API_BASE_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api'
 
 // --- Computed (vinculados a query params) ---
@@ -147,3 +154,43 @@ watch(
 
 onMounted(fetchSitesList)
 </script>
+<style scoped>
+
+h1 { margin-bottom: 10px; }
+.list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
+.status-message, .error-message, .empty-message { text-align: center; margin-top: 40px; color: #666; }
+.clear-filters-button { background-color: #f87171; color: white; border: none; padding: 8px 15px; margin-bottom: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+.clear-filters-button:hover { background-color: #ef4444; }
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 0;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+}
+.pagination-info {
+    color: #555;
+    font-size: 1em;
+    font-weight: 500;
+}
+.pagination-button {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.pagination-button:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+}
+.pagination-button:not(:disabled):hover {
+    background-color: #2563eb;
+}
+</style>
