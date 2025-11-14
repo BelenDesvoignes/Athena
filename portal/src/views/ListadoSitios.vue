@@ -58,6 +58,8 @@ import { useRoute, useRouter } from 'vue-router'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
 
+const filtersSiteRef = ref(null)
+
 const route = useRoute()
 const router = useRouter()
 
