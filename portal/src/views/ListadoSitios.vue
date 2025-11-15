@@ -5,16 +5,16 @@
       <FiltersSite ref="filtersSiteRef" />
 
       <div class="map-controls">
-        <button 
-          @click="openMapModal" 
-          :class="{'btn-active': isModalOpen}" 
+        <button
+          @click="openMapModal"
+          :class="{'btn-active': isModalOpen}"
           class="map-toggle-button"
         >
-          Ver Mapa de Sitios
+          Ver mapa de sitios
         </button>
 
-        <button v-if="Object.keys(route.query).length > 0" 
-                @click="clearAllFilters" 
+        <button v-if="Object.keys(route.query).length > 0"
+                @click="clearAllFilters"
                 class="clear-filters-button">
           Limpiar Filtros
         </button>
@@ -26,10 +26,10 @@
       <div v-else-if="error" class="error-message">❌ Error al cargar el listado</div>
 
       <div v-else-if="sites.length > 0" class="list-grid">
-        <SiteCard 
-          v-for="site in sites" 
-          :key="site.id" 
-          :site="site" 
+        <SiteCard
+          v-for="site in sites"
+          :key="site.id"
+          :site="site"
         />
       </div>
 
@@ -44,13 +44,13 @@
         Página {{ pagination.page }} de {{ pagination.pages }}
       </p>
 
-      <button @click="goToPage(pagination.page - 1)" 
+      <button @click="goToPage(pagination.page - 1)"
               :disabled="pagination.page === 1"
               class="pagination-button">
         ← Anterior
       </button>
 
-      <button @click="goToPage(pagination.page + 1)" 
+      <button @click="goToPage(pagination.page + 1)"
               :disabled="pagination.page === pagination.pages"
               class="pagination-button">
         Siguiente →
@@ -66,7 +66,7 @@
         </div>
 
         <div class="modal-body">
-          <SiteMap 
+          <SiteMap
             ref="siteMapRef"
             :sites="sites"
             :lat="currentLat"
@@ -190,11 +190,11 @@ h1 { margin-bottom: 10px; }
 
 .map-controls { display: flex; gap: 15px; margin-bottom: 15px; }
 .map-toggle-button, .proximity-filter-button, .clear-filters-button {
-    border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; 
+    border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s;
 }
-.map-toggle-button { background-color: #007bff; color: white; }
+.map-toggle-button { background-color: #071a78; color: white; }
 .proximity-filter-button { background-color: #007bff; color: white; }
-.clear-filters-button { background-color: #f87171; color: white; }
+.clear-filters-button { background-color: #071a78; color: white; }
 
 .map-toggle-button:hover, .proximity-filter-button:not(:disabled):hover { background-color: #0056b3; }
 .proximity-filter-button:disabled { background-color: #6c757d; cursor: not-allowed; }
@@ -203,7 +203,7 @@ h1 { margin-bottom: 10px; }
 
 .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 20px 0; margin-top: 20px; border-top: 1px solid #eee; }
 .pagination-info { color: #555; font-size: 1em; font-weight: 500; }
-.pagination-button { background-color: #3b82f6; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+.pagination-button { background-color: #071a78; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
 .pagination-button:disabled { background-color: #93c5fd; cursor: not-allowed; }
 .pagination-button:not(:disabled):hover { background-color: #2563eb; }
 

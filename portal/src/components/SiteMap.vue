@@ -207,7 +207,7 @@ export default {
       this.selectedLat = e.latlng.lat;
       this.selectedLon = e.latlng.lng;
 
-      // Creamos marcador rojo solo una vez
+      // el marcador del usuario se crea 1 sola vez
       if (!this.pointMarker) {
         this.pointMarker = L.marker([this.selectedLat, this.selectedLon], {
           icon: redMarkerIcon

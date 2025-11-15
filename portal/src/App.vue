@@ -1,99 +1,236 @@
 <script setup>
 import { RouterView, useRouter } from 'vue-router'
-import { onMounted } from 'vue'
+import { ref } from 'vue'
 import { GoogleLogin } from 'vue3-google-login'
-import { useAuthStore } from '@/stores/auth'; // Importar el store
+import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore();
-const router = useRouter();
+const authStore = useAuthStore()
+const router = useRouter()
 
-// onMounted ya no es necesario aquí, el store se inicializa con localStorage.
-onMounted(() => {
-  // Aseguramos que el router esté disponible si el usuario hace clic en el botón
-  // y que el store ya cargó los datos.
-});
+const isMenuOpen = ref(false)
 
-// 🔹 Callback: Simplemente llama a la acción del store
-const callback = async (response) => {
-  console.log("Respuesta de Google recibida. Procesando login en Pinia Store...");
-  await authStore.loginWithGoogle(response);
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
 }
 
-// 🔹 Cerrar sesión: Simplemente llama a la acción del store
+const callback = async (response) => {
+  console.log("Respuesta de Google recibida. Procesando login en Pinia Store...")
+  await authStore.loginWithGoogle(response)
+}
+
 const logout = () => {
-  // No usamos window.confirm, pero mantengo la funcionalidad requerida por las instrucciones anteriores.
-  const confirmar = window.confirm("¿Estás seguro de que querés cerrar sesión?");
+  const confirmar = window.confirm("¿Estás seguro de que querés cerrar sesión?")
   if (confirmar) {
-    authStore.logout();
-    // Opcional: redirigir después de cerrar sesión
-    // router.push('/'); 
+    authStore.logout()
+    router.push('/')
   }
 }
 </script>
 
 <template>
   <div id="app-wrapper">
-    <!-- Navbar/Header de autenticación -->
-    <div class="auth-bar">
-      <!-- Si NO hay sesión iniciada (usando store) -->
-      <div v-if="!authStore.isLoggedIn">
-        <GoogleLogin :callback="callback" />
+
+    <header class="main-header">
+
+      <div class="header-left">
+        <button @click="toggleMenu" class="menu-hamburguer-btn" aria-label="Abrir Menú">
+          <span class="icon-line"></span>
+          <span class="icon-line"></span>
+          <span class="icon-line"></span>
+        </button>
+        <span class="menu-label">Menú</span>
       </div>
 
-      <!-- Si HAY sesión iniciada (usando store) -->
-      <div v-else class="user-info">
-        <!-- Usar authStore.user en lugar de userProfile local -->
-        <img :src="authStore.user.imageUrl" alt="Foto de perfil" width="50" style="border-radius: 50%;" />
-        <h3>Bienvenido/a, {{ authStore.user.name }}!</h3>
-        <p style="color: gray; font-size: 0.9em;">ID: {{ authStore.userId }}</p>
-
-        <button class="btn">Perfil</button>
-        <button class="btn">Mis reseñas</button>
-        <!-- Usar router para ir a la vista de favoritos -->
-        <button class="btn" @click="router.push('/favorites')">Favoritos</button> 
-        <button @click="logout" class="btn">Cerrar sesión</button>
+      <div class="header-center">
+        <img src="@/assets/athena-logo.png" alt="Logo de Athena" class="app-logo" @click="router.push('/')">
       </div>
-    </div>
 
-    <!-- Contenido principal -->
+      <div class="header-right">
+        <div v-if="authStore.isLoggedIn" class="user-avatar-placeholder">
+          <img
+            :src="authStore.user.imageUrl"
+            alt="Foto de perfil"
+            width="40"
+            height="40"
+            style="border-radius: 50%; cursor: pointer;"
+            @click="router.push('/profile')"
+          />
+        </div>
+        <div v-else class="google-login-btn-wrapper">
+          <GoogleLogin :callback="callback" />
+        </div>
+      </div>
+
+    </header>
+
+    <aside :class="['sidebar', { 'is-open': isMenuOpen }]">
+      <button @click="toggleMenu" class="close-menu-btn">✖️</button>
+
+      <nav class="sidebar-nav">
+        <button @click="router.push('/'); toggleMenu();" class="sidebar-link">Inicio</button>
+        <button @click="router.push('/sitios'); toggleMenu();" class="sidebar-link">Listado de Sitios</button>
+
+        <template v-if="authStore.isLoggedIn">
+          <hr>
+          <button @click="router.push('/profile'); toggleMenu();" class="sidebar-link">Perfil</button>
+          <button @click="router.push('/reviews'); toggleMenu();" class="sidebar-link">Mis Reseñas</button>
+          <button @click="router.push('/favorites'); toggleMenu();" class="sidebar-link">Sitios Favoritos</button>
+          <button @click="logout(); toggleMenu();" class="sidebar-link logout-link">Cerrar Sesión</button>
+        </template>
+      </nav>
+    </aside>
+
+    <div v-if="isMenuOpen" @click="toggleMenu" class="menu-overlay"></div>
+
     <RouterView />
   </div>
 </template>
 
 <style>
-/* ... (Estilos existentes) ... */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap');
+
 #app-wrapper {
   font-family: 'Inter', sans-serif;
-  color: #2c3e50;
+  color: #373b3f;
 }
 
-.auth-bar {
-  padding: 10px 20px;
-  border-bottom: 1px solid #eee;
+.auth-bar, .user-info {
+  display: none !important;
+}
+
+.main-header {
   display: flex;
-  justify-content: flex-end; /* Alinear a la derecha */
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #0d055c;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
-.btn {
-  padding: 7px 15px;
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #555;
-  background-color: white;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  margin: 5px;
-}
-
-.btn:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
-}
-
-.user-info {
+.header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 100px;
+}
+
+.menu-hamburguer-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.icon-line {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background-color: white;
+  border-radius: 2px;
+}
+
+.menu-label {
+  font-weight: bold;
+  font-size: 1.1em;
+  display: none;
+}
+
+.header-center {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.app-logo {
+  height: 55px;
+  max-width: 200px;
+  cursor: pointer;
+}
+
+.header-right {
+  min-width: 100px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sidebar {
+ position: fixed;
+  top: 0;
+  left: -380px;
+  width: 280px;
+  height: 100%;
+  background-color: #f8f8f8;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+  transition: left 0.3s ease;
+  z-index: 1010;
+  padding: 20px;
+  display: block;
+}
+
+.sidebar.is-open {
+  left: 0;
+}
+
+.close-menu-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: #0a0c51;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 40px;
+}
+
+.sidebar-nav hr {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--vt-c-divider-light-2, #f2f2f2);
+  margin: 10px 0;
+}
+
+.sidebar-link {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 10px 15px;
+  font-size: 1.1em;
+  cursor: pointer;
+  color: var(--vt-c-indigo, #2c3e50);
+  transition: background-color 0.2s;
+  border-radius: 5px;
+  width: 100%;
+}
+
+.sidebar-link:hover {
+  background-color: var(--vt-c-white-mute, #f2f2f2);
+}
+
+.logout-link {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 1005;
 }
 </style>

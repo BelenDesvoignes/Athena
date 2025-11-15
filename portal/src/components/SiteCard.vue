@@ -16,21 +16,17 @@
 </template>
 
 <script setup>
-// Options API o Composition API (setup)
 import { defineProps } from 'vue';
 
 const props = defineProps({
   site: {
     type: Object,
     required: true,
-    // Estructura mínima esperada:
-    // { id, name, city, province, rating, image_url }
   }
 });
 </script>
 
 <style scoped>
-/* Estilos Mobile First */
 .site-card {
   display: block;
   text-decoration: none;
@@ -40,11 +36,9 @@ const props = defineProps({
   overflow: hidden;
   margin: 10px 0;
   transition: transform 0.2s;
-  /* (Asegúrate de que este estilo sea responsive) */
 }
 .site-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-/* ... Estilos para imagen, título, etc. ... */
 </style>
