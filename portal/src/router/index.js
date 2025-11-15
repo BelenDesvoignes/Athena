@@ -21,6 +21,21 @@ const router = createRouter({
       path: '/sitios/:id', // Ruta para el detalle del sitio
       name: 'detalle-sitio',
       component: () => import('../views/DetalleSitio.vue')
+    },
+    {
+      path: '/perfil',
+      name: 'perfil-usuario',
+      component: () => import('../views/PerfilView.vue')
+    },
+    {
+      path: '/mis-favoritos',
+      name: 'mis-favoritos',
+      component: () => import('../views/FavoritosView.vue')
+    },
+    {
+      path: '/mis-resenas',
+      name: 'mis-resenas',
+      component: () => import('../views/ResenasView.vue')
     }
     // ... otras rutas (About, Login, etc.)
   ]

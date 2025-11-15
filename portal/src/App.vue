@@ -72,10 +72,17 @@ const logout = () => {
 
         <template v-if="authStore.isLoggedIn">
           <hr>
-          <button @click="router.push('/profile'); toggleMenu();" class="sidebar-link">Perfil</button>
-          <button @click="router.push('/reviews'); toggleMenu();" class="sidebar-link">Mis Reseñas</button>
-          <button @click="router.push('/favorites'); toggleMenu();" class="sidebar-link">Sitios Favoritos</button>
-          <button @click="logout(); toggleMenu();" class="sidebar-link logout-link">Cerrar Sesión</button>
+          <button @click="router.push('/perfil'); toggleMenu();" class="sidebar-link">
+            Perfil
+          </button>
+
+          <button @click="router.push('/mis-resenas'); toggleMenu();" class="sidebar-link">
+            Mis Reseñas
+          </button>
+
+          <button @click="router.push('/mis-favoritos'); toggleMenu();" class="sidebar-link">
+            Sitios Favoritos
+          </button><button @click="logout(); toggleMenu();" class="sidebar-link logout-link">Cerrar Sesión</button>
         </template>
       </nav>
     </aside>
