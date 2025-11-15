@@ -53,7 +53,7 @@ const logout = () => {
             width="40"
             height="40"
             style="border-radius: 50%; cursor: pointer;"
-            @click="router.push('/profile')"
+            @click="router.push('/perfil')"
           />
         </div>
         <div v-else class="google-login-btn-wrapper">

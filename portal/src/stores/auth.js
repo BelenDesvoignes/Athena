@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
             };
 
             // 2. Llamada al backend para obtener/crear el usuario y obtener el ID
-            const API_URL = 'https://admin-grupo19.proyecto2025.linti.unlp.edu.ar/api/public_users/login';
+            const API_URL = import.meta.env.VITE_API_BASE_URL;
             
             const res = await fetch(API_URL, {
                 method: "POST",
