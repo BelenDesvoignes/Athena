@@ -1,6 +1,6 @@
 from flask import Flask, render_template, session
 from flask_session import Session
-
+from datetime import timedelta
 from src.core.database import db, reset_db
 from src.core.flags import is_flag_enabled
 from src.core.models.feature_flags import FeatureFlag
@@ -15,6 +15,7 @@ from src.web.controllers.tag_routes import tag_bp
 from src.web.controllers.user_routes import user_admin_bp
 from src.web.handlers.maintenance import maintenance_check
 from src.web.controllers.review_routes import reviews_bp
+from flask_jwt_extended import JWTManager
 
 from src.web.controllers.feature_flags_routes import feature_flags_bp
 from src.web.api.api import api_bp
@@ -26,10 +27,17 @@ def create_app(env="development", static_folder="../../static"):
 
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
-
+    app.config["JWT_SECRET_KEY"] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=3600)
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    app.config["JWT_COOKIE_SECURE"] = False     # True si usas HTTPS
+    app.config["JWT_COOKIE_HTTPONLY"] = True    # No accesible desde JS
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
     #inicializar la session
     Session(app) 
     CORS(app)
+    JWTManager(app)
 
     db.init_app(app)
     
