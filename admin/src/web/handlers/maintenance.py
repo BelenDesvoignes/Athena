@@ -28,14 +28,10 @@ def maintenance_check(app):
             if "admin" in endpoint and (user or 'user_id' in session):
                 return redirect(url_for("feature_flags.maintenance_admin"))
 
-        if g.feature_flags.get("portal_maintenance_mode"):
-            if "portal" in endpoint and (user or 'user_id' in session):
-                return redirect(url_for("feature_flags.maintenance_portal"))
-
 
 def maintenance_protected(area: str):
     """
-    area: "admin" o "portal"
+    area: "admin"
     Bloquea el endpoint si el modo de mantenimiento correspondiente está activo.
     """
     def decorator(f):

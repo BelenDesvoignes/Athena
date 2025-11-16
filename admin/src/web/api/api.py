@@ -1,5 +1,5 @@
 from sqlalchemy import func, or_, desc, asc, distinct
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from src.core.models.review import Review
 from src.core.database import db
 from src.core.models.site import Sitio
@@ -175,3 +175,29 @@ def get_all_tags():
     tags = db.session.query(Tag).order_by(Tag.nombre).all()
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
+
+@api_bp.get("/flags/portal")
+def portal_status():
+    """
+    Devuelve el estado del portal (mantenimiento o activo).
+    """
+    maintenance = g.feature_flags.get("portal_maintenance_mode", False)
+    msg = g.feature_flags_msg.get("portal_maintenance_mode")
+
+    return jsonify({
+        "maintenance": maintenance,
+        "message": msg or "El portal se encuentra en mantenimiento.",
+        "flag": "portal_maintenance_mode"
+    }), 209
+
+@api_bp.get("/flags/reviews")
+def reviews_status():
+    """
+    Devuelve si las reseñas del portal están habilitadas o deshabilitadas.
+    """
+    reviews_enabled = g.feature_flags.get("reviews_enabled", True)
+
+    return jsonify({
+        "enabled": reviews_enabled,
+        "flag": "reviews_enabled"
+    }), 200

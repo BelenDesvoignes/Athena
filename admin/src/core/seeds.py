@@ -313,9 +313,9 @@ def seed_feature_flags():
         },
         {
             "key": "reviews_enabled",
-            "display_name": "Permitir nuevas reseñas",
-            "description": "Habilita o deshabilita la creación y visualización de reseñas en el portal.",
-            "is_enabled": True,
+            "display_name": "Deshabilitar nuevas reseñas",
+            "description": "Deshabilita la creación y visualización de reseñas en el portal.",
+            "is_enabled": False,
             "maintenance_message": None
         }
     ]
