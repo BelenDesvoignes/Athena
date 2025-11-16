@@ -176,7 +176,7 @@ def get_all_tags():
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
 
-@api_bp.get("/flags")
+@api_bp.get("/flags/portal")
 def portal_status():
     """
     Devuelve el estado del portal (mantenimiento o activo).
@@ -189,3 +189,15 @@ def portal_status():
         "message": msg or "El portal se encuentra en mantenimiento.",
         "flag": "portal_maintenance_mode"
     }), 209
+
+@api_bp.get("/flags/reviews")
+def reviews_status():
+    """
+    Devuelve si las reseñas del portal están habilitadas o deshabilitadas.
+    """
+    reviews_enabled = g.feature_flags.get("reviews_enabled", True)
+
+    return jsonify({
+        "enabled": reviews_enabled,
+        "flag": "reviews_enabled"
+    }), 200
