@@ -1,12 +1,14 @@
-from sqlalchemy import func, or_, desc, asc, distinct
-from flask import Blueprint, jsonify, request, g
+from sqlalchemy import func, or_, desc, asc, distinct, and_
+from flask import Blueprint, jsonify, request, g, current_app
 from src.core.models.review import Review
 from src.core.database import db
+from src.core.models.images import Imagen
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.api_validations import validate_api_params, SiteListParams
 from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
-
+from minio import Minio
+from datetime import timedelta
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
 @api_bp.get("/sites")
@@ -35,8 +37,13 @@ def get_sites(validated_params):
     ).label('calificacion_promedio')
 
     # Query base
-    query = db.session.query(Sitio, avg_rating).filter(Sitio.visible == True)
-    query = query.outerjoin(Review, Sitio.id == Review.site_id).group_by(Sitio.id)
+    query = (
+        db.session.query(Sitio, avg_rating, Imagen)
+            .outerjoin(Review, Sitio.id == Review.site_id)
+            .outerjoin(Imagen, and_(Imagen.sitio_id == Sitio.id, Imagen.es_portada == True))
+            .filter(Sitio.visible == True)
+            .group_by(Sitio.id, Imagen.id)
+        )
 
     # búsqueda por texto
     if search_term:
@@ -94,12 +101,34 @@ def get_sites(validated_params):
     # paginación
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
+    # portada
+    minio_client = Minio(
+        endpoint=current_app.config["MINIO_SERVER"],
+        access_key=current_app.config["MINIO_ACCESS_KEY"],
+        secret_key=current_app.config["MINIO_SECRET_KEY"],
+        secure=current_app.config["MINIO_SECURE"]
+    )
+    bucket_name = current_app.config["MINIO_BUCKET"]
+    
     # construir data de respuesta
     data = []
     for row in pagination.items:
         sitio = row[0]
         promedio_rating = row[1]
-        distance_val = row[2] if len(row) > 2 else None
+        portada = row[2]
+        distance_val = row[3] if len(row) > 3 else None
+        
+        # URL portada
+        image_url = "/img/default.jpg"
+        if portada:
+            try:
+                image_url = minio_client.presigned_get_object(
+                    bucket_name,
+                    portada.ruta,
+                    expires=timedelta(hours=2)
+                )
+            except:
+                pass
 
         data.append({
             "id": sitio.id,
@@ -114,7 +143,7 @@ def get_sites(validated_params):
             "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
             "distance_km": round(distance_val, 2) if distance_val is not None else None,
             "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]],
-            "image_url": "/img/default.jpg",
+            "image_url": image_url,  
         })
 
     return jsonify({
@@ -139,6 +168,39 @@ def get_site_detail(site_id):
     )
     promedio = round(promedio, 2) if promedio else 0
 
+    minio_client = Minio(
+        endpoint=current_app.config["MINIO_SERVER"],
+        access_key=current_app.config["MINIO_ACCESS_KEY"],
+        secret_key=current_app.config["MINIO_SECRET_KEY"],
+        secure=current_app.config["MINIO_SECURE"]
+    )
+    bucket_name = current_app.config["MINIO_BUCKET"]
+
+    imagenes_data = []
+    default_url = "/img/default.jpg"
+
+    for img in sitio.imagenes: 
+        imagen_url = default_url
+
+        try:
+            imagen_url = minio_client.presigned_get_object(
+                bucket_name,
+                img.ruta,
+                expires=timedelta(hours=2)
+            )
+        except:
+            pass
+
+        imagenes_data.append({
+            "id": img.id,
+            "url": imagen_url,
+            "is_cover": img.es_portada
+        })
+
+    imagenes_data.sort(key=lambda x: not x["is_cover"])
+
+    portada_url = imagenes_data[0]["url"] if imagenes_data else default_url
+
     data = {
         "id": sitio.id,
         "name": sitio.nombre,
@@ -152,7 +214,8 @@ def get_site_detail(site_id):
         "latitude": db.session.scalar(ST_Y(sitio.ubicacion)),
         "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
         "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags],
-        "image_url": "/img/default.jpg",
+        "cover_image": portada_url,      
+        "images": imagenes_data          
     }
 
     return jsonify(data)
