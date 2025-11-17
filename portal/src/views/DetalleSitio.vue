@@ -24,8 +24,20 @@
       <div class="main-info-grid">
         
         <div class="image-container">
-          <img :src="site.image_url || '/default-cover.jpg'" :alt="site.name" class="site-cover-image">
+          
+          <img :src="site.cover_image || '/default-cover.jpg'" :alt="site.name" class="site-cover-image">
         </div>
+        <div v-if="site.images && site.images.length > 1" class="gallery-section">
+            <div class="gallery-scroll">
+              <img
+                v-for="img in site.images.filter(i => !i.is_cover)"
+                :key="img.id"
+                :src="img.url"
+                class="gallery-image"
+                :alt="`Imagen del sitio ${site.name}`"
+              >
+            </div>
+          </div>
 
         <div class="description-section">
           <h2>Descripción Breve</h2>
@@ -251,4 +263,26 @@ onMounted(() => {
       text-align: left;
     }
 }
+
+.gallery-section {
+  margin-top: 25px;
+}
+
+.gallery-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.gallery-image {
+  width: 180px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  border: 1px solid #ddd;
+  background: #f4f4f4;
+}
+
 </style>
