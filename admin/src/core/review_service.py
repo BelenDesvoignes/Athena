@@ -6,13 +6,15 @@ from src.core.database import db
 from src.core.models.user import User
 from src.core.models.site import Sitio
 from src.core.models.review import Review, ReviewStatus
+from werkzeug.exceptions import NotFound
+from datetime import datetime, timezone
 
 def get_review_by_id(review_id):
     return db.session.query(Review).filter_by(id=review_id, deleted=False).first()
 
 def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None, rating_max=None,
                  date_from=None, date_to=None, user_search=None, sort_by='created_at', sort_dir='desc'):
-   
+
     query = db.session.query(Review).options(
         joinedload(Review.user),  # carga la relación User
         joinedload(Review.site)   # carga la relación Sitio
@@ -61,7 +63,7 @@ def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None
 def approve_review(review_id, moderator_user):
     review = get_review_by_id(review_id)
     if not review:
-        raise ValueError("Reseña no encontrada.")
+        raise NotFound(f"Reseña con ID {review_id} no encontrada.")
     review.status = ReviewStatus.APROBADA
     review.rejection_reason = None
     review.updated_at = datetime.now(timezone.utc)
