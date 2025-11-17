@@ -107,7 +107,7 @@ def list():
         tags=tags,
     )
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+ALLOWED_EXTENSIONS = {"jpg", "png", "webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  
 
 
@@ -253,24 +253,20 @@ def new():
                 secure=current_app.config["MINIO_SECURE"]
             )
 
-            archivos = request.files.getlist("imagenes")
+            archivos = [f for f in request.files.getlist("imagenes") if f.filename]
             
-            # Primero validar que hay al menos una imagen
             if not archivos:
                 db.session.rollback()
                 error = "Debes subir al menos una imagen para el sitio."
                 return render_template("new_site.html", tags=tags, error=error)
             
-            # Luego validar cantidad máxima
             if len(archivos) > 10:
                 db.session.rollback()
                 error = "No se pueden subir más de 10 imágenes."
                 return render_template("new_site.html", tags=tags, error=error)
 
-            # Finalmente validar formato de cada imagen antes de guardar
             portada_idx = request.form.get("portada", type=int) or 0
 
-            # Obtener descripciones de cada imagen
             descripciones = {}
             descripciones_list = request.form.getlist("descripciones[]")
             for i in range(len(archivos)):
