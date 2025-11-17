@@ -41,4 +41,18 @@ const props = defineProps({
   transform: translateY(-3px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+
+.card-image-container {
+  width: 100%;
+  height: 180px;     
+  overflow: hidden;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  object-position: center; 
+}
 </style>
