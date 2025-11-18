@@ -18,3 +18,5 @@ class PublicUser(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    reviews: Mapped[List["Review"]] = relationship("Review", back_populates="user", lazy="selectin")

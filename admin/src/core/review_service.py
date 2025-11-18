@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 from src.core.database import db
-from src.core.models.user import User
+from src.core.models.public_user import PublicUser
 from src.core.models.site import Sitio
 from src.core.models.review import Review, ReviewStatus
 from werkzeug.exceptions import NotFound
@@ -24,16 +24,26 @@ def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None
         query = query.filter(Review.status == ReviewStatus(status))
     if site_id:
         query = query.filter(Review.site_id == site_id)
-    if rating_min is not None:
-        query = query.filter(Review.rating >= int(rating_min))
-    if rating_max is not None:
-        query = query.filter(Review.rating <= int(rating_max))
+    if rating_min: 
+        try:
+            query = query.filter(Review.rating >= int(rating_min))
+        except ValueError:
+            
+            pass
+
+    
+    if rating_max:
+        try:
+            query = query.filter(Review.rating <= int(rating_max))
+        except ValueError:
+            
+            pass
     if date_from:
         query = query.filter(Review.created_at >= date_from)
     if date_to:
         query = query.filter(Review.created_at <= date_to)
     if user_search:
-        query = query.join(User).filter(User.email.ilike(f"%{user_search}%"))
+        query = query.join(PublicUser).filter(PublicUser.email.ilike(f"%{user_search}%"))
 
     if sort_by == 'created_at':
         order_col = Review.created_at
