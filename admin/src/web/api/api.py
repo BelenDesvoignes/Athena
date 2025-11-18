@@ -169,22 +169,21 @@ def login():
     user = query.first()
     if not user or not check_password(password, user.password):
         return jsonify({"msg": "Usuario o contraseña incorrectos"}), 401
-    token = create_access_token(identity=str(user.id))
-    resp = jsonify({"msg": "Login exitoso"})
-    set_access_cookies(resp, token)
-    return resp, 200
+    
+    access_token = create_access_token(identity=str(user.id))
+
+    return jsonify({
+        "token": access_token,
+        "expires_in": 3600
+    }), 200
 
 
 """Api para cerrar sesion en jwt"""
 """Se crea un token con la id del usuario y se envia en una cookie segura"""
 
-
 @api_bp.post("/logout", endpoint="logout")
-@jwt_required
 def logout():
-    resp = jsonify({"msg": "Logout exitoso"})
-    unset_jwt_cookies(resp)
-    return resp, 200
+    return jsonify({"msg": "Logout exitoso"}), 200
 
 
 """API para obtener reviews de un sitio específico"""
@@ -286,3 +285,24 @@ def get_site_review(site_id, review_id):
         "updated_at": review.updated_at.isoformat(),
     }
     return jsonify(review_data)
+
+
+@api_bp.delete("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="delete_site_review")
+@jwt_required()
+def delete_review(site_id, review_id):
+    user_id = get_jwt_identity()  
+
+    
+    review = db.session.query(Review).filter_by(
+        id=review_id, site_id=site_id).first()
+
+    if not review:
+        return jsonify({"msg": "Review no encontrada"}), 404
+
+    if int(review.user_id) != int(user_id):
+        return jsonify({"msg": "No tenés permiso para eliminar esta reseña"}), 403
+
+    db.session.delete(review)
+    db.session.commit()
+
+    return jsonify({"msg": "Review eliminada con éxito"}), 200

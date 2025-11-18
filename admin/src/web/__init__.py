@@ -28,12 +28,8 @@ def create_app(env="development", static_folder="../../static"):
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
     app.config["JWT_SECRET_KEY"] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_TOKEN_LOCATION"] = ["headers"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=3600)
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-    app.config["JWT_COOKIE_SECURE"] = False     # True si usas HTTPS
-    app.config["JWT_COOKIE_HTTPONLY"] = True    # No accesible desde JS
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
     #inicializar la session
     Session(app) 
     CORS(app)
