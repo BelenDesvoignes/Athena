@@ -19,8 +19,7 @@ from src.web.controllers.review_routes import reviews_bp
 from src.web.controllers.feature_flags_routes import feature_flags_bp
 from src.web.api.api import api_bp
 from src.web.controllers.public_user_routes import public_users_bp
-
-
+from src.web.controllers.favorites_routes import favorites_bp
 
 from flask_cors import CORS
 
@@ -35,15 +34,15 @@ def create_app(env="development", static_folder="../../static"):
     if env == "development":
         # Nota: Usamos http y el puerto de tu frontend (5173)
         allowed_origins.append("http://localhost:5173")
-        allowed_origins.append("http://127.0.0.1:5173") 
+        allowed_origins.append("http://127.0.0.1:5173")
 
     #inicializar la session
-    Session(app) 
+    Session(app)
     CORS(app, origins=allowed_origins)
 
 
     db.init_app(app)
-    
+
     try:
         minio_server = app.config.get("MINIO_SERVER")
         access_key = app.config.get("MINIO_ACCESS_KEY")
@@ -59,13 +58,13 @@ def create_app(env="development", static_folder="../../static"):
         app.logger.warning(f"⚠️ No se pudieron registrar las credenciales de MinIO: {str(e)}")
 
     # Inicializar cliente de MinIO (maneja errores internamente)
-    
+
     try:
         storage.init_app(app)
     except Exception as e:
         app.logger.error(f"❌ Fallo al inicializar MinIO: {str(e)}")
-    
-    
+
+
     with app.app_context():
         from src.core.models.user import User
         from src.core.models.site import Sitio
@@ -74,11 +73,11 @@ def create_app(env="development", static_folder="../../static"):
         from src.core.models.public_user import PublicUser
         from src.core.models.favorites import Favorite
         db.create_all()
-        seed_roles_permissions() 
-        seed_admin_user()        
+        seed_roles_permissions()
+        seed_admin_user()
         seed_feature_flags()
         seed_sitios()
-        
+
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
     app.jinja_env.globals['is_flag_enabled'] = is_flag_enabled
@@ -93,22 +92,22 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(reviews_bp, url_prefix="/reviews")
     app.register_blueprint(api_bp)
     app.register_blueprint(public_users_bp)
+    app.register_blueprint(favorites_bp)
 
-
-    #rutas principales 
+    #rutas principales
     @app.route("/")
     def index():
         return render_template("index.html")
-    
+
     @app.route("/limpiar_sesion")
     def limpiar_sesion():
         session.clear()
         return "Sesión borrada"
-    
+
     @app.cli.command("reset-db")
     def reset_db_command():
-        reset_db() #elimina y recrea la estructura de la bd 
-        with app.app_context(): 
+        reset_db() #elimina y recrea la estructura de la bd
+        with app.app_context():
             seed_roles_permissions() #insertar roles
             seed_admin_user()        #crear el admin
             print("Base de datos reseteada e inicializada con roles y admin.")
@@ -122,7 +121,7 @@ def create_app(env="development", static_folder="../../static"):
         return {
             "feature_flags": feature_flags
         }
-        
+
     maintenance_check(app)
 
     #manejo de errores
@@ -139,5 +138,5 @@ def create_app(env="development", static_folder="../../static"):
     def unauthorized(error):
         return render_template("error_401.html"), 401
 
-    
+
     return app

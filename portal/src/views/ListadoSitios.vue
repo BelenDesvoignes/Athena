@@ -158,11 +158,29 @@ const fetchSitesList = async () => {
     per_page: route.query.per_page || 10,
   })
 
-  const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius"]
+  const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius", "favorites"]
+
   dynamic.forEach(p => route.query[p] && params.append(p, route.query[p]))
 
+  //  INCLUIR JWT EN EL ENCABEZADO DE AUTORIZACIÓN
+  const token = localStorage.getItem('jwt_token');
+  const headers = {};
+
+  if (token) {
+    // Si existe el token, se añade el encabezado
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   try {
-    const res = await fetch(`${API_BASE_URL}/sites?${params}`)
+    const res = await fetch(`${API_BASE_URL}/sites?${params}`, {
+      headers: headers // Se añade el encabezado a la solicitud
+    });
+
+    // Si la respuesta no es OK, manejar el error
+    if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const data = await res.json()
 
     sites.value = data.data || []
@@ -172,7 +190,8 @@ const fetchSitesList = async () => {
       total: data.total,
       per_page: data.per_page,
     }
-  } catch {
+  } catch (err) {
+    console.error("Error al cargar sitios:", err);
     error.value = true
   } finally {
     isLoading.value = false

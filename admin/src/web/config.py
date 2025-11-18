@@ -22,15 +22,15 @@ class ProductionConfig(Config):
     MINIO_SECURE = True
     MINIO_BUCKET = "grupo19"
     SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL")
-
+    JWT_SECRET_KEY = environ.get("JWT_SECRET_KEY")
 
 class DevelopmentConfig(Config):
     MINIO_SERVER = "localhost:9000"
     MINIO_ACCESS_KEY = "grupo19admin"
     MINIO_SECRET_KEY = "grupo19secret"
-    MINIO_SECURE = False    
+    MINIO_SECURE = False
     MINIO_BUCKET = "grupo19"
-    
+
     SECRET_KEY = "your_dev_secret_key"
     DB_USER = "postgres"
     DB_PASSWORD = "admin"
@@ -42,6 +42,7 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = (
         f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
+    JWT_SECRET_KEY = "grupo19"
 
 
 class TestingConfig(Config):
