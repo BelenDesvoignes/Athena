@@ -9,9 +9,6 @@ from src.core.api_validations import validate_api_params, SiteListParams
 from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
 from minio import Minio
 from datetime import timedelta
-from src.core.auth_decorators import optional_login_public
-from src.core.models.favorites import Favorite
-
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
 
@@ -32,7 +29,6 @@ def get_site_images(sitio):
     default_url = "/img/default.jpg"
     imagenes_data = []
 
-    # Se asume que la relación 'imagenes' está definida en el modelo Sitio
     for img in sitio.imagenes:
         image_url = default_url
 
@@ -43,7 +39,6 @@ def get_site_images(sitio):
                 expires=timedelta(hours=2)
             )
         except:
-            # En caso de error de MinIO, se usa la URL por defecto
             pass
 
         imagenes_data.append({
@@ -52,7 +47,6 @@ def get_site_images(sitio):
             "is_cover": img.es_portada
         })
 
-    # Aseguramos que la portada esté al inicio, aunque es redundante para el objetivo
     imagenes_data.sort(key=lambda x: not x["is_cover"])
 
     cover_url = imagenes_data[0]["url"] if imagenes_data else default_url
@@ -63,7 +57,6 @@ def get_site_images(sitio):
 @api_bp.get("/sites")
 @api_bp.route("/sites/", methods=["GET"])
 @validate_api_params(SiteListParams)
-@optional_login_public
 def get_sites(validated_params):
 
     page = validated_params.page
@@ -79,23 +72,17 @@ def get_sites(validated_params):
     lon = validated_params.lon
     radius_km = validated_params.radius
 
-    # 🚨 CORRECCIÓN CLAVE: Sobreescribimos favorites_param leyendo directamente del request
-    # Esto soluciona el problema de la conversión de "True" a booleano dentro del validador.
-    favorites_param = request.args.get('favorites', '').lower() in ['true', '1']
-
-
     avg_rating = func.coalesce(
         func.avg(Review.rating).filter(Review.status == 'APROBADA'),
         0
     ).label('calificacion_promedio')
 
-    # MODIFICACIÓN 1: Se consulta solo Sitio y la calificación promedio
     query = (
-        db.session.query(Sitio, avg_rating)
+        db.session.query(Sitio, avg_rating, Imagen)
         .outerjoin(Review, Sitio.id == Review.site_id)
+        .outerjoin(Imagen, and_(Imagen.sitio_id == Sitio.id, Imagen.es_portada == True))
         .filter(Sitio.visible == True)
-        # Agrupamos solo por el ID del sitio.
-        .group_by(Sitio.id)
+        .group_by(Sitio.id, Imagen.id)
     )
 
     # búsqueda
@@ -134,30 +121,8 @@ def get_sites(validated_params):
         query = query.filter(dist_meters <= radius_km * 1000)
         query = query.add_columns(distance_km)
 
-    # =========================================================================
-    # DEBUGGING PARA FILTRO DE FAVORITOS
-    # =========================================================================
-
-    is_authenticated = hasattr(g, 'public_user') and g.public_user is not None
-    print("\n--- DEBUG FAVORITOS ---")
-    print(f"1. favorites_param (De Request): {favorites_param}") # Ahora debería ser True
-    print(f"2. User Authenticated (g.public_user): {is_authenticated}")
-    if is_authenticated:
-        print(f"3. User ID: {g.public_user.id}")
-    print("------------------------\n")
-    # =========================================================================
-
-    # favoritos - Lógica REVISADA para asegurar el filtrado
-    if favorites_param and is_authenticated:
-        # 1. Creamos una subconsulta para obtener solo los IDs de sitio favoritos del usuario
-        favorite_site_ids = db.session.query(Favorite.sitio_id).filter(
-            Favorite.user_id == g.public_user.id
-        ).subquery()
-
-        # 2. Filtramos la consulta principal para incluir solo esos IDs
-        query = query.filter(Sitio.id.in_(favorite_site_ids))
-
     # ordenamiento
+    column_names = [c.get('name') for c in query.column_descriptions]
     sort_column = None
 
     if order_by == "nombre":
@@ -166,10 +131,8 @@ def get_sites(validated_params):
         sort_column = Sitio.registrado
     elif order_by == "calificacion":
         sort_column = avg_rating
-    elif order_by == "distancia":
-        # Usamos el objeto Label distance_km si fue añadido
-        if distance_km is not None:
-             sort_column = distance_km
+    elif order_by == "distancia" and "distance_km" in column_names:
+        sort_column = db.column("distance_km")
 
     if sort_column is not None:
         if order_direction == "asc":
@@ -177,28 +140,14 @@ def get_sites(validated_params):
         else:
             query = query.order_by(desc(sort_column))
 
-    # MODIFICACIÓN 2: Aplicamos distinct() justo antes de la paginación.
-    query = query.distinct()
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     data = []
 
     for row in pagination.items:
-        # El tuple 'row' ahora contiene: (Sitio, promedio, [distancia_val, si se aplicó el filtro])
         sitio = row[0]
         promedio = row[1]
-        # La distancia es el tercer elemento si se incluyó en la consulta, si no, es None
-        distancia_val = row[2] if len(row) > 2 else None
-
-        is_favorite = False
-
-        # Solo consultamos si el usuario está logueado
-        if is_authenticated:
-            # Consulta directa para verificar la existencia del favorito
-            is_favorite = db.session.query(Favorite).filter(
-                Favorite.sitio_id == sitio.id,
-                Favorite.user_id == g.public_user.id
-            ).first() is not None
+        distancia_val = row[3] if len(row) > 3 else None
 
         cover_url, _ = get_site_images(sitio)
 
@@ -215,8 +164,7 @@ def get_sites(validated_params):
             "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
             "distance_km": round(distancia_val, 2) if distancia_val else None,
             "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]],
-            "image_url": cover_url,
-            "is_favorite": is_favorite
+            "image_url": cover_url
         })
 
     return jsonify({
@@ -227,9 +175,7 @@ def get_sites(validated_params):
         "per_page": pagination.per_page
     })
 
-
 @api_bp.get("/sites/<int:site_id>")
-@optional_login_public
 def get_site_detail(site_id):
     sitio = db.session.query(Sitio).filter_by(id=site_id, visible=True).first()
     if not sitio:
@@ -243,16 +189,6 @@ def get_site_detail(site_id):
     promedio = round(promedio, 2) if promedio else 0
 
     cover_url, imagenes_data = get_site_images(sitio)
-
-    is_favorite = False
-
-    # Solo consultamos si el usuario está logueado
-    if hasattr(g, 'public_user') and g.public_user:
-        # Consulta para verificar si el sitio es favorito del usuario logueado
-        is_favorite = db.session.query(Favorite).filter(
-            Favorite.sitio_id == sitio.id,
-            Favorite.user_id == g.public_user.id
-        ).first() is not None
 
     data = {
         "id": sitio.id,
@@ -268,8 +204,7 @@ def get_site_detail(site_id):
         "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
         "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags],
         "cover_image": cover_url,
-        "images": imagenes_data,
-        "is_favorite": is_favorite
+        "images": imagenes_data
     }
 
     return jsonify(data)

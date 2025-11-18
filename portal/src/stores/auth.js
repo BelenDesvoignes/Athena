@@ -3,8 +3,7 @@ import { ref, computed } from 'vue';
 import { jwtDecode } from 'jwt-decode';
 
 // Keys para localStorage
-// Usando 'jwt_token' para compatibilidad con ListadoSitios.vue
-const TOKEN_KEY = 'jwt_token';
+const TOKEN_KEY = 'authToken';
 const PROFILE_KEY = 'userProfile';
 const USER_ID_KEY = 'userId';
 
@@ -16,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // --- Getters ---
     const isLoggedIn = computed(() => !!user.value && !!token.value);
-
+    
     // Header para el backend (Crucial para Favoritos)
     const authHeader = computed(() => {
         if (token.value) {
@@ -28,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     // --- Actions ---
 
     /**
-     * Procesa la respuesta de Google, registra/autentica el usuario en el backend
+     * Procesa la respuesta de Google, registra/autentica el usuario en el backend 
      * y guarda el estado globalmente.
      */
     const loginWithGoogle = async (googleResponse) => {
@@ -38,38 +37,36 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         try {
-            //  Decodificar JWT de Google para obtener info del perfil
+            // 1. Decodificar JWT de Google para obtener info del perfil
             const googleJwt = googleResponse.credential;
             const decoded = jwtDecode(googleJwt);
-
+            
             const profile = {
                 name: decoded.name,
                 email: decoded.email,
                 imageUrl: decoded.picture,
             };
 
-            //  Llamada al backend (Flask) para autenticar y obtener su JWT propio
+            // 2. Llamada al backend para obtener/crear el usuario y obtener el ID
             const API_URL = import.meta.env.VITE_API_LOGIN_URL;
-
-            // Enviamos el token de Google para que Flask lo valide con Google
+            
             const res = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${googleJwt}`
-                },
-                body: JSON.stringify({
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
                     email: profile.email,
-                    name: profile.name
+                    name: profile.name // El backend usa 'name' también
                 }),
             });
 
             if (!res.ok) {
+                // Si el backend falla (ej: 500, 400), intentamos obtener los detalles
                 let errorDetails = `Status: ${res.status}`;
                 try {
                     const data = await res.json();
                     errorDetails += `, Details: ${data.error || JSON.stringify(data)}`;
                 } catch (e) {
+                    // Si no puede parsear JSON (ej: respuesta es HTML de un error 500)
                     errorDetails += `, Response Type: No JSON (revisar logs del servidor)`;
                 }
                 throw new Error(`Error en el backend: ${errorDetails}`);
@@ -77,42 +74,27 @@ export const useAuthStore = defineStore('auth', () => {
 
             const data = await res.json();
 
-            //  AJUSTE DE CLAVE CLAVE
-            // Intentamos obtener el token de varias claves comunes en la respuesta de Flask.
-            const flaskAccessToken = data.access_token || data.auth_token || data.token;
-
-            if (!flaskAccessToken) {
-                // Si aún no se encuentra, lanzamos un error más informativo para el desarrollador.
-                console.error("Respuesta completa del backend:", data);
-                throw new Error("El backend no devolvió el access_token, auth_token, o token necesario.");
-            }
-
-            //  Guardar el estado en el Store y localStorage (usando el token de Flask)
-            token.value = flaskAccessToken;
+            // 3. Guardar el estado en el Store y localStorage
+            token.value = googleJwt; // Guardar el JWT completo
             user.value = profile;
-            // Asumimos que el ID está en data.user.id
-            userId.value = data.user?.id?.toString();
-
-            // Si el ID del usuario no existe, esto podría ser un problema para la función de favoritos.
-            if (!userId.value) {
-                console.warn("ADVERTENCIA: No se pudo obtener el ID del usuario de la respuesta del backend.");
-            }
-
-            // Guardamos el token de Flask que ListadoSitios.vue espera
-            localStorage.setItem(TOKEN_KEY, flaskAccessToken);
+            userId.value = data.user.id.toString(); // Guardar el ID retornado por Flask
+            
+            localStorage.setItem(TOKEN_KEY, googleJwt);
             localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-            localStorage.setItem(USER_ID_KEY, userId.value);
-
+            localStorage.setItem(USER_ID_KEY, data.user.id.toString());
+            
             console.log("✅ Inicio de sesión exitoso. Usuario ID:", userId.value);
             return true;
 
         } catch (error) {
             console.error("🚨 Error al procesar login:", error);
+            // Mostrar alerta más específica al usuario
             if (error.message.includes('Failed to fetch')) {
-                 window.alert('Error de Conexión: No se pudo conectar con el servidor.');
+                 window.alert('Error de Conexión: No se pudo conectar con el servidor. Revisa la URL y CORS.');
             } else {
                  window.alert(`Error al iniciar sesión: ${error.message}`);
             }
+            // Limpiar el estado por si acaso
             logout();
             return false;
         }
