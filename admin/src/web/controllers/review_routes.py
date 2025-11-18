@@ -1,5 +1,5 @@
 # admin/src/routes/reviews.py
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for, flash
 from src.core.database import db
 from src.core.models.user import User
 from src.core.review_service import list_reviews, get_review_by_id, approve_review, reject_review, delete_review
@@ -20,7 +20,7 @@ def reviews_list():
     rating_max = request.args.get("rating_max")
     date_from = request.args.get("date_from")  
     date_to = request.args.get("date_to")
-    user_search = request.args.get("user")
+    user_search = request.args.get("user_search")
     sort_by = request.args.get("sort_by", "created_at")
     sort_dir = request.args.get("sort_dir", "desc")
 
@@ -59,11 +59,13 @@ def review_detail(review_id):
 def review_approve(review_id):
     try:
         review = approve_review(review_id, current_user())
-        return jsonify({"ok": True, "status": review.status.value})
+       
+        flash(f"Reseña ID {review_id} aprobada con éxito.", "success")
+        return redirect(url_for('reviews.reviews_list'))
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-
+       
+        flash(f"Error al aprobar la reseña ID {review_id}: {str(e)}", "danger")
+        return redirect(url_for('reviews.reviews_list'))
 @reviews_bp.route("/<int:review_id>/reject", methods=["POST"])
 @login_required
 @permission_required("user_moderation")
@@ -72,10 +74,11 @@ def review_reject(review_id):
     reason = data.get("reason", "")
     try:
         review = reject_review(review_id, reason, current_user())
-        return jsonify({"ok": True, "status": review.status.value})
+        flash(f"Reseña ID {review_id} rechazada con éxito.", "success")
+        return redirect(url_for('reviews.reviews_list'))
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
+        flash(f"Error al rechazar la reseña ID {review_id}: {str(e)}", "danger")
+        return redirect(url_for('reviews.reviews_list'))
 
 
 @reviews_bp.route("/<int:review_id>", methods=["POST"])
@@ -85,11 +88,13 @@ def review_delete(review_id):
     hard = request.args.get("hard", "false").lower() == "true"
     try:
         delete_review(review_id, hard_delete=hard)
-        return jsonify({"ok": True})
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    
 
+        flash(f"Reseña ID {review_id} eliminada con éxito.", "success")
+        return redirect(url_for('reviews.reviews_list'))
+    except ValueError as e:
+
+        flash(f"Error al eliminar la reseña ID {review_id}: {str(e)}", "danger")
+        return redirect(url_for('reviews.reviews_list'))
 
 def current_user():
     user_id = session.get("user_id")

@@ -73,16 +73,16 @@
           <td>{{ review.rating }}</td>
           <td>{{ review.content | truncate(70) }}</td>
           <td>
-            {% if review.status == 'PENDIENTE' %}
+            {% if review.status.value == 'PENDIENTE' %}
               <span class="badge bg-warning text-dark">Pendiente</span>
-            {% elif review.status == 'APROBADA' %}
+            {% elif review.status.value == 'APROBADA' %}
               <span class="badge bg-success">Aprobada</span>
             {% else %}
               <span class="badge bg-danger">Rechazada</span>
             {% endif %}
           </td>
           <td>
-            {% if review.status == 'RECHAZADA' %}
+            {% if review.status.value == 'RECHAZADA' %}
               {{ review.rejection_reason }}
             {% else %}
               -
@@ -95,7 +95,7 @@
                 Acciones
               </button>
               <ul class="dropdown-menu">
-                {% if review.status == 'PENDIENTE' %}
+                {% if review.status.value == 'PENDIENTE' %}
                   <!-- Aprobar -->
                   <li>
                     <form method="POST" action="{{ url_for('reviews.review_approve', review_id=review.id) }}" style="display:inline;">
@@ -149,8 +149,8 @@
             <ul class="list-group">
               <li class="list-group-item"><strong>Contenido completo:</strong> {{ review.content }}</li>
               <li class="list-group-item"><strong>Calificación:</strong> {{ review.rating }}</li>
-              <li class="list-group-item"><strong>Estado:</strong> {{ review.status }}</li>
-              {% if review.status == 'RECHAZADA' %}
+              <li class="list-group-item"><strong>Estado:</strong> {{ review.status.value}}</li>
+              {% if review.status.value == 'RECHAZADA' %}
               <li class="list-group-item"><strong>Motivo:</strong> {{ review.rejection_reason }}</li>
               {% endif %}
               <li class="list-group-item"><strong>Usuario:</strong> {{ review.user.email }}</li>
