@@ -22,8 +22,6 @@ from src.web.controllers.public_user_routes import public_users_bp
 from src.web.controllers.favorites_routes import favorites_bp
 
 from flask_cors import CORS
-#  Importar la extensión JWT
-from flask_jwt_extended import JWTManager
 
 
 def create_app(env="development", static_folder="../../static"):
@@ -42,10 +40,6 @@ def create_app(env="development", static_folder="../../static"):
     Session(app)
     CORS(app, origins=allowed_origins)
 
-    # Inicializar la extensión JWT (Usa la clave de app.config)
-    # Sin esta línea, Flask no sabe qué hacer con JWT_SECRET_KEY.
-    JWTManager(app)
-
 
     db.init_app(app)
 
@@ -56,10 +50,10 @@ def create_app(env="development", static_folder="../../static"):
         secure = app.config.get("MINIO_SECURE")
 
         app.logger.info(f"🔧 Configuración MinIO detectada:")
-        app.logger.info(f"    ➜ Server: {minio_server}")
-        app.logger.info(f"    ➜ Secure: {secure}")
-        app.logger.info(f"    ➜ Access Key: {access_key}" if access_key else "    ➜ Access Key: NO DEFINIDA")
-        app.logger.info(f"    ➜ Secret Key: {secret_key}" if secret_key else "    ➜ Secret Key: NO DEFINIDA")
+        app.logger.info(f"    ➜ Server: {minio_server}")
+        app.logger.info(f"    ➜ Secure: {secure}")
+        app.logger.info(f"    ➜ Access Key: {access_key}" if access_key else "    ➜ Access Key: NO DEFINIDA")
+        app.logger.info(f"    ➜ Secret Key: {secret_key}" if secret_key else "    ➜ Secret Key: NO DEFINIDA")
     except Exception as e:
         app.logger.warning(f"⚠️ No se pudieron registrar las credenciales de MinIO: {str(e)}")
 
