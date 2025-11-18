@@ -150,7 +150,7 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
         filename = secure_filename(file.filename)
         ext = os.path.splitext(filename)[1].lower().lstrip(".")
 
-        object_name = f"public/{sitio_id}/{uuid.uuid4().hex}.{ext}"
+        object_name = f"sites/{sitio_id}/{uuid.uuid4().hex}.{ext}"
 
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
@@ -477,10 +477,6 @@ def edit(id):
                 if error_imagen:
                     error = error_imagen
                 
-                    
-            print("[DEBUG] Portada seleccionada:", portada_valor)
-            print("[DEBUG] Hubo eliminaciones:", hubo_eliminaciones)
-            print("[DEBUG] Hubo nuevas:", hubo_nuevas)
             
             # --- Actualizar portada SOLO si hay cambios reales ---
             if portada_valor and portada_valor != "0":

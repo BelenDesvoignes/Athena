@@ -90,7 +90,7 @@
                 <div class="mb-3 mt-2">
                     <div class="custom-file-upload">
                         <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
-                        <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                        <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.png,.webp">
                         <span id="file-count" class="ms-2 text-info"></span>
                     </div>
                 </div>
@@ -145,6 +145,11 @@
     let nuevasImagenes = [];
     let imagenesExistentes = [];
 
+    const EXT_PERMITIDAS = ["jpg", "png", "webp"];
+    const MAX_IMAGENES = 10;
+    const MAX_BYTES = 5 * 1024 * 1024;
+
+    // Inicializar imágenes existentes
     document.querySelectorAll('.imagen-item[data-id]').forEach(div => {
         imagenesExistentes.push({
             id: div.dataset.id,
@@ -155,10 +160,15 @@
         });
     });
 
+    function extensionValida(nombre) {
+        const ext = nombre.split('.').pop().toLowerCase();
+        return EXT_PERMITIDAS.includes(ext);
+    }
+
     function renderizarImagenes() {
         contenedor.innerHTML = '';
 
-        // Imágenes existentes
+        // Renderizar imágenes existentes
         imagenesExistentes.forEach((img, idx) => {
             const div = document.createElement('div');
             div.className = 'imagen-item bg-dark p-3 rounded';
@@ -202,7 +212,6 @@
             label.appendChild(radio);
             div.appendChild(label);
 
-            // Campo de descripción (editable)
             const descripcion = document.createElement('input');
             descripcion.type = "text";
             descripcion.className = "form-control form-control-sm mt-2";
@@ -211,18 +220,13 @@
             descripcion.style.backgroundColor = "#222";
             descripcion.style.color = "#fff";
             descripcion.style.border = "1px solid #555";
-            descripcion.addEventListener('input', e => {
-                img.descripcion = e.target.value;
-            });
+            descripcion.addEventListener('input', e => img.descripcion = e.target.value);
 
-            // Input oculto que se enviará al backend
             const hiddenDesc = document.createElement('input');
             hiddenDesc.type = "hidden";
             hiddenDesc.name = "descripciones_existentes[]";
             hiddenDesc.value = img.descripcion || "";
-            descripcion.addEventListener('input', () => {
-                hiddenDesc.value = descripcion.value;
-            });
+            descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
 
             div.appendChild(descripcion);
             div.appendChild(hiddenDesc);
@@ -230,7 +234,7 @@
             contenedor.appendChild(div);
         });
 
-        // Imágenes nuevas
+        // Renderizar imágenes nuevas
         nuevasImagenes.forEach((fileObj, idx) => {
             const div = document.createElement('div');
             div.className = 'imagen-item bg-dark p-3 rounded';
@@ -274,7 +278,6 @@
             label.appendChild(radio);
             div.appendChild(label);
 
-            // Campo de descripción (editable)
             const descripcion = document.createElement('input');
             descripcion.type = "text";
             descripcion.className = "form-control form-control-sm mt-2";
@@ -283,18 +286,13 @@
             descripcion.style.backgroundColor = "#222";
             descripcion.style.color = "#fff";
             descripcion.style.border = "1px solid #555";
-            descripcion.addEventListener('input', e => {
-                fileObj.descripcion = e.target.value;
-            });
+            descripcion.addEventListener('input', e => fileObj.descripcion = e.target.value);
 
-            // Input oculto que se enviará al backend
             const hiddenDesc = document.createElement('input');
             hiddenDesc.type = "hidden";
             hiddenDesc.name = "descripciones_nuevas[]";
             hiddenDesc.value = fileObj.descripcion || "";
-            descripcion.addEventListener('input', () => {
-                hiddenDesc.value = descripcion.value;
-            });
+            descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
 
             div.appendChild(descripcion);
             div.appendChild(hiddenDesc);
@@ -303,21 +301,6 @@
         });
 
         actualizarContador();
-    }
-
-    function marcarComoPortadaNueva(idx) {
-        imagenesExistentes.forEach(img => img.portada = false);
-        nuevasImagenes.forEach(f => f.portada = false);
-        nuevasImagenes[idx].portada = true;
-        portadaHidden.value = "nueva-" + idx;
-        renderizarImagenes();
-    }
-
-    function marcarComoPortadaExistente(id) {
-        imagenesExistentes.forEach(img => img.portada = (img.id === id));
-        nuevasImagenes.forEach(f => f.portada = false);
-        portadaHidden.value = id;
-        renderizarImagenes();
     }
 
     function eliminarNueva(idx) {
@@ -348,6 +331,21 @@
         }
     }
 
+    function marcarComoPortadaNueva(idx) {
+        imagenesExistentes.forEach(img => img.portada = false);
+        nuevasImagenes.forEach(f => f.portada = false);
+        nuevasImagenes[idx].portada = true;
+        portadaHidden.value = "nueva-" + idx;
+        renderizarImagenes();
+    }
+
+    function marcarComoPortadaExistente(id) {
+        imagenesExistentes.forEach(img => img.portada = (img.id === id));
+        nuevasImagenes.forEach(f => f.portada = false);
+        portadaHidden.value = id;
+        renderizarImagenes();
+    }
+
     function actualizarContador() {
         document.getElementById('file-count').textContent =
             (nuevasImagenes.length + imagenesExistentes.length) > 0
@@ -356,15 +354,30 @@
     }
 
     inputImagenes.addEventListener('change', (e) => {
-        Array.from(e.target.files).forEach(file => {
-            if ((nuevasImagenes.length + imagenesExistentes.length) < 10) {
-                nuevasImagenes.push({
-                    file,
-                    portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada),
-                    descripcion: ""
-                });
+        const nuevos = Array.from(e.target.files);
+
+        if (nuevasImagenes.length + imagenesExistentes.length + nuevos.length > MAX_IMAGENES) {
+            alert(`Solo puedes subir hasta ${MAX_IMAGENES} imágenes en total.`);
+            return;
+        }
+
+        nuevos.forEach(file => {
+            if (!extensionValida(file.name)) {
+                alert(`Formato no permitido: ${file.name}\nPermitidas: ${EXT_PERMITIDAS.join(", ")}`);
+                return;
             }
+            if (file.size > MAX_BYTES) {
+                alert(`El archivo ${file.name} supera el tamaño máximo de 5 MB`);
+                return;
+            }
+
+            nuevasImagenes.push({
+                file,
+                portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada),
+                descripcion: ""
+            });
         });
+
         renderizarImagenes();
     });
 

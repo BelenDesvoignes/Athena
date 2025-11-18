@@ -131,9 +131,8 @@ const portadaHidden = document.getElementById('portada-hidden');
 let archivosSeleccionados = [];
 
 const EXT_PERMITIDAS = ["jpg", "png", "webp"];
-const MAX_IMAGENES = 10;
-const MAX_SIZE_MB = 5; 
-const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
+const MAX_IMAGENES = 10; 
+const MAX_BYTES = 5 * 1024 * 1024;
 
 function extensionValida(nombre) {
     const ext = nombre.split('.').pop().toLowerCase();
@@ -161,15 +160,17 @@ function renderizarImagenes() {
         imgContainer.appendChild(img);
 
         // Botón eliminar
-        const botonEliminar = document.createElement('button');
-        botonEliminar.type = "button";
-        botonEliminar.textContent = "×";
-        botonEliminar.className = "btn btn-sm btn-danger";
-        botonEliminar.style.position = "absolute";
-        botonEliminar.style.top = "5px";
-        botonEliminar.style.right = "5px";
-        botonEliminar.addEventListener('click', () => eliminarImagen(idx));
-        imgContainer.appendChild(botonEliminar);
+        if (!fileObj.portada) {
+            const botonEliminar = document.createElement('button');
+            botonEliminar.type = "button";
+            botonEliminar.textContent = "×";
+            botonEliminar.className = "btn btn-sm btn-danger";
+            botonEliminar.style.position = "absolute";
+            botonEliminar.style.top = "5px";
+            botonEliminar.style.right = "5px";
+            botonEliminar.addEventListener('click', () => eliminarImagen(idx));
+            imgContainer.appendChild(botonEliminar);
+        }
 
         const portadaLabel = document.createElement('label');
         portadaLabel.className = "text-light mt-1";
@@ -213,7 +214,9 @@ function renderizarImagenes() {
     });
 
     actualizarInputFiles();
+    actualizarContador();   
 }
+
 
 function eliminarImagen(idx) {
     const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
@@ -230,7 +233,12 @@ function actualizarInputFiles() {
     archivosSeleccionados.forEach(f => dt.items.add(f.file));
     inputImagenes.files = dt.files;
 }
-
+function actualizarContador() {
+    document.getElementById('file-count').textContent =
+        archivosSeleccionados.length > 0
+            ? `${archivosSeleccionados.length} imagen(es) seleccionada(s)`
+            : "";
+}
 
 inputImagenes.addEventListener('change', e => {
     const nuevos = Array.from(e.target.files);
@@ -259,7 +267,7 @@ inputImagenes.addEventListener('change', e => {
             descripcion: ""
         });
     });
-
+    
     renderizarImagenes();
 });
 
