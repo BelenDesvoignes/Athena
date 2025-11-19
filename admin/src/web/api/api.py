@@ -1,23 +1,20 @@
 from sqlalchemy import func, or_, desc, asc, distinct, and_
 from flask import Blueprint, jsonify, request, g, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
 from math import ceil
 from marshmallow import ValidationError
-from src.core.models.review import Review
+from minio import Minio
 from src.core.database import db
 from src.core.models.images import Imagen
 from src.core.bcrypt import check_password
+from src.core.api_validations import validate_api_params, SiteListParams
+from datetime import timedelta
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
-from src.core.api_validations import validate_api_params, SiteListParams
-from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
-from minio import Minio
-from datetime import timedelta
-from src.core.models.tag import Tag
 from src.core.models.user import User
-from src.core.models.tag import sitios_tags
 from src.core.models.review import Review, ReviewStatus
-from src.core.models.schema.Reviews import Review_Schema, Review_Create_Schema
+from src.core.models.schema.Reviews import Review_Create_Schema
 
 
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
@@ -252,7 +249,6 @@ def get_all_tags():
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
 
-
 """Api para identificarse en jwt"""
 
 
@@ -273,13 +269,6 @@ def login():
         "expires_in": 3600
     }), 200
 
-
-"""Api para cerrar sesion en jwt"""
-"""Se crea un token con la id del usuario y se envia en una cookie segura"""
-
-@api_bp.post("/logout", endpoint="logout")
-def logout():
-    return jsonify({"msg": "Logout exitoso"}), 200
 
 
 """API para obtener reviews de un sitio específico"""
@@ -309,11 +298,10 @@ def get_site_reviews(site_id):
         "page": page,
         "per_page": per_page,
         "total": total_reviews,
-        "tatal_pages": ceil(total_reviews / per_page),
+        "total_pages": ceil(total_reviews / per_page),
         "reviews": data,
     }
     return jsonify(response)
-
 
 """Metodo para crear una nueva review para un sitio turistico"""
 
@@ -341,7 +329,7 @@ def create_site_review(site_id):
         user_id=user_id,
         rating=data["rating"],
         content=data.get("comment", ""),
-        status=ReviewStatus.PENDIENTE,
+        status=ReviewStatus.APROBADA,
     )
     db.session.add(new_review)
     db.session.commit()
@@ -415,6 +403,24 @@ def portal_status():
         "message": msg or "El portal se encuentra en mantenimiento.",
         "flag": "portal_maintenance_mode"
     }), 209
+
+@api_bp.get("/internal/users/<int:user_id>")
+def get_user_info(user_id):
+    """
+    Devuelve información básica del usuario dado su ID.
+    """
+    print(f'Consulta recibida para el usuario con ID: {user_id}')
+    user = db.session.query(User).filter_by(id=user_id).first()
+    if not user:
+        print(f'Usuario no encontrado para el ID: {user_id}')
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    data = {
+        "nombre": user.nombre,
+        "apellido": user.apellido,
+    }
+    print(f'Datos devueltos: {data}')
+    return jsonify(data), 200
 
 @api_bp.get("/flags/reviews")
 def reviews_status():
