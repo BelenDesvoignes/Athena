@@ -24,6 +24,7 @@ minio = "^7.2.18"
 flask-cors = "^4.0.0"
 flask-wtf = "^1.2.2"
 flask-jwt-extended = "^4.7.1"
+marshmallow = "^4.1.0"
 
 [[tool.poetry.source]]
 name = "pypi-http"
