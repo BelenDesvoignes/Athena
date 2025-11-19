@@ -117,8 +117,17 @@
                 <div class="position-sticky pt-3 sidebar-content">
                     <ul class="nav flex-column">
                     {% if not feature_flags.admin_maintenance_mode %}
+                        
+                        {# Gestión de sitios históricos (Requiere permiso 'site_index') #}
+                        {% if 'site_list' in current_user_permissions() %}
                         <li class="nav-item"><a class="nav-link text-light" href="{{url_for('sitios.list')}}">Gestión de sitios históricos</a></li>
+                        {% endif %}
+                        
+                        {# Validación de propuestas (Requiere permiso 'proposals_validation') #}
+                        {% if 'proposals_validation' in current_user_permissions() %}
                         <li class="nav-item"><a class="nav-link text-light" href="#">Validación de propuestas</a></li>
+                        {% endif %}
+                        
                             {% if 'user_moderation' in current_user_permissions() %}
                                 <li class="nav-item"><a class="nav-link text-light" href="{{url_for('reviews.reviews_list')}}">Moderación de Reseñas</a></li>
                             {% endif %}

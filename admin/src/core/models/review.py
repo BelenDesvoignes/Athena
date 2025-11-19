@@ -15,7 +15,7 @@ class Review(Base):
 
     id = Column(Integer, primary_key=True)
     site_id = Column(Integer, ForeignKey("sitios.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("public_users.id"), nullable=False)
     rating = Column(Integer, nullable=False)  
     content = Column(Text, nullable=False)
     status = Column(Enum(ReviewStatus), nullable=False, default=ReviewStatus.PENDIENTE)
@@ -24,6 +24,6 @@ class Review(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     deleted = Column(Boolean, default=False)
 
-    user = relationship("User", back_populates="reviews") 
+    user = relationship("PublicUser", back_populates="reviews") 
     site = relationship("Sitio", back_populates="reviews")  
 

@@ -1,8 +1,6 @@
-
-// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-// Asegúrate de crear el componente ListadoSitios.vue
+import { checkPortalStatus } from "../services/portalFlags.js"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,9 +19,53 @@ const router = createRouter({
       path: '/sitios/:id', // Ruta para el detalle del sitio
       name: 'detalle-sitio',
       component: () => import('../views/DetalleSitio.vue')
-    }
+    },
+    {
+      path: '/perfil',
+      name: 'perfil-usuario',
+      component: () => import('../views/PerfilView.vue')
+    },
+    {
+      path: '/mis-favoritos',
+      name: 'mis-favoritos',
+      component: () => import('../views/FavoritosView.vue')
+    },
+    {
+    path: "/mantenimiento",
+    name: "Mantenimiento",
+    component: () => import("../views/Mantenimiento.vue")
+    },
+
+    // --- Ruta deshabilitada temporalmente ---
+    // {
+    //   path: '/mis-resenas',
+    //   name: 'mis-resenas',
+    //   component: () => import('../views/ResenasView.vue')
+    // }
+
     // ... otras rutas (About, Login, etc.)
   ]
+})
+
+router.beforeEach(async (to, from, next) => {
+  if (to.name === "Mantenimiento") {
+    const status = await checkPortalStatus()
+
+    if (!status.maintenance) {
+      next({ name: "home" })
+    } else {
+      next()
+    }
+    return
+  }
+
+  const status = await checkPortalStatus()
+
+  if (status.maintenance) {
+    next({ name: "Mantenimiento" })
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -6,7 +6,9 @@ from src.core.models.feature_flags import FeatureFlag
 from src.core.models.role_permission import Permission, Role, RolePermission
 from src.core.models.site import Sitio
 from src.core.models.user import User
-from datetime import datetime
+from src.core.models.public_user import PublicUser
+from src.core.models.review import Review, ReviewStatus
+from datetime import datetime, timezone
 
 
 
@@ -313,9 +315,9 @@ def seed_feature_flags():
         },
         {
             "key": "reviews_enabled",
-            "display_name": "Permitir nuevas reseñas",
-            "description": "Habilita o deshabilita la creación y visualización de reseñas en el portal.",
-            "is_enabled": True,
+            "display_name": "Deshabilitar nuevas reseñas",
+            "description": "Deshabilita la creación y visualización de reseñas en el portal.",
+            "is_enabled": False,
             "maintenance_message": None
         }
     ]
@@ -327,6 +329,102 @@ def seed_feature_flags():
 
     db.session.commit()
     print("Feature flags iniciales creados.")
+
+
+def seed_public_users():
+    print("--- 3. Inicializando Usuarios Públicos (PublicUser) ---")
+    
+    public_users_data = [
+        {"email": "user1@portal.com", "name": "Alice Tester"},
+        {"email": "user2@portal.com", "name": "Bob Reviewer"},
+        {"email": "user3@portal.com", "name": "Charlie Critic"},
+    ]
+
+    for data in public_users_data:
+        existing = db.session.query(PublicUser).filter_by(email=data["email"]).first()
+        if not existing:
+            user = PublicUser(email=data["email"], name=data["name"])
+            db.session.add(user)
+            print(f"✅ PublicUser creado: {data['email']}")
+        else:
+            print(f"⚠️ PublicUser ya existe, omitido: {data['email']}")
+    
+    db.session.commit()
+
+
+def seed_reviews():
+    print("--- 5. Inicializando Reseñas (Reviews) ---")
+
+    if db.session.query(Review).count() > 0:
+        print("Reseñas ya existentes. Omitiendo siembra.")
+        return
+
+    # Obtener IDs de PublicUsers y Sitios
+    user1 = db.session.query(PublicUser).filter_by(email="user1@portal.com").first()
+    user2 = db.session.query(PublicUser).filter_by(email="user2@portal.com").first()
+    user3 = db.session.query(PublicUser).filter_by(email="user3@portal.com").first()
+
+    sitio1 = db.session.query(Sitio).filter_by(nombre="Cabildo de Buenos Aires").first()
+    sitio2 = db.session.query(Sitio).filter_by(nombre="Ruinas de San Ignacio").first()
+    sitio3 = db.session.query(Sitio).filter_by(nombre="Casa Histórica de Tucumán").first()
+    sitio4 = db.session.query(Sitio).filter_by(nombre="Glaciar Perito Moreno").first()
+    sitio5 = db.session.query(Sitio).filter_by(nombre="Manzana Jesuítica").first()
+    
+    
+    if not all([user1, user2, user3, sitio1, sitio2, sitio3, sitio4, sitio5]):
+        print("⚠️ No se pudieron encontrar todos los usuarios o sitios necesarios. Omitiendo siembra de reseñas.")
+        return
+
+    reviews_data = [
+        
+        Review(
+            site_id=sitio1.id, user_id=user1.id, rating=5, 
+            content="Una visita obligada para entender la historia argentina.",
+            status=ReviewStatus.APROBADA,
+            created_at=datetime(2023, 1, 10, tzinfo=timezone.utc)
+        ),
+        Review(
+            site_id=sitio1.id, user_id=user2.id, rating=4, 
+            content="Muy interesante, aunque la visita es un poco rápida.",
+            status=ReviewStatus.PENDIENTE,
+            created_at=datetime(2023, 1, 15, tzinfo=timezone.utc)
+        ),
+        # Reseña para Ruinas de San Ignacio (sitio2) - Pendiente
+        Review(
+            site_id=sitio2.id, user_id=user3.id, rating=5, 
+            content="Las ruinas son impresionantes, el atardecer ahí es mágico.",
+            status=ReviewStatus.PENDIENTE,
+            created_at=datetime(2023, 2, 20, tzinfo=timezone.utc)
+        ),
+        # Reseña para Casa Histórica de Tucumán (sitio3) - Rechazada
+        Review(
+            site_id=sitio3.id, user_id=user1.id, rating=2, 
+            content="Esperaba más del museo, la entrada es cara para lo que ofrece.",
+            status=ReviewStatus.RECHAZADA,
+            rejection_reason="Contenido inapropiado o irrelevante.",
+            created_at=datetime(2023, 3, 5, tzinfo=timezone.utc)
+        ),
+        # Reseña para Glaciar Perito Moreno (sitio4)
+        Review(
+            site_id=sitio4.id, user_id=user2.id, rating=5, 
+            content="¡La naturaleza en su máxima expresión! Increíble e inolvidable.",
+            status=ReviewStatus.APROBADA,
+            created_at=datetime(2023, 4, 1, tzinfo=timezone.utc)
+        ),
+        # Reseña para Manzana Jesuítica (sitio5)
+        Review(
+            site_id=sitio5.id, user_id=user3.id, rating=4, 
+            content="Hermosa arquitectura, el recorrido histórico es muy completo.",
+            status=ReviewStatus.PENDIENTE,
+            created_at=datetime(2023, 4, 15, tzinfo=timezone.utc)
+        ),
+    ]
+
+    db.session.add_all(reviews_data)
+    db.session.commit()
+    print(f"✅ Se han cargado {len(reviews_data)} reseñas de ejemplo.")
+
+
 
 
 #if __name__ == "__main__":

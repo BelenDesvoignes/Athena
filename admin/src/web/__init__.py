@@ -5,7 +5,7 @@ from src.core.database import db, reset_db
 from src.core.flags import is_flag_enabled
 from src.core.models.feature_flags import FeatureFlag
 from src.core.permissions_service import current_user_permissions
-from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios
+from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios, seed_public_users, seed_reviews
 
 from src.web.config import config
 from src.web.storage import storage
@@ -19,6 +19,10 @@ from flask_jwt_extended import JWTManager
 
 from src.web.controllers.feature_flags_routes import feature_flags_bp
 from src.web.api.api import api_bp
+from src.web.controllers.public_user_routes import public_users_bp
+
+
+
 from flask_cors import CORS
 
 
@@ -27,12 +31,19 @@ def create_app(env="development", static_folder="../../static"):
 
     app.config.from_object(config[env])
     # carga la configuracion segun el entorno
+
+    allowed_origins = ["https://grupo19.proyecto2025.linti.unlp.edu.ar"]
+    if env == "development":
+        # Nota: Usamos http y el puerto de tu frontend (5173)
+        allowed_origins.append("http://localhost:5173")
+        allowed_origins.append("http://127.0.0.1:5173") 
+
     app.config["JWT_SECRET_KEY"] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
     app.config["JWT_TOKEN_LOCATION"] = ["headers"]
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=3600)
     #inicializar la session
     Session(app) 
-    CORS(app)
+    CORS(app, origins=allowed_origins)
     JWTManager(app)
 
     db.init_app(app)
@@ -64,11 +75,15 @@ def create_app(env="development", static_folder="../../static"):
         from src.core.models.site import Sitio
         from src.core.models.review import Review
         from src.core.models.feature_flags import FeatureFlag
+        from src.core.models.public_user import PublicUser
+        from src.core.models.favorites import Favorite
         db.create_all()
         seed_roles_permissions() 
         seed_admin_user()        
         seed_feature_flags()
         seed_sitios()
+        seed_public_users()
+        seed_reviews()
         
     # inicializa la bd
     app.jinja_env.globals['current_user_permissions'] = current_user_permissions
@@ -83,6 +98,9 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(bp_sitios, url_prefix="/sitios")
     app.register_blueprint(reviews_bp, url_prefix="/reviews")
     app.register_blueprint(api_bp)
+    app.register_blueprint(public_users_bp)
+
+
     #rutas principales 
     @app.route("/")
     def index():

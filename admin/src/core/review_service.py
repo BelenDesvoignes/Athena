@@ -3,16 +3,18 @@ from datetime import datetime, timezone
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 from src.core.database import db
-from src.core.models.user import User
+from src.core.models.public_user import PublicUser
 from src.core.models.site import Sitio
 from src.core.models.review import Review, ReviewStatus
+from werkzeug.exceptions import NotFound
+from datetime import datetime, timezone
 
 def get_review_by_id(review_id):
     return db.session.query(Review).filter_by(id=review_id, deleted=False).first()
 
 def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None, rating_max=None,
                  date_from=None, date_to=None, user_search=None, sort_by='created_at', sort_dir='desc'):
-   
+
     query = db.session.query(Review).options(
         joinedload(Review.user),  # carga la relación User
         joinedload(Review.site)   # carga la relación Sitio
@@ -22,16 +24,26 @@ def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None
         query = query.filter(Review.status == ReviewStatus(status))
     if site_id:
         query = query.filter(Review.site_id == site_id)
-    if rating_min is not None:
-        query = query.filter(Review.rating >= int(rating_min))
-    if rating_max is not None:
-        query = query.filter(Review.rating <= int(rating_max))
+    if rating_min: 
+        try:
+            query = query.filter(Review.rating >= int(rating_min))
+        except ValueError:
+            
+            pass
+
+    
+    if rating_max:
+        try:
+            query = query.filter(Review.rating <= int(rating_max))
+        except ValueError:
+            
+            pass
     if date_from:
         query = query.filter(Review.created_at >= date_from)
     if date_to:
         query = query.filter(Review.created_at <= date_to)
     if user_search:
-        query = query.join(User).filter(User.email.ilike(f"%{user_search}%"))
+        query = query.join(PublicUser).filter(PublicUser.email.ilike(f"%{user_search}%"))
 
     if sort_by == 'created_at':
         order_col = Review.created_at
@@ -61,7 +73,7 @@ def list_reviews(page=1, per_page=25, status=None, site_id=None, rating_min=None
 def approve_review(review_id, moderator_user):
     review = get_review_by_id(review_id)
     if not review:
-        raise ValueError("Reseña no encontrada.")
+        raise NotFound(f"Reseña con ID {review_id} no encontrada.")
     review.status = ReviewStatus.APROBADA
     review.rejection_reason = None
     review.updated_at = datetime.now(timezone.utc)

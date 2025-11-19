@@ -28,6 +28,10 @@ class Sitio(Base):
     imagenes: Mapped[List["Imagen"]] = relationship(
         "Imagen", back_populates="sitio", cascade="all, delete-orphan", lazy="selectin"
     )
+    favorites: Mapped[List["Favorite"]] = relationship(
+    "Favorite", back_populates="sitio", cascade="all, delete-orphan", lazy="selectin"
+)
+
 
     def __repr__(self):
         return f"<Sitio(id={self.id}, nombre={self.nombre})>"
