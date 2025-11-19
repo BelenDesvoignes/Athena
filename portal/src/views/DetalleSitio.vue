@@ -12,8 +12,8 @@
       <header class="detail-header">
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
-        <div v-if="site.average_rating" class="rating-badge">
-          ⭐ {{ site.average_rating.toFixed(1) }} ({{ site.review_count || 0 }} Reseñas)
+        <div v-if="site.average_rating !== null && site.average_rating !== undefined" class="rating-badge">
+          ⭐ {{ Number(site.average_rating).toFixed(1) }} ({{ site.review_count || 0 }} Reseñas)
         </div>
       </header>
 

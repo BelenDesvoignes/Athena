@@ -7,9 +7,10 @@ from src.core.models.role_permission import Permission, Role, RolePermission
 from src.core.models.site import Sitio
 from src.core.models.user import User
 from src.core.models.public_user import PublicUser
+from src.core.models.tag import Tag
 from src.core.models.review import Review, ReviewStatus
 from datetime import datetime, timezone
-
+from sqlalchemy.exc import IntegrityError
 
 
 
@@ -140,8 +141,41 @@ def seed_admin_user():
             print(f"⚠️ Usuario ya existe, omitido: {data['email']}")
 
     db.session.commit()
+def slugify(text: str) -> str:
+    """Convierte un texto en un slug válido."""
+    return text.lower().replace(" ", "-")
 
+def seed_tags():
+    """Crea los tags iniciales si no existen."""
+    tags_nombres = [
+        "Histórico",
+        "Cultura",
+        "Deporte",
+        "Gastronomía",
+        "Natural",
+        "Arte",
+        "Entretenimiento",
+        "Educación"
+    ]
 
+    for nombre in tags_nombres:
+        # Verifica si ya existe
+        tag = db.session.query(Tag).filter_by(nombre=nombre).first()
+        if not tag:
+            slug = slugify(nombre)
+            tag = Tag(
+                nombre=nombre,
+                slug=slug,
+                fecha_creacion=datetime.now(timezone.utc)
+            )
+            db.session.add(tag)
+    
+    try:
+        db.session.commit()
+        print("Tags iniciales creados.")
+    except IntegrityError as e:
+        db.session.rollback()
+        print(f"Error al crear tags: {e}")
 def seed_sitios():
 
     if db.session.query(Sitio).count() > 0:
@@ -160,6 +194,7 @@ def seed_sitios():
             categoria="Edificio público",
             visible=True,
             ubicacion=WKTElement('Point(-58.3702 -34.6083)', srid=4326),
+
         ),
         Sitio(
             nombre="Ruinas de San Ignacio",
@@ -296,6 +331,25 @@ def seed_sitios():
     db.session.add_all(sitios)
     db.session.commit()
     print("Sitios históricos de ejemplo cargados.")
+
+def asignar_tags_a_sitios():
+    tags = {tag.nombre: tag for tag in db.session.query(Tag).all()}
+
+
+    sitio = db.session.query(Sitio).filter_by(nombre="Ruinas de San Ignacio").first()
+    if sitio:
+        if tags["Histórico"] not in sitio.tags:
+            sitio.tags.append(tags["Histórico"])
+        if tags["Museo"] not in sitio.tags:
+            sitio.tags.append(tags["Museo"])
+
+
+    sitio = db.session.query(Sitio).filter_by(nombre="Quebrada de Humahuaca").first()
+    if sitio and tags["Natural"] not in sitio.tags:
+        sitio.tags.append(tags["Natural"])
+
+    db.session.commit()
+    print("Tags asignados a los sitios existentes.")
 
 def seed_feature_flags():
     flags = [
