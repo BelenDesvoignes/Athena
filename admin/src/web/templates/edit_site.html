@@ -101,6 +101,7 @@
                         data-id="{{ img.id }}" 
                         data-url="{{ img.url }}" 
                         data-descripcion="{{ img.descripcion or '' }}"
+                        data-titulo="{{ img.titulo }}"
                         data-portada="{{ 'true' if img.es_portada else 'false' }}"
                         data-nueva="false"
                         style="display:inline-block; margin:10px; text-align:center; position:relative; vertical-align:top;">
@@ -154,6 +155,7 @@
         imagenesExistentes.push({
             id: div.dataset.id,
             url: div.dataset.url,
+            titulo: div.dataset.titulo || "",
             descripcion: div.dataset.descripcion || "",
             portada: div.dataset.portada === 'true',
             nueva: false
@@ -212,6 +214,23 @@
             label.appendChild(radio);
             div.appendChild(label);
 
+            const titulo = document.createElement("input");
+            titulo.type = "text";
+            titulo.className = "form-control form-control-sm mt-2";
+            titulo.placeholder = "Título...";
+            titulo.required = true;
+            titulo.value = img.titulo || "";
+            titulo.addEventListener("input", e => img.titulo = e.target.value);
+
+            const hiddenTitulo = document.createElement("input");
+            hiddenTitulo.type = "hidden";
+            hiddenTitulo.name = `titulos_existentes[${img.id}]`;
+            hiddenTitulo.value = img.titulo || "";
+            titulo.addEventListener("input", () => hiddenTitulo.value = titulo.value);
+
+            div.appendChild(titulo);
+            div.appendChild(hiddenTitulo);
+
             const descripcion = document.createElement('input');
             descripcion.type = "text";
             descripcion.className = "form-control form-control-sm mt-2";
@@ -224,13 +243,13 @@
 
             const hiddenDesc = document.createElement('input');
             hiddenDesc.type = "hidden";
-            hiddenDesc.name = "descripciones_existentes[]";
+            hiddenDesc.name = `descripciones_existentes[${img.id}]`;;
             hiddenDesc.value = img.descripcion || "";
             descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
 
             div.appendChild(descripcion);
             div.appendChild(hiddenDesc);
-
+            
             contenedor.appendChild(div);
         });
 
@@ -277,6 +296,21 @@
             radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
             label.appendChild(radio);
             div.appendChild(label);
+
+            const titulo = document.createElement("input");
+            titulo.type = "text";
+            titulo.className = "form-control form-control-sm mt-2";
+            titulo.placeholder = "Título...";
+            titulo.required = true;
+            titulo.addEventListener("input", e => fileObj.titulo = e.target.value);
+
+            const hiddenTitulo = document.createElement("input");
+            hiddenTitulo.type = "hidden";
+            hiddenTitulo.name = "titulos_nuevos[]";
+            titulo.addEventListener("input", () => hiddenTitulo.value = titulo.value);
+
+            div.appendChild(titulo);
+            div.appendChild(hiddenTitulo);
 
             const descripcion = document.createElement('input');
             descripcion.type = "text";
@@ -360,7 +394,7 @@
             alert(`Solo puedes subir hasta ${MAX_IMAGENES} imágenes en total.`);
             return;
         }
-
+        
         nuevos.forEach(file => {
             if (!extensionValida(file.name)) {
                 alert(`Formato no permitido: ${file.name}\nPermitidas: ${EXT_PERMITIDAS.join(", ")}`);
@@ -374,13 +408,36 @@
             nuevasImagenes.push({
                 file,
                 portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada),
+                titulo: "",
                 descripcion: ""
             });
         });
 
         renderizarImagenes();
     });
+    
+    document.querySelector("form").addEventListener("submit", function(e) {
 
+        let haySinTitulo = false;
+
+        imagenesExistentes.forEach(img => {
+            if (!img.titulo || img.titulo.trim() === "") {
+                haySinTitulo = true;
+            }
+        });
+
+        nuevasImagenes.forEach(img => {
+            if (!img.titulo || img.titulo.trim() === "") {
+                haySinTitulo = true;
+            }
+        });
+
+        if (haySinTitulo) {
+            e.preventDefault();
+            alert("Todas las imágenes deben tener un título antes de guardar.");
+            return false;
+        }
+    });
     renderizarImagenes();
 </script>
 

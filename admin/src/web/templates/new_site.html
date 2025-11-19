@@ -159,7 +159,6 @@ function renderizarImagenes() {
         img.style.borderRadius = "4px";
         imgContainer.appendChild(img);
 
-        // Botón eliminar
         if (!fileObj.portada) {
             const botonEliminar = document.createElement('button');
             botonEliminar.type = "button";
@@ -188,6 +187,26 @@ function renderizarImagenes() {
         portadaLabel.appendChild(portadaRadio);
         portadaLabel.append(" Portada");
 
+        const titulo = document.createElement('input');
+        titulo.type = "text";
+        titulo.className = "form-control form-control-sm mt-2";
+        titulo.placeholder = "Título...";
+        titulo.required = true;
+        titulo.value = fileObj.titulo || "";
+        titulo.addEventListener('input', e => {
+            fileObj.titulo = e.target.value;
+        });
+
+        const hiddenTitulo = document.createElement('input');
+        hiddenTitulo.type = "hidden";
+        hiddenTitulo.name = "titulos[]";
+        hiddenTitulo.value = fileObj.titulo || "";
+
+        titulo.addEventListener('input', () => {
+            hiddenTitulo.value = titulo.value;
+        });
+
+    
         const descripcion = document.createElement('input');
         descripcion.type = "text";
         descripcion.className = "form-control form-control-sm mt-2";
@@ -208,13 +227,15 @@ function renderizarImagenes() {
 
         div.appendChild(imgContainer);
         div.appendChild(portadaLabel);
+        div.appendChild(titulo);
+        div.appendChild(hiddenTitulo);
         div.appendChild(descripcion);
         div.appendChild(hiddenDesc);
         contenedor.appendChild(div);
     });
 
     actualizarInputFiles();
-    actualizarContador();   
+    actualizarContador();
 }
 
 
@@ -277,6 +298,14 @@ document.querySelector("form").addEventListener("submit", function(e) {
         e.preventDefault();
         alert("Debes subir al menos una imagen.");
         return;
+    }
+
+    for (const f of archivosSeleccionados) {
+        if (!f.titulo || f.titulo.trim() === "") {
+            e.preventDefault();
+            alert("Cada imagen debe tener un título.");
+            return;
+        }
     }
 
     const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
