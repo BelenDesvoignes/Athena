@@ -128,17 +128,18 @@ def validar_archivo_imagen(file):
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_idx=0, descripciones=None, orden_base=0):
+def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, descripciones=None, orden_base=0):
     """
     Guarda las imágenes asociadas a un sitio:
       - Valida formato y tamaño
       - Sube al bucket de MinIO
       - Crea instancias de Imagen asociadas al sitio
-      - Genera URL firmada de acceso temporal
-      - Almacena descripción y orden
+      - Genera URL firmada
+      - Guarda título, descripción y orden
     """
     imagenes = []
     bucket_name = current_app.config["MINIO_BUCKET"]
+
     if descripciones is None:
         descripciones = {}
 
@@ -146,6 +147,11 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
         error = validar_archivo_imagen(file)
         if error:
             return None, error
+
+        if str(idx) not in titulos or not titulos[str(idx)].strip():
+            return None, f"El título para la imagen {idx+1} es obligatorio."
+
+        titulo = titulos[str(idx)].strip()
 
         filename = secure_filename(file.filename)
         ext = os.path.splitext(filename)[1].lower().lstrip(".")
@@ -174,21 +180,21 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
                 expires=timedelta(hours=2)
             )
         except S3Error:
-            url = None 
+            url = None
 
         imagen = Imagen(
             sitio_id=sitio_id,
-            titulo=filename,
+            titulo=titulo,                  
             ruta=object_name,
             descripcion=descripciones.get(str(idx), ""),
             orden=orden_base + idx,
             es_portada=(idx == portada_idx),
             url=url
         )
+
         imagenes.append(imagen)
 
     db.session.add_all(imagenes)
-
     return imagenes, None
 
 
@@ -274,6 +280,13 @@ def new():
                     desc = descripciones_list[i]
                     if desc:
                         descripciones[str(i)] = desc
+                        
+            titulos = {}
+            titulos_list = request.form.getlist("titulos[]")
+            for i in range(len(archivos)):
+                if i < len(titulos_list):
+                    t = titulos_list[i]
+                    titulos[str(i)] = t
 
             imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                 archivos,
@@ -281,6 +294,7 @@ def new():
                 db,
                 Imagen,
                 minio_client,
+                titulos=titulos,
                 portada_idx=portada_idx,
                 descripciones=descripciones,
                 orden_base=0

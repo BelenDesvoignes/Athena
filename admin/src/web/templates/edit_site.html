@@ -243,7 +243,7 @@
 
             const hiddenDesc = document.createElement('input');
             hiddenDesc.type = "hidden";
-            hiddenDesc.name = `descripciones_existentes[${img.id}]`;;
+            hiddenDesc.name = `descripciones_existentes[${img.id}]`;
             hiddenDesc.value = img.descripcion || "";
             descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
 
@@ -306,7 +306,7 @@
 
             const hiddenTitulo = document.createElement("input");
             hiddenTitulo.type = "hidden";
-            hiddenTitulo.name = "titulos_nuevos[]";
+            hiddenTitulo.name = "titulos_nuevas[]";
             titulo.addEventListener("input", () => hiddenTitulo.value = titulo.value);
 
             div.appendChild(titulo);
@@ -415,29 +415,28 @@
 
         renderizarImagenes();
     });
-    
     document.querySelector("form").addEventListener("submit", function(e) {
 
-        let haySinTitulo = false;
+    let haySinTitulo = false;
 
-        imagenesExistentes.forEach(img => {
-            if (!img.titulo || img.titulo.trim() === "") {
-                haySinTitulo = true;
-            }
-        });
-
-        nuevasImagenes.forEach(img => {
-            if (!img.titulo || img.titulo.trim() === "") {
-                haySinTitulo = true;
-            }
-        });
-
-        if (haySinTitulo) {
-            e.preventDefault();
-            alert("Todas las imágenes deben tener un título antes de guardar.");
-            return false;
+    imagenesExistentes.forEach(img => {
+        if (!img.titulo || img.titulo.trim() === "") {
+            haySinTitulo = true;
         }
     });
+
+    nuevasImagenes.forEach(img => {
+        if (!img.titulo || img.titulo.trim() === "") {
+            haySinTitulo = true;
+        }
+    });
+
+    if (haySinTitulo) {
+        e.preventDefault();
+        alert("Todas las imágenes deben tener un título antes de guardar.");
+        return false;
+    }
+});
     renderizarImagenes();
 </script>
 
