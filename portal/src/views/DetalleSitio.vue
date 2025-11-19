@@ -23,8 +23,8 @@
         <div class="image-container">
           <div class="cover-wrapper">
             <img
-              :src="site.cover_image || '/default-cover.jpg'"
-              :alt="site.name"
+              :src="site.cover_image?.url || site.cover_image || '/default-cover.jpg'"
+              :alt="site.cover_image?.title || site.name"
               class="site-cover-image"
               @click="openByIndex(0)"
             >
@@ -54,7 +54,7 @@
             <img
               :src="img.url"
               class="gallery-image"
-              :alt="`Imagen del sitio ${site.name}`"
+              :alt="img.alt_text"
               @click="openByIndex(idx + 1)"
             >
             <button class="expand-btn" @click.stop="openByIndex(idx + 1)">🔍</button>
@@ -83,7 +83,7 @@
 
       <button class="modal-nav left" @click.stop="prevImage" aria-label="Anterior">◀</button>
       <div class="modal-inner" @click.stop>
-        <img :src="currentImage" class="modal-image" :alt="`Imagen grande ${site?.name}`">
+        <img :src="currentImage.url" class="modal-image" :alt="currentImage.alt_text" />
         <div class="modal-counter">{{ currentIndex + 1 }} / {{ imagesList.length }}</div>
       </div>
       <button class="modal-nav right" @click.stop="nextImage" aria-label="Siguiente">▶</button>
@@ -114,10 +114,15 @@ const isModalOpen = ref(false);
 const currentIndex = ref(0);
 const imagesList = ref([]);
 
-const currentImage = computed(() => imagesList.value[currentIndex.value] || '');
+const currentImage = computed(() => imagesList.value[currentIndex.value] || { url: '', alt_text: '' });
 const nonCoverImages = computed(() => {
   if (!site.value || !site.value.images) return [];
-  return site.value.images.filter(i => !i.is_cover);
+  return site.value.images
+    .filter(i => !i.is_cover)
+    .map(i => ({
+      ...i,
+      alt_text: i.title || `Imagen del sitio ${site.value.name}`
+    }));
 });
 
 function openByIndex(idx) {
@@ -134,14 +139,25 @@ function buildImagesListIfNeeded() {
   if (imagesList.value.length > 0) return;
 
   const list = [];
-  const cover = site.value.cover_image || null;
-  if (cover) list.push(cover);
+
+  if (site.value.cover_image) {
+    list.push({
+      url: site.value.cover_image.url || site.value.cover_image,
+      alt_text: site.value.cover_image.title || site.value.name
+    });
+  }
 
   if (site.value.images && site.value.images.length) {
     for (const img of site.value.images) {
-      if (!img.is_cover) list.push(img.url);
+      if (!img.is_cover) {
+        list.push({
+          url: img.url,
+          alt_text: img.title || site.value.name
+        });
+      }
     }
   }
+
   imagesList.value = list;
 }
 

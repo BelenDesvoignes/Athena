@@ -12,10 +12,11 @@ from datetime import timedelta
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
 
-def get_site_images(sitio):
+def get_site_images(sitio, only_cover=False):
     """
-    Obtiene todas las imágenes del sitio, genera URLs presignadas
-    y retorna (portada_url, lista_de_imagenes).
+    Obtiene imágenes del sitio y genera URLs presignadas.
+    Si only_cover=True, solo devuelve la portada.
+    Retorna (cover_url, cover_title, lista_de_imagenes)
     """
 
     minio_client = Minio(
@@ -27,31 +28,39 @@ def get_site_images(sitio):
     bucket_name = current_app.config["MINIO_BUCKET"]
 
     default_url = "/img/default.jpg"
+
+    if only_cover:
+        portada = next((img for img in sitio.imagenes if img.es_portada), None)
+        if portada:
+            try:
+                cover_url = minio_client.presigned_get_object(bucket_name, portada.ruta, expires=timedelta(hours=2))
+            except:
+                cover_url = default_url
+            cover_title = portada.titulo
+        else:
+            cover_url = default_url
+            cover_title = ""
+        return cover_url, cover_title, []
+    
     imagenes_data = []
-
     for img in sitio.imagenes:
-        image_url = default_url
-
         try:
-            image_url = minio_client.presigned_get_object(
-                bucket_name,
-                img.ruta,
-                expires=timedelta(hours=2)
-            )
+            image_url = minio_client.presigned_get_object(bucket_name, img.ruta, expires=timedelta(hours=2))
         except:
-            pass
+            image_url = default_url
 
         imagenes_data.append({
             "id": img.id,
             "url": image_url,
+            "title": img.titulo,
             "is_cover": img.es_portada
         })
 
     imagenes_data.sort(key=lambda x: not x["is_cover"])
-
     cover_url = imagenes_data[0]["url"] if imagenes_data else default_url
+    cover_title = imagenes_data[0]["title"] if imagenes_data else ""
 
-    return cover_url, imagenes_data
+    return cover_url, cover_title, imagenes_data
 
 
 @api_bp.get("/sites")
@@ -149,7 +158,7 @@ def get_sites(validated_params):
         promedio = row[1]
         distancia_val = row[3] if len(row) > 3 else None
 
-        cover_url, _ = get_site_images(sitio)
+        cover_url, cover_title, _ = get_site_images(sitio, only_cover=True)
 
         data.append({
             "id": sitio.id,
@@ -164,7 +173,8 @@ def get_sites(validated_params):
             "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
             "distance_km": round(distancia_val, 2) if distancia_val else None,
             "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags[:5]],
-            "image_url": cover_url
+            "image_url": cover_url,
+            "image_title": cover_title
         })
 
     return jsonify({
@@ -188,7 +198,7 @@ def get_site_detail(site_id):
     )
     promedio = round(promedio, 2) if promedio else 0
 
-    cover_url, imagenes_data = get_site_images(sitio)
+    cover_url, cover_title, imagenes_data = get_site_images(sitio)
 
     data = {
         "id": sitio.id,
@@ -203,7 +213,10 @@ def get_site_detail(site_id):
         "latitude": db.session.scalar(ST_Y(sitio.ubicacion)),
         "longitude": db.session.scalar(ST_X(sitio.ubicacion)),
         "tags": [{"id": t.id, "name": t.nombre} for t in sitio.tags],
-        "cover_image": cover_url,
+        "cover_image": {
+            "url": cover_url,
+            "title": cover_title
+        },
         "images": imagenes_data
     }
 

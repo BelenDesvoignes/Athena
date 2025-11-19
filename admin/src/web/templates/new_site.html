@@ -89,7 +89,7 @@
                     <div class="mb-3">
                         <div class="custom-file-upload">
                             <label for="imagenes" class="btn btn-primary">📁 Seleccionar imágenes</label>
-                            <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.jpeg,.png,.webp">
+                            <input type="file" id="imagenes" name="imagenes" multiple accept=".jpg,.png,.webp">
                             <span id="file-count" class="ms-2 text-info"></span>
                         </div>
                     </div>
@@ -130,8 +130,18 @@ const contenedor = document.getElementById('imagenes-lista');
 const portadaHidden = document.getElementById('portada-hidden');
 let archivosSeleccionados = [];
 
+const EXT_PERMITIDAS = ["jpg", "png", "webp"];
+const MAX_IMAGENES = 10; 
+const MAX_BYTES = 5 * 1024 * 1024;
+
+function extensionValida(nombre) {
+    const ext = nombre.split('.').pop().toLowerCase();
+    return EXT_PERMITIDAS.includes(ext);
+}
+
 function renderizarImagenes() {
     contenedor.innerHTML = "";
+
     archivosSeleccionados.forEach((fileObj, idx) => {
         const div = document.createElement('div');
         div.className = 'imagen-item bg-dark p-2 rounded';
@@ -149,18 +159,18 @@ function renderizarImagenes() {
         img.style.borderRadius = "4px";
         imgContainer.appendChild(img);
 
-        // Botón eliminar
-        const botonEliminar = document.createElement('button');
-        botonEliminar.type = "button";
-        botonEliminar.textContent = "×";
-        botonEliminar.className = "btn btn-sm btn-danger";
-        botonEliminar.style.position = "absolute";
-        botonEliminar.style.top = "5px";
-        botonEliminar.style.right = "5px";
-        botonEliminar.addEventListener('click', () => eliminarImagen(idx));
-        imgContainer.appendChild(botonEliminar);
+        if (!fileObj.portada) {
+            const botonEliminar = document.createElement('button');
+            botonEliminar.type = "button";
+            botonEliminar.textContent = "×";
+            botonEliminar.className = "btn btn-sm btn-danger";
+            botonEliminar.style.position = "absolute";
+            botonEliminar.style.top = "5px";
+            botonEliminar.style.right = "5px";
+            botonEliminar.addEventListener('click', () => eliminarImagen(idx));
+            imgContainer.appendChild(botonEliminar);
+        }
 
-        // Radio portada
         const portadaLabel = document.createElement('label');
         portadaLabel.className = "text-light mt-1";
         const portadaRadio = document.createElement('input');
@@ -177,41 +187,57 @@ function renderizarImagenes() {
         portadaLabel.appendChild(portadaRadio);
         portadaLabel.append(" Portada");
 
-        // Descripción
+        const titulo = document.createElement('input');
+        titulo.type = "text";
+        titulo.className = "form-control form-control-sm mt-2";
+        titulo.placeholder = "Título...";
+        titulo.required = true;
+        titulo.value = fileObj.titulo || "";
+        titulo.addEventListener('input', e => {
+            fileObj.titulo = e.target.value;
+        });
+
+        const hiddenTitulo = document.createElement('input');
+        hiddenTitulo.type = "hidden";
+        hiddenTitulo.name = "titulos[]";
+        hiddenTitulo.value = fileObj.titulo || "";
+
+        titulo.addEventListener('input', () => {
+            hiddenTitulo.value = titulo.value;
+        });
+
+    
         const descripcion = document.createElement('input');
         descripcion.type = "text";
         descripcion.className = "form-control form-control-sm mt-2";
-        descripcion.placeholder = "Descripción..."; 
+        descripcion.placeholder = "Descripción...";
         descripcion.value = fileObj.descripcion || "";
         descripcion.addEventListener('input', e => {
             fileObj.descripcion = e.target.value;
         });
 
-        // Input oculto para enviar la descripción
         const hiddenDesc = document.createElement('input');
         hiddenDesc.type = "hidden";
         hiddenDesc.name = "descripciones[]";
         hiddenDesc.value = fileObj.descripcion || "";
-        div.appendChild(hiddenDesc);
 
-        // Actualiza el valor oculto cada vez que cambia
         descripcion.addEventListener('input', () => {
             hiddenDesc.value = descripcion.value;
         });
 
-        // Orden visual
-        const orden = document.createElement('div');
-        orden.className = "text-center text-secondary mt-1";
-
         div.appendChild(imgContainer);
         div.appendChild(portadaLabel);
+        div.appendChild(titulo);
+        div.appendChild(hiddenTitulo);
         div.appendChild(descripcion);
-        div.appendChild(orden);
+        div.appendChild(hiddenDesc);
         contenedor.appendChild(div);
     });
 
     actualizarInputFiles();
+    actualizarContador();
 }
+
 
 function eliminarImagen(idx) {
     const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
@@ -228,20 +254,67 @@ function actualizarInputFiles() {
     archivosSeleccionados.forEach(f => dt.items.add(f.file));
     inputImagenes.files = dt.files;
 }
-
-inputImagenes.addEventListener('change', e => {
-    Array.from(e.target.files).forEach(file => {
-        if (archivosSeleccionados.length < 10) {
-            archivosSeleccionados.push({ file, portada: archivosSeleccionados.length === 0, descripcion: "" });
-        }
-    });
-    renderizarImagenes();
+function actualizarContador() {
     document.getElementById('file-count').textContent =
         archivosSeleccionados.length > 0
             ? `${archivosSeleccionados.length} imagen(es) seleccionada(s)`
             : "";
+}
+
+inputImagenes.addEventListener('change', e => {
+    const nuevos = Array.from(e.target.files);
+
+    if (archivosSeleccionados.length + nuevos.length > MAX_IMAGENES) {
+        alert(`Solo puedes subir hasta ${MAX_IMAGENES} imágenes.`);
+        return;
+    }
+
+    nuevos.forEach(file => {
+        if (!file || !file.name) return;
+
+        if (!extensionValida(file.name)) {
+            alert(`Formato no permitido: ${file.name}\nPermitidas: ${EXT_PERMITIDAS.join(", ")}`);
+            return;
+        }
+
+        if (file.size > MAX_BYTES) {
+            alert(`El archivo ${file.name} supera el tamaño máximo de 5 MB`);
+            return;
+        }
+
+        archivosSeleccionados.push({
+            file,
+            portada: archivosSeleccionados.length === 0,
+            descripcion: ""
+        });
+    });
+    
+    renderizarImagenes();
 });
 
+document.querySelector("form").addEventListener("submit", function(e) {
+
+    if (archivosSeleccionados.length === 0) {
+        e.preventDefault();
+        alert("Debes subir al menos una imagen.");
+        return;
+    }
+
+    for (const f of archivosSeleccionados) {
+        if (!f.titulo || f.titulo.trim() === "") {
+            e.preventDefault();
+            alert("Cada imagen debe tener un título.");
+            return;
+        }
+    }
+
+    const portadaIdx = archivosSeleccionados.findIndex(f => f.portada);
+    if (portadaIdx === -1) {
+        e.preventDefault();
+        alert("Debes seleccionar una imagen como portada.");
+        return;
+    }
+});
 </script>
 
 <style>

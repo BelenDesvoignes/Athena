@@ -107,7 +107,7 @@ def list():
         tags=tags,
     )
 
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+ALLOWED_EXTENSIONS = {"jpg", "png", "webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  
 
 
@@ -128,17 +128,18 @@ def validar_archivo_imagen(file):
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_idx=0, descripciones=None, orden_base=0):
+def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, descripciones=None, orden_base=0):
     """
     Guarda las imágenes asociadas a un sitio:
       - Valida formato y tamaño
       - Sube al bucket de MinIO
       - Crea instancias de Imagen asociadas al sitio
-      - Genera URL firmada de acceso temporal
-      - Almacena descripción y orden
+      - Genera URL firmada
+      - Guarda título, descripción y orden
     """
     imagenes = []
     bucket_name = current_app.config["MINIO_BUCKET"]
+
     if descripciones is None:
         descripciones = {}
 
@@ -147,10 +148,15 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
         if error:
             return None, error
 
+        if str(idx) not in titulos or not titulos[str(idx)].strip():
+            return None, f"El título para la imagen {idx+1} es obligatorio."
+
+        titulo = titulos[str(idx)].strip()
+
         filename = secure_filename(file.filename)
         ext = os.path.splitext(filename)[1].lower().lstrip(".")
 
-        object_name = f"public/{sitio_id}/{uuid.uuid4().hex}.{ext}"
+        object_name = f"sites/{sitio_id}/{uuid.uuid4().hex}.{ext}"
 
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
@@ -174,21 +180,21 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, portada_id
                 expires=timedelta(hours=2)
             )
         except S3Error:
-            url = None 
+            url = None
 
         imagen = Imagen(
             sitio_id=sitio_id,
-            titulo=filename,
+            titulo=titulo,                  
             ruta=object_name,
             descripcion=descripciones.get(str(idx), ""),
             orden=orden_base + idx,
             es_portada=(idx == portada_idx),
             url=url
         )
+
         imagenes.append(imagen)
 
     db.session.add_all(imagenes)
-
     return imagenes, None
 
 
@@ -253,24 +259,21 @@ def new():
                 secure=current_app.config["MINIO_SECURE"]
             )
 
-            archivos = request.files.getlist("imagenes")
+            archivos = [f for f in request.files.getlist("imagenes") if f.filename]
+            print("[DEBUG] Archivos:", archivos)
             
-            # Primero validar que hay al menos una imagen
             if not archivos:
                 db.session.rollback()
                 error = "Debes subir al menos una imagen para el sitio."
                 return render_template("new_site.html", tags=tags, error=error)
             
-            # Luego validar cantidad máxima
             if len(archivos) > 10:
                 db.session.rollback()
                 error = "No se pueden subir más de 10 imágenes."
                 return render_template("new_site.html", tags=tags, error=error)
 
-            # Finalmente validar formato de cada imagen antes de guardar
             portada_idx = request.form.get("portada", type=int) or 0
 
-            # Obtener descripciones de cada imagen
             descripciones = {}
             descripciones_list = request.form.getlist("descripciones[]")
             for i in range(len(archivos)):
@@ -278,6 +281,13 @@ def new():
                     desc = descripciones_list[i]
                     if desc:
                         descripciones[str(i)] = desc
+                        
+            titulos = {}
+            titulos_list = request.form.getlist("titulos[]")
+            for i in range(len(archivos)):
+                if i < len(titulos_list):
+                    t = titulos_list[i]
+                    titulos[str(i)] = t
 
             imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                 archivos,
@@ -285,6 +295,7 @@ def new():
                 db,
                 Imagen,
                 minio_client,
+                titulos=titulos,
                 portada_idx=portada_idx,
                 descripciones=descripciones,
                 orden_base=0
@@ -399,56 +410,51 @@ def edit(id):
         try:
             portada_valor = request.form.get("portada", "").strip() 
             
-            # --- Actualizar descripciones de imágenes existentes ---
-            descripciones_existentes = request.form.getlist("descripciones_existentes[]")
-            imagenes_existentes_bd = db.session.query(Imagen).filter_by(sitio_id=sitio.id).order_by(Imagen.orden.asc()).all()
-            
-            for idx, imagen in enumerate(imagenes_existentes_bd):
-                if idx < len(descripciones_existentes):
-                    imagen.descripcion = descripciones_existentes[idx]
-            
-            # --- Eliminar imágenes marcadas para eliminación ---
+            form_dict = request.form.to_dict()
+
+            imagenes_existentes_bd = db.session.query(Imagen).filter_by(
+                sitio_id=sitio.id
+            ).order_by(Imagen.orden.asc()).all()
+
+            for imagen in imagenes_existentes_bd:
+                imagen_id = str(imagen.id)
+
+                titulo_key = f"titulos_existentes[{imagen_id}]"
+                desc_key = f"descripciones_existentes[{imagen_id}]"
+
+                titulo = form_dict.get(titulo_key, "").strip()
+                descripcion = form_dict.get(desc_key, "").strip()
+
+                imagen.titulo = titulo
+                imagen.descripcion = descripcion
+                    
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
-            hubo_eliminaciones = False
             for img_id in imagenes_eliminar:
                 imagen = db.session.query(Imagen).filter_by(id=img_id, sitio_id=sitio.id).first()
                 if imagen:
-                    # Eliminar de MinIO
                     try:
                         bucket_name = current_app.config["MINIO_BUCKET"]
                         minio_client.remove_object(bucket_name, imagen.ruta)
-                        print(f"[INFO] Imagen eliminada de MinIO: {imagen.ruta}")
                     except S3Error as e:
                         print(f"[WARN] Error al eliminar de MinIO: {str(e)}")
                     
-                    # Eliminar de la BD
                     db.session.delete(imagen)
-                    hubo_eliminaciones = True
 
-            # --- Subida de nuevas imágenes ---
             archivos = [f for f in request.files.getlist("imagenes") if f.filename]
-            hubo_nuevas = False
-            print("[DEBUG] Archivos:", archivos)
             
-            # Validar que siempre haya al menos una imagen en total
             imagenes_existentes_bd = db.session.query(Imagen).filter_by(sitio_id=sitio.id).all()
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             imagenes_despues_eliminacion = [img for img in imagenes_existentes_bd if str(img.id) not in imagenes_eliminar]
             
-            # Primero: validar cantidad total
             if archivos and len(archivos) + len(imagenes_despues_eliminacion) > 10:
                 error = "No se pueden subir más de 10 imágenes en total."
-            # Segundo: validar que quede al menos una imagen
             elif not archivos and not imagenes_despues_eliminacion:
                 error = "Debes tener al menos una imagen en el sitio. No puedes eliminar todas las imágenes sin agregar nuevas."
-            # Tercero: procesar las imágenes nuevas (la validación de formato ocurre en guardar_imagenes_sitio)
             elif archivos:
-                hubo_nuevas = True
                 portada_idx = -1 
                 
                 if portada_valor.startswith("nueva-"):
                     portada_idx = int(portada_valor.split("-")[1])
-                    print("[DEBUG] Portada nueva en idx:", portada_idx)
                 if portada_idx != -1:
                     db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
                         {Imagen.es_portada: False},
@@ -456,17 +462,20 @@ def edit(id):
                     )
                     db.session.flush()
                 
-                # Obtener descripciones de cada imagen nueva
-                descripciones = {}
                 descripciones_nuevas = request.form.getlist("descripciones_nuevas[]")
+                titulos_nuevos = request.form.getlist("titulos_nuevos[]")
+
+                descripciones = {}
+                titulos = {}
+
                 for i in range(len(archivos)):
                     if i < len(descripciones_nuevas):
-                        desc = descripciones_nuevas[i]
-                        if desc:
-                            descripciones[str(i)] = desc
+                        descripciones[str(i)] = descripciones_nuevas[i]
+                    if i < len(titulos_nuevos):
+                        titulos[str(i)] = titulos_nuevos[i]
                 
-                # Calcular orden base (después de las imágenes existentes)
-                orden_base = len(imagenes_despues_eliminacion)
+                max_orden = max(img.orden for img in imagenes_despues_eliminacion)
+                orden_base = max_orden + 1
                 
                 imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                     files=archivos,
@@ -474,6 +483,7 @@ def edit(id):
                     db=db,
                     Imagen=Imagen,
                     minio_client=minio_client,
+                    titulos=titulos,
                     portada_idx=portada_idx,
                     descripciones=descripciones,
                     orden_base=orden_base
@@ -481,32 +491,27 @@ def edit(id):
                 if error_imagen:
                     error = error_imagen
                 
-                    
-            print("[DEBUG] Portada seleccionada:", portada_valor)
-            print("[DEBUG] Hubo eliminaciones:", hubo_eliminaciones)
-            print("[DEBUG] Hubo nuevas:", hubo_nuevas)
-            
-            # --- Actualizar portada SOLO si hay cambios reales ---
             if portada_valor and portada_valor != "0":
                 if portada_valor.startswith("nueva-"):
-                    # Es una imagen nueva - no hacer nada aquí
-                    # Ya fue marcada en guardar_imagenes_sitio()
                     pass
                 else:
-                    # Es una imagen existente - marcarla como portada
                     try:
-                        db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
-                            {Imagen.es_portada: False},
-                            synchronize_session=False
-                        )
-                        db.session.flush()
-                        
                         imagen_portada = db.session.query(Imagen).filter_by(
                             id=int(portada_valor),
                             sitio_id=sitio.id
                         ).first()
+
                         if imagen_portada:
+                            db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                                {Imagen.es_portada: False},
+                                synchronize_session=False
+                            )
+                            db.session.flush()
+                            
+                            db.session.refresh(imagen_portada)
+
                             imagen_portada.es_portada = True
+
                     except (ValueError, TypeError):
                         pass
 
