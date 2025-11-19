@@ -1,15 +1,20 @@
 <template>
   <router-link :to="`/sitios/${site.id}`" class="site-card">
     <div class="card-image-container">
-      <img :src="site.image_url || '/default-image.jpg'" :alt="site.name" class="card-image">
+      <img 
+        :src="site.image_url || '/default-image.jpg'" 
+        :alt="site.image_title || site.name" 
+        class="card-image"
+      />
     </div>
     <div class="card-body">
       <h3 class="card-title">{{ site.name }}</h3>
       <p class="card-location">{{ site.city }}, {{ site.province }}</p>
-      
-      <div v-if="site.rating" class="card-rating">
-        <span class="star-icon">⭐</span>
-        <span class="rating-value">{{ site.rating.toFixed(1) }}</span>
+      <p class="card-location"> Estado de conservación: {{ site.state_of_conservation }}</p>
+      <div v-if="site.tags && site.tags.length" class="tags">
+        <span v-for="tag in site.tags" :key="tag.id" class="tag">
+          {{ tag.name }}
+        </span>
       </div>
     </div>
   </router-link>
@@ -54,5 +59,20 @@ const props = defineProps({
   height: 100%;
   object-fit: cover; 
   object-position: center; 
+}
+
+.tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: #eee;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #555;
 }
 </style>

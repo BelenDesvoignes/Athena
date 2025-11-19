@@ -5,7 +5,7 @@ from src.core.database import db, reset_db
 from src.core.flags import is_flag_enabled
 from src.core.models.feature_flags import FeatureFlag
 from src.core.permissions_service import current_user_permissions
-from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios, seed_public_users, seed_reviews
+from src.core.seeds import seed_admin_user, seed_feature_flags, seed_roles_permissions, seed_sitios, seed_public_users, seed_reviews, seed_tags, asignar_tags_a_sitios
 
 from src.web.config import config
 from src.web.storage import storage
@@ -82,6 +82,8 @@ def create_app(env="development", static_folder="../../static"):
         seed_admin_user()        
         seed_feature_flags()
         seed_sitios()
+        seed_tags()
+        asignar_tags_a_sitios()
         seed_public_users()
         seed_reviews()
         

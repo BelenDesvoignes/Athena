@@ -37,11 +37,6 @@ const performSearch = () => {
     <main class="main-content">
 
       <FeaturedSection
-        title="🔥 Más Visitados"
-        orderByParam="nombre"
-      />
-
-      <FeaturedSection
         title="🏆 Mejor Puntuados"
         orderByParam="calificacion"
       />
