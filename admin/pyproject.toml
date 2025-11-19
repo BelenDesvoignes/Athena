@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<4"
 flask = ">=3.1.2,<4.0.0"
 sqlalchemy = ">=2.0.43,<3.0.0"
 psycopg2-binary = ">=2.9.10,<3.0.0"
@@ -23,6 +23,7 @@ geoalchemy2 = "^0.18.0"
 minio = "^7.2.18"
 flask-cors = "^4.0.0"
 flask-wtf = "^1.2.2"
+flask-jwt-extended = "^4.7.1"
 
 [[tool.poetry.source]]
 name = "pypi-http"
