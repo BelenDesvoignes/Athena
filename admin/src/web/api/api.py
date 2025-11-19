@@ -1,14 +1,25 @@
 from sqlalchemy import func, or_, desc, asc, distinct, and_
 from flask import Blueprint, jsonify, request, g, current_app
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from math import ceil
+from marshmallow import ValidationError
 from src.core.models.review import Review
 from src.core.database import db
 from src.core.models.images import Imagen
+from src.core.bcrypt import check_password
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.api_validations import validate_api_params, SiteListParams
 from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
 from minio import Minio
 from datetime import timedelta
+from src.core.models.tag import Tag
+from src.core.models.user import User
+from src.core.models.tag import sitios_tags
+from src.core.models.review import Review, ReviewStatus
+from src.core.models.schema.Reviews import Review_Schema, Review_Create_Schema
+
+
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
 
@@ -241,6 +252,156 @@ def get_all_tags():
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
 
+
+"""Api para identificarse en jwt"""
+
+
+@api_bp.post("/auth", endpoint="login")
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    query = db.session.query(User).filter(User.email == email)
+    user = query.first()
+    if not user or not check_password(password, user.password):
+        return jsonify({"msg": "Usuario o contraseña incorrectos"}), 401
+    
+    access_token = create_access_token(identity=str(user.id))
+
+    return jsonify({
+        "token": access_token,
+        "expires_in": 3600
+    }), 200
+
+
+"""Api para cerrar sesion en jwt"""
+"""Se crea un token con la id del usuario y se envia en una cookie segura"""
+
+@api_bp.post("/logout", endpoint="logout")
+def logout():
+    return jsonify({"msg": "Logout exitoso"}), 200
+
+
+"""API para obtener reviews de un sitio específico"""
+
+
+@api_bp.get("/sites/<int:site_id>/reviews")
+def get_site_reviews(site_id):
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=10, type=int)
+    """Validacion de parametros"""
+    if page < 1 or per_page < 1 or per_page > 100:
+        return jsonify({"error": "Parametros de paginacion invalidos"}), 400
+    query = db.session.query(Review).filter_by(site_id=site_id)
+    total_reviews = query.count()
+    reviews = query.offset((page - 1) * per_page).limit(per_page).all()
+    data = [
+        {
+            "id": review.id,
+            "user_id": review.user_id,
+            "rating": review.rating,
+            "comment": review.content,
+            "created_at": review.created_at.isoformat(),
+        }
+        for review in reviews
+    ]
+    response = {
+        "page": page,
+        "per_page": per_page,
+        "total": total_reviews,
+        "tatal_pages": ceil(total_reviews / per_page),
+        "reviews": data,
+    }
+    return jsonify(response)
+
+
+"""Metodo para crear una nueva review para un sitio turistico"""
+
+
+@api_bp.post("/sites/<int:site_id>/reviews", endpoint="create_site_review")
+@jwt_required()
+def create_site_review(site_id):
+    review_schema = Review_Create_Schema()
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({"error": "Debe enviar un cuerpo JSON"}), 400
+    try:
+        data = review_schema.load(json_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
+    if data["site_id"] != site_id:
+        return (
+            jsonify(
+                {"error": "El ID del sitio en el cuerpo no coincide con la URL"}),
+            400,
+        )
+    user_id = int(get_jwt_identity())
+    new_review = Review(
+        site_id=site_id,
+        user_id=user_id,
+        rating=data["rating"],
+        content=data.get("comment", ""),
+        status=ReviewStatus.PENDIENTE,
+    )
+    db.session.add(new_review)
+    db.session.commit()
+    return (
+        jsonify(
+            {
+                "message": "Reseña creada exitosamente.",
+                "review": {
+                    "id": new_review.id,
+                    "site_id": new_review.site_id,
+                    "user_id": new_review.user_id,
+                    "rating": new_review.rating,
+                    "comment": new_review.content,
+                    "status": new_review.status.value,
+                },
+            }
+        ),
+        201,
+    )
+
+
+@api_bp.get("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="get_site_review")
+@jwt_required()
+def get_site_review(site_id, review_id):
+    review = db.session.query(Review).filter_by(
+        id=review_id, site_id=site_id).first()
+    if not review:
+        return jsonify({"error": "Reseña no encontrada"}), 404
+    review_data = {
+        "id": review.id,
+        "site_id": review.site_id,
+        "user_id": review.user_id,
+        "rating": review.rating,
+        "comment": review.content,
+        "status": review.status.value,
+        "created_at": review.created_at.isoformat(),
+        "updated_at": review.updated_at.isoformat(),
+    }
+    return jsonify(review_data)
+
+
+@api_bp.delete("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="delete_site_review")
+@jwt_required()
+def delete_review(site_id, review_id):
+    user_id = get_jwt_identity()  
+
+    
+    review = db.session.query(Review).filter_by(
+        id=review_id, site_id=site_id).first()
+
+    if not review:
+        return jsonify({"msg": "Review no encontrada"}), 404
+
+    if int(review.user_id) != int(user_id):
+        return jsonify({"msg": "No tenés permiso para eliminar esta reseña"}), 403
+
+    db.session.delete(review)
+    db.session.commit()
+
+    return jsonify({"msg": "Review eliminada con éxito"}), 200
 @api_bp.get("/flags/portal")
 def portal_status():
     """
