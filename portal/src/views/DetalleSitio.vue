@@ -13,7 +13,7 @@
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
         <div v-if="site.average_rating" class="rating-badge">
-          ⭐ {{ site.average_rating.toFixed(1) }} ({{ site.review_count || 0 }} Reseñas)
+          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ reviews.length || 0 }} Reseñas)
         </div>
       </header>
 
@@ -22,12 +22,8 @@
       <div class="main-info-grid">
         <div class="image-container">
           <div class="cover-wrapper">
-            <img
-              :src="site.cover_image || '/default-cover.jpg'"
-              :alt="site.name"
-              class="site-cover-image"
-              @click="openByIndex(0)"
-            >
+            <img :src="site.cover_image || '/default-cover.jpg'" :alt="site.name" class="site-cover-image"
+              @click="openByIndex(0)">
             <button class="expand-button cover" @click.stop="openByIndex(0)">🔍</button>
           </div>
         </div>
@@ -46,17 +42,9 @@
 
       <div v-if="site.images && site.images.length > 1" class="gallery-section">
         <div class="gallery-scroll">
-          <div
-            class="image-wrapper"
-            v-for="(img, idx) in nonCoverImages"
-            :key="img.id"
-          >
-            <img
-              :src="img.url"
-              class="gallery-image"
-              :alt="`Imagen del sitio ${site.name}`"
-              @click="openByIndex(idx + 1)"
-            >
+          <div class="image-wrapper" v-for="(img, idx) in nonCoverImages" :key="img.id">
+            <img :src="img.url" class="gallery-image" :alt="`Imagen del sitio ${site.name}`"
+              @click="openByIndex(idx + 1)">
             <button class="expand-btn" @click.stop="openByIndex(idx + 1)">🔍</button>
           </div>
         </div>
@@ -71,10 +59,42 @@
 
       <hr>
 
+
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
-        <p>Esta sección cargará las reseñas usando GET /sites/{{ site.id }}/reviews.</p>
+
+        <!-- Cargando -->
+        <div v-if="isLoadingReviews" class="status-message">
+          Cargando reseñas...
+        </div>
+
+        <!-- Error -->
+        <div v-else-if="reviewsError" class="status-message error">
+          ❌ {{ reviewsErrorMessage }}
+        </div>
+
+        <!-- Lista de reseñas -->
+        <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
+          <div class="review-header">
+            <strong>
+              {{ review.user_info?.nombre || 'Usuario' }}
+              {{ review.user_info?.apellido || 'Anónimo' }}
+            </strong>
+            <span>⭐ {{ review.rating }}/5</span>
+          </div>
+          <p class="review-text">{{ review.content }}</p>
+          <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
+        </div>
+
+        <!-- Sin reseñas -->
+        <p v-else class="empty-message">
+          Este sitio aún no tiene reseñas.
+        </p>
       </section>
+
+
+
+
 
     </section>
 
@@ -108,7 +128,14 @@ const errorMessage = ref('');
 const isFavorite = ref(false);
 
 const siteId = route.params.id;
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+const reviews = ref([]);
+const isLoadingReviews = ref(true);
+const reviewsError = ref(false);
+const reviewsErrorMessage = ref('');
+
 
 const isModalOpen = ref(false);
 const currentIndex = ref(0);
@@ -202,8 +229,69 @@ const fetchSiteDetail = async () => {
   }
 };
 
+const fetchUserInfo = async (userId) => {
+  const url = `${API_BASE_URL}/internal/users/${userId}`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const user_info = await response.json();
+
+    return user_info;
+
+  } catch (err) {
+    return null;
+  }
+};
+
+const fetchReviews = async () => {
+  isLoadingReviews.value = true;
+  reviewsError.value = false;
+  reviewsErrorMessage.value = '';
+
+  try {
+    const url = `${API_BASE_URL}/sites/${siteId}/reviews`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Error al obtener reseñas. Código: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reviewsData = data.reviews || [];
+
+    // 👉 Ahora buscamos nombres de usuario PARA CADA REVIEW
+    for (const review of reviewsData) {
+      console.log("🔍 Buscando usuario para review:", review);
+
+      if (review.user_id) {
+        review.user_info = await fetchUserInfo(review.user_id);
+      } else {
+        review.user_info = null;
+      }
+    }
+
+    reviews.value = reviewsData;
+
+    console.log("✨ Reviews finales con user info:", reviews.value);
+
+  } catch (err) {
+    console.error('🔥 Error al cargar reseñas:', err);
+    reviewsErrorMessage.value = err.message;
+    reviewsError.value = true;
+  } finally {
+    isLoadingReviews.value = false;
+  }
+};
 onMounted(() => {
-  if (siteId) fetchSiteDetail();
+  if (siteId) {
+    fetchSiteDetail();
+    fetchReviews();
+  }
   else {
     errorMessage.value = 'ID del sitio no especificado en la URL.';
     error.value = true;
@@ -252,7 +340,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ccc;
   padding: 6px 10px;
   border-radius: 8px;
@@ -284,7 +372,7 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 768px) {
-  .site-content > .detail-header {
+  .site-content>.detail-header {
     margin-bottom: 30px;
   }
 
@@ -333,7 +421,7 @@ onBeforeUnmount(() => {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background-color: rgba(0,0,0,0.7);
+  background-color: rgba(0, 0, 0, 0.7);
   color: white;
   border: none;
   padding: 6px 10px;
@@ -344,7 +432,7 @@ onBeforeUnmount(() => {
 }
 
 .expand-btn:hover {
-  background-color: rgba(0,0,0,0.85);
+  background-color: rgba(0, 0, 0, 0.85);
 }
 
 .image-modal {
@@ -353,7 +441,7 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -380,8 +468,8 @@ onBeforeUnmount(() => {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   width: 44px;
   height: 44px;
@@ -406,8 +494,8 @@ onBeforeUnmount(() => {
   position: fixed;
   top: 18px;
   right: 18px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   width: 40px;
   height: 40px;
@@ -421,7 +509,7 @@ onBeforeUnmount(() => {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   color: #fff;
   padding: 6px 8px;
   border-radius: 8px;
