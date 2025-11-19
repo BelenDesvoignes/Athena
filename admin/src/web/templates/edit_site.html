@@ -166,6 +166,17 @@
         const ext = nombre.split('.').pop().toLowerCase();
         return EXT_PERMITIDAS.includes(ext);
     }
+    
+    function actualizarInputFiles() {
+        const dt = new DataTransfer();
+        nuevasImagenes.forEach(img => {
+            if (img.file instanceof File) {
+                dt.items.add(img.file);
+            }
+        });
+        inputImagenes.files = dt.files;
+    }
+
 
     function renderizarImagenes() {
         contenedor.innerHTML = '';
@@ -306,7 +317,7 @@
 
             const hiddenTitulo = document.createElement("input");
             hiddenTitulo.type = "hidden";
-            hiddenTitulo.name = "titulos_nuevas[]";
+            hiddenTitulo.name = "titulos_nuevos[]";
             titulo.addEventListener("input", () => hiddenTitulo.value = titulo.value);
 
             div.appendChild(titulo);
@@ -335,6 +346,7 @@
         });
 
         actualizarContador();
+        actualizarInputFiles();
     }
 
     function eliminarNueva(idx) {
@@ -342,6 +354,7 @@
             alert("No se puede eliminar la imagen marcada como portada.");
             return;
         }
+        
         nuevasImagenes.splice(idx, 1);
         renderizarImagenes();
     }
