@@ -285,7 +285,7 @@ def get_site_reviews(site_id):
         "page": page,
         "per_page": per_page,
         "total": total_reviews,
-        "tatal_pages": ceil(total_reviews / per_page),
+        "total_pages": ceil(total_reviews / per_page),
         "reviews": data,
     }
     return jsonify(response)

@@ -13,7 +13,7 @@
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
         <div v-if="site.average_rating" class="rating-badge">
-          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ reviews.length || 0 }} Reseñas)
+          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ totalReviews || 0 }} Reseñas)
         </div>
       </header>
 
@@ -85,12 +85,24 @@
           <p class="review-text">{{ review.content }}</p>
           <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
         </div>
+         <div class="pagination" v-if="totalPages > 1">
+            <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
+              Anterior
+            </button>
+
+            <span>Página {{ currentPage }} de {{ totalPages }}</span>
+
+            <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
+              Siguiente
+            </button>
+          </div>
 
         <!-- Sin reseñas -->
         <p v-else class="empty-message">
           Este sitio aún no tiene reseñas.
         </p>
       </section>
+
 
 
 
@@ -132,10 +144,13 @@ const siteId = route.params.id;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const reviews = ref([]);
+const totalReviews = ref(0);
 const isLoadingReviews = ref(true);
 const reviewsError = ref(false);
 const reviewsErrorMessage = ref('');
-
+const currentPage = ref(1);
+const totalPages = ref(1);
+const perPage = 25;
 
 const isModalOpen = ref(false);
 const currentIndex = ref(0);
@@ -171,6 +186,19 @@ function buildImagesListIfNeeded() {
   }
   imagesList.value = list;
 }
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    fetchReviews();
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    fetchReviews();
+  }
+};
 
 function closeModal() {
   isModalOpen.value = false;
@@ -252,9 +280,8 @@ const fetchReviews = async () => {
   isLoadingReviews.value = true;
   reviewsError.value = false;
   reviewsErrorMessage.value = '';
-
   try {
-    const url = `${API_BASE_URL}/sites/${siteId}/reviews`;
+    const url = `${API_BASE_URL}/sites/${siteId}/reviews?page=${currentPage.value}&per_page=${perPage}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -262,19 +289,17 @@ const fetchReviews = async () => {
     }
 
     const data = await response.json();
+    totalPages.value = data.total_pages || 1;
     const reviewsData = data.reviews || [];
 
-    // 👉 Ahora buscamos nombres de usuario PARA CADA REVIEW
     for (const review of reviewsData) {
-      console.log("🔍 Buscando usuario para review:", review);
-
       if (review.user_id) {
         review.user_info = await fetchUserInfo(review.user_id);
       } else {
         review.user_info = null;
       }
     }
-
+      totalReviews.value = data.total || 0;
     reviews.value = reviewsData;
 
     console.log("✨ Reviews finales con user info:", reviews.value);
@@ -347,6 +372,23 @@ onBeforeUnmount(() => {
   cursor: pointer;
   z-index: 5;
 }
+
+.page-button {
+  cursor: pointer;
+  background-color: lightgray;
+  color: black;
+  border-radius: 8px;
+}
+
+.page-button:hover {
+  background-color: gray;
+  color: white;
+}
+.page-button:disabled
+ {
+ Cursor:text !important; Text-Decoration: None !important; 
+ } 
+
 
 .description-section {
   padding: 0;
