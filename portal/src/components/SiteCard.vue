@@ -1,7 +1,11 @@
 <template>
   <router-link :to="`/sitios/${site.id}`" class="site-card">
     <div class="card-image-container">
-      <img :src="site.image_url || '/default-image.jpg'" :alt="site.name" class="card-image">
+      <img 
+        :src="site.image_url || '/default-image.jpg'" 
+        :alt="site.image_title || site.name" 
+        class="card-image"
+      />
     </div>
     <div class="card-body">
       <h3 class="card-title">{{ site.name }}</h3>
