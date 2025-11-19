@@ -474,8 +474,11 @@ def edit(id):
                     if i < len(titulos_nuevos):
                         titulos[str(i)] = titulos_nuevos[i]
                 
-                max_orden = max(img.orden for img in imagenes_despues_eliminacion)
-                orden_base = max_orden + 1
+                if imagenes_despues_eliminacion:
+                    max_orden = max(img.orden for img in imagenes_despues_eliminacion)
+                    orden_base = max_orden + 1
+                else:
+                    orden_base = 1
                 
                 imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                     files=archivos,
