@@ -410,7 +410,6 @@ def edit(id):
         try:
             portada_valor = request.form.get("portada", "").strip() 
             
-            # --- Actualizar descripciones de imágenes existentes ---
             form_dict = request.form.to_dict()
 
             imagenes_existentes_bd = db.session.query(Imagen).filter_by(
@@ -420,56 +419,42 @@ def edit(id):
             for imagen in imagenes_existentes_bd:
                 imagen_id = str(imagen.id)
 
-                # claves del formulario
                 titulo_key = f"titulos_existentes[{imagen_id}]"
                 desc_key = f"descripciones_existentes[{imagen_id}]"
 
-                # obtener valores (si no existen, quedan en vacío)
                 titulo = form_dict.get(titulo_key, "").strip()
                 descripcion = form_dict.get(desc_key, "").strip()
 
-                # actualizar
                 imagen.titulo = titulo
                 imagen.descripcion = descripcion
                     
-            # --- Eliminar imágenes marcadas para eliminación ---
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             for img_id in imagenes_eliminar:
                 imagen = db.session.query(Imagen).filter_by(id=img_id, sitio_id=sitio.id).first()
                 if imagen:
-                    # Eliminar de MinIO
                     try:
                         bucket_name = current_app.config["MINIO_BUCKET"]
                         minio_client.remove_object(bucket_name, imagen.ruta)
-                        print(f"[INFO] Imagen eliminada de MinIO: {imagen.ruta}")
                     except S3Error as e:
                         print(f"[WARN] Error al eliminar de MinIO: {str(e)}")
                     
-                    # Eliminar de la BD
                     db.session.delete(imagen)
 
-            # --- Subida de nuevas imágenes ---
             archivos = [f for f in request.files.getlist("imagenes") if f.filename]
-            print("[DEBUG] Archivos:", archivos)
             
-            # Validar que siempre haya al menos una imagen en total
             imagenes_existentes_bd = db.session.query(Imagen).filter_by(sitio_id=sitio.id).all()
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             imagenes_despues_eliminacion = [img for img in imagenes_existentes_bd if str(img.id) not in imagenes_eliminar]
             
-            # Primero: validar cantidad total
             if archivos and len(archivos) + len(imagenes_despues_eliminacion) > 10:
                 error = "No se pueden subir más de 10 imágenes en total."
-            # Segundo: validar que quede al menos una imagen
             elif not archivos and not imagenes_despues_eliminacion:
                 error = "Debes tener al menos una imagen en el sitio. No puedes eliminar todas las imágenes sin agregar nuevas."
-            # Tercero: procesar las imágenes nuevas (la validación de formato ocurre en guardar_imagenes_sitio)
             elif archivos:
                 portada_idx = -1 
                 
                 if portada_valor.startswith("nueva-"):
                     portada_idx = int(portada_valor.split("-")[1])
-                    print("[DEBUG] Portada nueva en idx:", portada_idx)
                 if portada_idx != -1:
                     db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
                         {Imagen.es_portada: False},
@@ -477,7 +462,6 @@ def edit(id):
                     )
                     db.session.flush()
                 
-                # Obtener descripciones de cada imagen nueva
                 descripciones_nuevas = request.form.getlist("descripciones_nuevas[]")
                 titulos_nuevos = request.form.getlist("titulos_nuevos[]")
 
@@ -490,8 +474,8 @@ def edit(id):
                     if i < len(titulos_nuevos):
                         titulos[str(i)] = titulos_nuevos[i]
                 
-                # Calcular orden base (después de las imágenes existentes)
-                orden_base = len(imagenes_despues_eliminacion)
+                max_orden = max(img.orden for img in imagenes_despues_eliminacion)
+                orden_base = max_orden + 1
                 
                 imagenes_objetos, error_imagen = guardar_imagenes_sitio(
                     files=archivos,
@@ -507,28 +491,27 @@ def edit(id):
                 if error_imagen:
                     error = error_imagen
                 
-            
-            # --- Actualizar portada SOLO si hay cambios reales ---
             if portada_valor and portada_valor != "0":
                 if portada_valor.startswith("nueva-"):
-                    # Es una imagen nueva - no hacer nada aquí
-                    # Ya fue marcada en guardar_imagenes_sitio()
                     pass
                 else:
-                    # Es una imagen existente - marcarla como portada
                     try:
-                        db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
-                            {Imagen.es_portada: False},
-                            synchronize_session=False
-                        )
-                        db.session.flush()
-                        
                         imagen_portada = db.session.query(Imagen).filter_by(
                             id=int(portada_valor),
                             sitio_id=sitio.id
                         ).first()
+
                         if imagen_portada:
+                            db.session.query(Imagen).filter_by(sitio_id=sitio.id).update(
+                                {Imagen.es_portada: False},
+                                synchronize_session=False
+                            )
+                            db.session.flush()
+                            
+                            db.session.refresh(imagen_portada)
+
                             imagen_portada.es_portada = True
+
                     except (ValueError, TypeError):
                         pass
 
