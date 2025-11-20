@@ -225,7 +225,6 @@ import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
 import "leaflet/dist/leaflet.css";
 
-const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter(); // Se mantiene aunque no se use para redirección
 const authStore = useAuthStore();
@@ -415,50 +414,44 @@ function loadMap() {
   mapLoaded.value = true;
 }
 
-
-
-/**
- * Función para alternar el estado de favorito del sitio.
- * Realiza una actualización optimista y revierte en caso de fallo.
- */
 const toggleFavorite = async () => {
-  if (!token.value) {
-    // En un entorno real, se mostraría un modal pidiendo iniciar sesión.
-    console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
-    return;
-  }
-
-  const isAdding = !isFavorite.value;
-  const action = isAdding ? 'POST' : 'DELETE';
-  const previousFavoriteState = isFavorite.value;
-
-  try {
-    // 1. Actualización Optimista: Cambiar el estado inmediatamente en la UI
-    isFavorite.value = isAdding;
-
-    const response = await fetch(`${API_BASE_URL}/favorites`, {
-      method: action,
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-        'Content-Type': 'application/json'
-      },
-      // Se asume que el endpoint acepta el site_id en el cuerpo para ambas acciones.
-      body: JSON.stringify({ site_id: siteId })
-    });
-
-    if (!response.ok) {
-      // Revertir estado si la llamada API falla
-      isFavorite.value = previousFavoriteState;
-      const errorData = await response.json().catch(() => ({}));
-      console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
-      // Mostrar un mensaje de error al usuario si fuese necesario.
+    if (!token.value) {
+        console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
+        return;
     }
 
-  } catch (err) {
-    // Revertir estado en caso de error de red
-    isFavorite.value = previousFavoriteState;
-    console.error('Error de red al actualizar favoritos:', err);
-  }
+    const isAdding = !isFavorite.value;
+    const action = isAdding ? 'POST' : 'DELETE';
+    const previousFavoriteState = isFavorite.value;
+
+    // AHORA LA URL INCLUYE EL SITE_ID
+    const url = `${API_BASE_URL}/sites/${siteId}/favorite`;
+
+    try {
+        // 1. Actualización Optimista
+        isFavorite.value = isAdding;
+
+        const response = await fetch(url, { // <-- URL corregida
+            method: action,
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                // No se necesita Content-Type ni body para DELETE/POST en esta estructura
+            },
+            // REMOVER EL BODY: No es necesario enviar el site_id en el cuerpo si ya está en la URL
+            // body: JSON.stringify({ site_id: siteId })
+        });
+
+        if (!response.ok) {
+            // Revertir estado si la llamada API falla
+            isFavorite.value = previousFavoriteState;
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
+        }
+
+    } catch (err) {
+        isFavorite.value = previousFavoriteState;
+        console.error('Error de red al actualizar favoritos:', err);
+    }
 };
 
 const fetchSiteDetail = async () => {
