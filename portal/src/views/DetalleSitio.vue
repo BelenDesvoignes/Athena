@@ -65,7 +65,14 @@
       </section>
 
       <hr>
+      <section class="map-section">
+        <div class="map-card">
+          <h3 class="map-title">📍 Ubicación</h3>
+          <div id="site-map" class="map-container" style="height: 300px; width: 100%; border-radius: 12px;"></div>
 
+        </div>
+      </section>
+      <hr>
 
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
@@ -171,11 +178,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, nextTick, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
+import "leaflet/dist/leaflet.css";
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -322,6 +330,33 @@ function cancelReview() {
   newReview.value.content = "";
 }
 
+import L from "leaflet";
+const map = ref(null);
+const mapLoaded = ref(false);
+function loadMap() {
+  if (!site.value || mapLoaded.value) return;
+
+  const lat = site.value.latitude;
+  const lng = site.value.longitude;
+  if (!lat || !lng) {
+    console.warn("⚠ Este sitio no tiene coordenadas");
+    return;
+  }
+
+  map.value = L.map("site-map").setView([lat, lng], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap contributors",
+  }).addTo(map.value);
+
+  L.marker([lat, lng]).addTo(map.value);
+
+  mapLoaded.value = true;
+}
+
+
+
 /**
  * Función para alternar el estado de favorito del sitio.
  * Realiza una actualización optimista y revierte en caso de fallo.
@@ -396,6 +431,9 @@ const fetchSiteDetail = async () => {
 
     imagesList.value = [];
     buildImagesListIfNeeded();
+
+    await nextTick();
+    setTimeout(loadMap, 50);
 
     // Sincronizar el estado de favorito desde la respuesta de la API
     if (site.value.is_favorite !== undefined) {
@@ -625,6 +663,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   z-index: 5;
 }
+.map-container {
+  height: 300px;
+  width: 100%;
+  border-radius: 12px;
+}
+
 
 .page-button {
   cursor: pointer;
@@ -724,6 +768,8 @@ onBeforeUnmount(() => {
 
 .favorite-button:hover {
   opacity: 0.8;
+  transform: translateY(-2px);
+
 }
 
 .favorite-button.is-favorite {
@@ -778,29 +824,33 @@ onBeforeUnmount(() => {
   font-weight: 600;
   color: #333;
 }
+
 /* ---- Botón principal ---- */
 .write-review-btn {
-  background: linear-gradient(135deg, #4e8cff, #1f62ff);
-  color: white;
-  padding: 12px 18px;
-  font-size: 15px;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
   border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
-  transition: 0.25s ease;
-  box-shadow: 0 3px 10px rgba(0, 76, 255, 0.25);
+  transition: all 0.3s ease;
+  border: 2px solid #ccc;
+  background-color: white;
+  color: #333;
 }
 
 .write-review-btn:hover {
+  opacity: 0.8;
   transform: translateY(-2px);
-  box-shadow: 0 5px 14px rgba(0, 76, 255, 0.4);
+
 }
 
 /* ---- Overlay oscuro ---- */
 .review-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
@@ -815,7 +865,7 @@ onBeforeUnmount(() => {
   background: #ffffff;
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   animation: popIn 0.25s ease;
 }
 
@@ -912,8 +962,13 @@ onBeforeUnmount(() => {
 
 /* ---- Animaciones ---- */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes popIn {
@@ -921,6 +976,7 @@ onBeforeUnmount(() => {
     opacity: 0;
     transform: scale(0.92);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

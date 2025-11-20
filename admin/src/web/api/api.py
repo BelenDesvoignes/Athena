@@ -297,7 +297,7 @@ def get_site_reviews(site_id):
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
 
-    query = db.session.query(Review).filter_by(site_id=site_id)
+    query = db.session.query(Review).filter_by(site_id=site_id).filter(Review.status == ReviewStatus.APROBADA).order_by(Review.created_at.desc())
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
 
