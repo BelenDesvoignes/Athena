@@ -110,14 +110,9 @@ const logout = () => {
           <button @click="router.push('/perfil'); toggleMenu();" class="sidebar-link">
             Perfil
           </button>
-
-          <button @click="router.push('/mis-resenas'); toggleMenu();" class="sidebar-link">
-            Mis Reseñas
+          <button @click="logout(); toggleMenu();" class="sidebar-link logout-link">
+            Cerrar Sesión
           </button>
-
-          <button @click="router.push('/mis-favoritos'); toggleMenu();" class="sidebar-link">
-            Sitios Favoritos
-          </button><button @click="logout(); toggleMenu();" class="sidebar-link logout-link">Cerrar Sesión</button>
         </template>
       </nav>
     </aside>

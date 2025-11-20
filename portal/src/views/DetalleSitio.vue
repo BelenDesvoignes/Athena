@@ -519,8 +519,8 @@ onBeforeUnmount(() => {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid #ccc;
-  background-color: white;
+  border: 2px solid rgb(107, 106, 106);
+  background-color: rgb(167, 165, 165);
   color: #333;
 }
 
@@ -529,7 +529,7 @@ onBeforeUnmount(() => {
 }
 
 .favorite-button.is-favorite {
-  background-color: #ff4d4d; /* Rojo para favorito */
+  background-color: #af6868; /* Rojo para favorito */
   color: white;
   border-color: #ff4d4d;
 }
