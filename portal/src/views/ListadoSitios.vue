@@ -2,34 +2,41 @@
   <div class="listado-sitios-page">
     <header>
       <h1>Listado de Sitios Históricos</h1>
+      <!-- FiltersSite maneja todos los filtros, incluyendo el de favoritos -->
       <FiltersSite ref="filtersSiteRef" />
 
-      <div class="map-controls">
-        <button
-          @click="openMapModal"
-          :class="{'btn-active': isModalOpen}"
-          class="map-toggle-button"
-        >
-          Ver mapa de sitios
-        </button>
+      <div class="controls-group">
+        <!-- ¡EL BOTÓN MANUAL DE FAVORITOS SE ELIMINÓ!
+             Ahora el checkbox en FiltersSite maneja el estado de favoritos. -->
 
-        <button v-if="Object.keys(route.query).length > 0"
-                @click="clearAllFilters"
-                class="clear-filters-button">
-          Limpiar Filtros
-        </button>
+        <div class="map-controls">
+          <button
+            @click="openMapModal"
+            :class="{'btn-active': isModalOpen}"
+            class="map-toggle-button"
+          >
+            Ver mapa de sitios
+          </button>
+
+          <button v-if="Object.keys(route.query).length > 0"
+                  @click="clearAllFilters"
+                  class="clear-filters-button">
+            Limpiar Filtros
+          </button>
+        </div>
       </div>
     </header>
 
     <main>
       <div v-if="isLoading" class="status-message">Cargando sitios...</div>
-      <div v-else-if="error" class="error-message">❌ Error al cargar el listado</div>
+      <div v-else-if="error" class="error-message">❌ Error al cargar el listado: {{ error }}</div>
 
       <div v-else-if="sites.length > 0" class="list-grid">
         <SiteCard
           v-for="site in sites"
           :key="site.id"
           :site="site"
+          @toggle-favorite="fetchSitesList"
         />
       </div>
 
@@ -83,21 +90,27 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { storeToRefs } from 'pinia'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
 import SiteMap from '@/components/SiteMap.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+const { token } = storeToRefs(authStore) // Obtenemos el token reactivo
 
 const filtersSiteRef = ref(null)
 const siteMapRef = ref(null)
 
 const sites = ref([])
 const isLoading = ref(true)
-const error = ref(false)
-
+const error = ref('') // Cambiado a string para mensajes de error
 const isModalOpen = ref(false)
+
+// Cómputo para verificar si el filtro de favoritos está activo en la URL (usa 'favorites' para coincidir con FiltersSite)
+const isFavoriteFilterActive = computed(() => route.query.favorites === 'true')
 
 const currentLat = computed(() => route.query.lat || null)
 const currentLon = computed(() => route.query.lon || null)
@@ -144,12 +157,12 @@ const goToPage = (p) => {
   router.push({ query: { ...route.query, page: p } })
 }
 
-// API CALL
+// API CALL (LÓGICA CRÍTICA MODIFICADA AQUÍ)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const fetchSitesList = async () => {
   isLoading.value = true
-  error.value = false
+  error.value = ''
 
   const params = new URLSearchParams({
     order_by: route.query.order_by || "registrado",
@@ -161,8 +174,37 @@ const fetchSitesList = async () => {
   const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius"]
   dynamic.forEach(p => route.query[p] && params.append(p, route.query[p]))
 
+  // 1. Verificar si se está pidiendo el filtro de favoritos
+  const fetchingFavorites = isFavoriteFilterActive.value;
+  let headers = {};
+
+  if (fetchingFavorites) {
+    params.append('is_favorite', 'true');
+
+    // 2. Si se pide favoritos, DEBEMOS adjuntar el token
+    if (token.value) {
+      headers['Authorization'] = `Bearer ${token.value}`;
+      // El parámetro 'favorites=true' ya está en la URL gracias a FiltersSite
+    } else {
+      // 3. Caso de error: pide favoritos pero no está logueado
+      isLoading.value = false;
+      error.value = "Debes iniciar sesión para filtrar tus sitios favoritos.";
+      sites.value = [];
+      // Quitamos el filtro de la URL para que el usuario no se quede atascado
+      const newQuery = { ...route.query };
+      delete newQuery.favorites;
+      router.replace({ query: newQuery });
+      return;
+    }
+  }
+
   try {
-    const res = await fetch(`${API_BASE_URL}/sites?${params}`)
+    const res = await fetch(`${API_BASE_URL}/sites?${params.toString()}`, { headers })
+
+    if (!res.ok) {
+      throw new Error(`Fallo la solicitud del listado. Código: ${res.status}`);
+    }
+
     const data = await res.json()
 
     sites.value = data.data || []
@@ -172,8 +214,9 @@ const fetchSitesList = async () => {
       total: data.total,
       per_page: data.per_page,
     }
-  } catch {
-    error.value = true
+  } catch (e) {
+    console.error("Error al obtener sitios:", e);
+    error.value = e.message || 'Ocurrió un error inesperado al cargar los sitios.';
   } finally {
     isLoading.value = false
   }
@@ -184,11 +227,22 @@ onMounted(fetchSitesList)
 </script>
 
 <style scoped>
+/* Las clases y estilos originales se mantienen, excepto la de 'favorite-toggle-button' que ya no se usa. */
+.controls-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.map-controls { display: flex; gap: 15px; }
+
 h1 { margin-bottom: 10px; }
 .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
 .status-message, .error-message, .empty-message { text-align: center; margin-top: 40px; color: #666; }
+.error-message { color: #0f0f0f; font-weight: bold; background-color: #ffeaea; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; }
 
-.map-controls { display: flex; gap: 15px; margin-bottom: 15px; }
+
 .map-toggle-button, .proximity-filter-button, .clear-filters-button {
     border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s;
 }

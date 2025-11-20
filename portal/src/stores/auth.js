@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // --- Getters ---
     const isLoggedIn = computed(() => !!user.value && !!token.value);
-    
+
     // Header para el backend (Crucial para Favoritos)
     const authHeader = computed(() => {
         if (token.value) {
@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     // --- Actions ---
 
     /**
-     * Procesa la respuesta de Google, registra/autentica el usuario en el backend 
+     * Procesa la respuesta de Google, registra/autentica el usuario en el backend
      * y guarda el estado globalmente.
      */
     const loginWithGoogle = async (googleResponse) => {
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
             // 1. Decodificar JWT de Google para obtener info del perfil
             const googleJwt = googleResponse.credential;
             const decoded = jwtDecode(googleJwt);
-            
+
             const profile = {
                 name: decoded.name,
                 email: decoded.email,
@@ -49,11 +49,11 @@ export const useAuthStore = defineStore('auth', () => {
 
             // 2. Llamada al backend para obtener/crear el usuario y obtener el ID
             const API_URL = import.meta.env.VITE_API_LOGIN_URL;
-            
+
             const res = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     email: profile.email,
                     name: profile.name // El backend usa 'name' también
                 }),
@@ -74,15 +74,22 @@ export const useAuthStore = defineStore('auth', () => {
 
             const data = await res.json();
 
+            const flaskToken = data.access_token;
+
+            if (!flaskToken) {
+                throw new Error("El backend no devolvió un token de acceso.");
+            }
+
+
             // 3. Guardar el estado en el Store y localStorage
-            token.value = googleJwt; // Guardar el JWT completo
+            token.value = flaskToken;  //guardo token de flask
             user.value = profile;
             userId.value = data.user.id.toString(); // Guardar el ID retornado por Flask
-            
-            localStorage.setItem(TOKEN_KEY, googleJwt);
+
+            localStorage.setItem(TOKEN_KEY, flaskToken);
             localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
             localStorage.setItem(USER_ID_KEY, data.user.id.toString());
-            
+
             console.log("✅ Inicio de sesión exitoso. Usuario ID:", userId.value);
             return true;
 
