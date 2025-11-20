@@ -35,9 +35,17 @@
           <h2>Descripción Breve</h2>
           <p>{{ site.short_description }}</p>
 
-          <div v-if="site.tags && site.tags.length" class="tags-section">
-            <span v-for="tag in site.tags" :key="tag.id" class="tag-badge">{{ tag.name }}</span>
-          </div>
+          <RouterLink
+            v-for="tag in site.tags"
+            :key="tag.id"
+            :to="{ 
+              path: '/sitios', 
+              query: { tags: tag.id } 
+            }"
+            class="tag-badge">
+            {{ tag.name }}
+          </RouterLink>
+
 
           <div class="action-buttons">
             <!-- Botón de Favorito añadido aquí -->
@@ -78,8 +86,17 @@
 
       <section class="full-description-section">
         <h2>Detalle del Sitio</h2>
-        <p>{{ site.description || site.short_description }}</p>
+
+        <p>
+          <!-- Mostrar corto o largo según estado -->
+          {{ showFull ? site.description : site.short_description }}
+        </p>
+
+        <button v-if="site.description" @click="toggleDescription" class="ver-mas-btn">
+          {{ showFull ? 'Ver menos' : 'Ver más' }}
+        </button>
       </section>
+
 
       <hr>
 
@@ -160,6 +177,10 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
+const showFull = ref(false);
+const toggleDescription = () => {
+  showFull.value = !showFull.value;
+};
 
 const site = ref(null);
 const isLoading = ref(true);
@@ -700,4 +721,18 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   font-size: 0.9rem;
 }
+.ver-mas-btn {
+  margin-top: 10px;
+  background: none;
+  color: #0077cc;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+}
+
+.ver-mas-btn:hover {
+  text-decoration: underline;
+}
+
 </style>

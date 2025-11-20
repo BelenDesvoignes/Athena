@@ -2,7 +2,18 @@
 <section class="featured-section">
 <header class="section-header">
 <h2>{{ title }}</h2>
-<RouterLink v-if="listRoute && sites.length > 0" :to="listRoute" class="btn-ver-todos">
+<RouterLink
+  v-if="sites.length > 0"
+  :to="{
+    path: listRoute,
+    query: {
+      favorites: props.isFavorite,
+      order_by: props.orderByParam,
+      order: 'desc'
+    }
+  }"
+  class="btn-ver-todos"
+>
 Ver todos &gt;
 </RouterLink>
 </header>
