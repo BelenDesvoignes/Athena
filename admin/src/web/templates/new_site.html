@@ -206,31 +206,10 @@ function renderizarImagenes() {
             hiddenTitulo.value = titulo.value;
         });
 
-    
-        const descripcion = document.createElement('input');
-        descripcion.type = "text";
-        descripcion.className = "form-control form-control-sm mt-2";
-        descripcion.placeholder = "Descripción...";
-        descripcion.value = fileObj.descripcion || "";
-        descripcion.addEventListener('input', e => {
-            fileObj.descripcion = e.target.value;
-        });
-
-        const hiddenDesc = document.createElement('input');
-        hiddenDesc.type = "hidden";
-        hiddenDesc.name = "descripciones[]";
-        hiddenDesc.value = fileObj.descripcion || "";
-
-        descripcion.addEventListener('input', () => {
-            hiddenDesc.value = descripcion.value;
-        });
-
         div.appendChild(imgContainer);
         div.appendChild(portadaLabel);
         div.appendChild(titulo);
         div.appendChild(hiddenTitulo);
-        div.appendChild(descripcion);
-        div.appendChild(hiddenDesc);
         contenedor.appendChild(div);
     });
 
@@ -285,7 +264,8 @@ inputImagenes.addEventListener('change', e => {
         archivosSeleccionados.push({
             file,
             portada: archivosSeleccionados.length === 0,
-            descripcion: ""
+            titulo: "",
+            orden: archivosSeleccionados.length
         });
     });
     

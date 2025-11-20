@@ -128,20 +128,17 @@ def validar_archivo_imagen(file):
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, descripciones=None, orden_base=0):
+def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, orden_base=0):
     """
     Guarda las imágenes asociadas a un sitio:
       - Valida formato y tamaño
       - Sube al bucket de MinIO
       - Crea instancias de Imagen asociadas al sitio
       - Genera URL firmada
-      - Guarda título, descripción y orden
+      - Guarda título y orden
     """
     imagenes = []
     bucket_name = current_app.config["MINIO_BUCKET"]
-
-    if descripciones is None:
-        descripciones = {}
 
     for idx, file in enumerate(files):
         error = validar_archivo_imagen(file)
@@ -186,7 +183,6 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, p
             sitio_id=sitio_id,
             titulo=titulo,                  
             ruta=object_name,
-            descripcion=descripciones.get(str(idx), ""),
             orden=orden_base + idx,
             es_portada=(idx == portada_idx),
             url=url
@@ -274,14 +270,6 @@ def new():
 
             portada_idx = request.form.get("portada", type=int) or 0
 
-            descripciones = {}
-            descripciones_list = request.form.getlist("descripciones[]")
-            for i in range(len(archivos)):
-                if i < len(descripciones_list):
-                    desc = descripciones_list[i]
-                    if desc:
-                        descripciones[str(i)] = desc
-                        
             titulos = {}
             titulos_list = request.form.getlist("titulos[]")
             for i in range(len(archivos)):
@@ -297,7 +285,6 @@ def new():
                 minio_client,
                 titulos=titulos,
                 portada_idx=portada_idx,
-                descripciones=descripciones,
                 orden_base=0
             )
 
@@ -347,7 +334,6 @@ def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
             "id": img.id,
             "titulo": img.titulo,
             "url": url,
-            "descripcion": img.descripcion,
             "es_portada": img.es_portada
         })
 
@@ -420,13 +406,10 @@ def edit(id):
                 imagen_id = str(imagen.id)
 
                 titulo_key = f"titulos_existentes[{imagen_id}]"
-                desc_key = f"descripciones_existentes[{imagen_id}]"
 
                 titulo = form_dict.get(titulo_key, "").strip()
-                descripcion = form_dict.get(desc_key, "").strip()
 
                 imagen.titulo = titulo
-                imagen.descripcion = descripcion
                     
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             for img_id in imagenes_eliminar:
@@ -462,15 +445,11 @@ def edit(id):
                     )
                     db.session.flush()
                 
-                descripciones_nuevas = request.form.getlist("descripciones_nuevas[]")
                 titulos_nuevos = request.form.getlist("titulos_nuevos[]")
 
-                descripciones = {}
                 titulos = {}
 
                 for i in range(len(archivos)):
-                    if i < len(descripciones_nuevas):
-                        descripciones[str(i)] = descripciones_nuevas[i]
                     if i < len(titulos_nuevos):
                         titulos[str(i)] = titulos_nuevos[i]
                 
@@ -488,7 +467,6 @@ def edit(id):
                     minio_client=minio_client,
                     titulos=titulos,
                     portada_idx=portada_idx,
-                    descripciones=descripciones,
                     orden_base=orden_base
                 )
                 if error_imagen:
