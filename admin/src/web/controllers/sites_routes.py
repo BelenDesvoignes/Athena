@@ -25,14 +25,19 @@ import uuid, os
 """ Ruta basica para sitios turísticos. """
 bp_sitios = Blueprint("sitios", __name__, url_prefix="/sitios")
 
-"""Listado de sitios turísticos con paginación y búsqueda avanzada"""
-
-
 @bp_sitios.route("/", methods=["GET"])
 @login_required
 @permission_required("site_list")
 @maintenance_protected("admin")
 def list():
+    """
+    Lista los sitios históricos con soporte de filtros, búsqueda y paginación.
+
+    Filtra por ciudad, provincia, tags, estado de conservación, rango de fechas,
+    visibilidad y texto de búsqueda. Permite ordenar por nombre, ciudad o fecha
+    de registro, de forma ascendente o descendente. Devuelve una página con 25
+    sitios por defecto y datos adicionales para filtros en la plantilla.
+    """
     page = request.args.get("page", 1, type=int)
     order_by = request.args.get("order_by", "nombre")
     order_dir = request.args.get("order_dir", "asc")
@@ -112,6 +117,7 @@ MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 
 def allowed_file(filename):
+    """Valida extensión."""
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
@@ -128,20 +134,17 @@ def validar_archivo_imagen(file):
         return f"Archivo demasiado grande: {file.filename}"
     return None
 
-def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, descripciones=None, orden_base=0):
+def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, portada_idx=0, orden_base=0):
     """
     Guarda las imágenes asociadas a un sitio:
       - Valida formato y tamaño
       - Sube al bucket de MinIO
       - Crea instancias de Imagen asociadas al sitio
       - Genera URL firmada
-      - Guarda título, descripción y orden
+      - Guarda título y orden
     """
     imagenes = []
     bucket_name = current_app.config["MINIO_BUCKET"]
-
-    if descripciones is None:
-        descripciones = {}
 
     for idx, file in enumerate(files):
         error = validar_archivo_imagen(file)
@@ -186,7 +189,6 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, p
             sitio_id=sitio_id,
             titulo=titulo,                  
             ruta=object_name,
-            descripcion=descripciones.get(str(idx), ""),
             orden=orden_base + idx,
             es_portada=(idx == portada_idx),
             url=url
@@ -197,14 +199,15 @@ def guardar_imagenes_sitio(files, sitio_id, db, Imagen, minio_client, titulos, p
     db.session.add_all(imagenes)
     return imagenes, None
 
-
-"""Procedimiento para crear un nuevo sitio turístico"""
-
 @bp_sitios.route("/nuevo", methods=["GET", "POST"])
 @login_required
 @permission_required("site_new")
 @maintenance_protected("admin")
 def new():
+    """
+    Crea un nuevo sitio histórico con sus datos y sus imágenes.
+    Valida campos obligatorios, guarda imágenes en MinIO y registra la modificación.
+    """
     current_user = get_current_user()
     error = None
     tags = db.session.query(Tag).all()
@@ -274,14 +277,6 @@ def new():
 
             portada_idx = request.form.get("portada", type=int) or 0
 
-            descripciones = {}
-            descripciones_list = request.form.getlist("descripciones[]")
-            for i in range(len(archivos)):
-                if i < len(descripciones_list):
-                    desc = descripciones_list[i]
-                    if desc:
-                        descripciones[str(i)] = desc
-                        
             titulos = {}
             titulos_list = request.form.getlist("titulos[]")
             for i in range(len(archivos)):
@@ -297,7 +292,6 @@ def new():
                 minio_client,
                 titulos=titulos,
                 portada_idx=portada_idx,
-                descripciones=descripciones,
                 orden_base=0
             )
 
@@ -318,9 +312,7 @@ def new():
     return render_template("new_site.html", tags=tags, current_user=current_user)
 
 
-"""Logica para editar un sitio turístico existente"""
 
-@permission_required("site_update")
 @login_required
 @maintenance_protected("admin")
 def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
@@ -347,7 +339,6 @@ def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
             "id": img.id,
             "titulo": img.titulo,
             "url": url,
-            "descripcion": img.descripcion,
             "es_portada": img.es_portada
         })
 
@@ -358,6 +349,11 @@ def obtener_imagenes_sitio(sitio_id, db, Imagen, minio_client):
 @maintenance_protected("admin")
 @bp_sitios.route("/<int:id>/editar", methods=["GET", "POST"])
 def edit(id):
+    """
+    Edita un sitio histórico existente, actualizando sus datos y sus imágenes.
+    Gestiona validación de campos, eliminación y subida de imágenes, 
+    y marca la imagen portada correspondiente.
+    """
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404, "Sitio no encontrado.")
@@ -420,13 +416,10 @@ def edit(id):
                 imagen_id = str(imagen.id)
 
                 titulo_key = f"titulos_existentes[{imagen_id}]"
-                desc_key = f"descripciones_existentes[{imagen_id}]"
 
                 titulo = form_dict.get(titulo_key, "").strip()
-                descripcion = form_dict.get(desc_key, "").strip()
 
                 imagen.titulo = titulo
-                imagen.descripcion = descripcion
                     
             imagenes_eliminar = request.form.getlist("eliminar_imagenes[]")
             for img_id in imagenes_eliminar:
@@ -462,15 +455,11 @@ def edit(id):
                     )
                     db.session.flush()
                 
-                descripciones_nuevas = request.form.getlist("descripciones_nuevas[]")
                 titulos_nuevos = request.form.getlist("titulos_nuevos[]")
 
-                descripciones = {}
                 titulos = {}
 
                 for i in range(len(archivos)):
-                    if i < len(descripciones_nuevas):
-                        descripciones[str(i)] = descripciones_nuevas[i]
                     if i < len(titulos_nuevos):
                         titulos[str(i)] = titulos_nuevos[i]
                 
@@ -488,7 +477,6 @@ def edit(id):
                     minio_client=minio_client,
                     titulos=titulos,
                     portada_idx=portada_idx,
-                    descripciones=descripciones,
                     orden_base=orden_base
                 )
                 if error_imagen:
@@ -647,13 +635,15 @@ def detail(id):
         historial=historial,
     )
 
-"""Elimina un sitio turístico"""
-
 @bp_sitios.route("/<int:id>/eliminar", methods=["POST"])
 @login_required
 @permission_required("site_delete")
 @maintenance_protected("admin")
 def remove(id):
+    """
+    Elimina un sitio histórico existente de la base de datos.
+    Registra la acción como una modificación realizada por el usuario actual.
+    """
     sitio = db.session.get(Sitio, id)
     if not sitio:
         abort(404)
@@ -666,13 +656,15 @@ def remove(id):
     return redirect(url_for("sitios.list"))
 
 
-""" Logica para la exportacion de sitios a CSV """
-
 @bp_sitios.route("/exportar", methods=["GET"])
 @login_required
 @permission_required("export_csv")
 @maintenance_protected("admin")
 def export():
+    """
+    Exporta todos los sitios históricos a un archivo CSV descargable.
+    Incluye datos básicos y coordenadas de cada sitio.
+    """
     sitios = db.session.query(
         Sitio,
         func.ST_Y(Sitio.ubicacion).label("latitud"),
@@ -728,6 +720,10 @@ def export():
     )
 
 def get_current_user():
+    """
+    Obtiene el usuario actualmente logueado a partir de la sesión.
+    Devuelve None si no hay usuario logueado.
+    """
     user_id = session.get("user_id")
     if not user_id:
         return None
@@ -735,14 +731,26 @@ def get_current_user():
 
 
 def is_admin(user):
+    """
+    Verifica si el usuario tiene rol de administrador.
+    Devuelve True si el rol es 1 (admin), False en caso contrario.
+    """
     return user.role_id == 1
 
 
 def is_editor_or_admin(user):
+    """
+    Verifica si el usuario es editor o administrador.
+    Devuelve True si el rol es 1 (admin) o 2 (editor), False en caso contrario.
+    """
     return user.role_id in [1, 2]
 
 
 def extract_coords(ubicacion):
+    """
+    Extrae latitud y longitud de un objeto geométrico.
+    Devuelve un diccionario con keys 'latitud' y 'longitud'.
+    """
     geom = to_shape(ubicacion)
 
     resultado = {"latitud": float(geom.y), "longitud": float(geom.x)}
