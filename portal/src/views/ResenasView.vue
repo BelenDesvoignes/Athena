@@ -1,5 +1,6 @@
 <template>
   <div class="reviews-page">
+    <BackButton />
     <header class="page-header">
       <h1>📝 Mis Reseñas</h1>
       <p class="subtitle">Aquí puedes ver todas tus reseñas y su estado de aprobación.</p>
@@ -66,6 +67,7 @@
 import { ref, onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
+import BackButton from '@/components/BackButton.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();

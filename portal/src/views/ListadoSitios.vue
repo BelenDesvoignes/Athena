@@ -1,8 +1,12 @@
+
 <template>
   <div class="listado-sitios-page">
+    
     <header>
+      <BackButton />
       <h1>Listado de Sitios Históricos</h1>
       <FiltersSite ref="filtersSiteRef" />
+      
 
       <div class="map-controls">
         <button
@@ -86,6 +90,7 @@ import { useRoute, useRouter } from 'vue-router'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
 import SiteMap from '@/components/SiteMap.vue'
+import BackButton from '@/components/BackButton.vue'
 
 const route = useRoute()
 const router = useRouter()

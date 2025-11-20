@@ -3,12 +3,11 @@
     <div v-if="isLoading" class="status-message">
       Cargando detalles del sitio...
     </div>
-
     <div v-else-if="error" class="status-message error">
       ❌ {{ errorMessage }}
     </div>
-
     <section v-else-if="site" class="site-content">
+      <BackButton />
       <header class="detail-header">
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
@@ -140,6 +139,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import BackButton from "@/components/BackButton.vue";
 
 const route = useRoute();
 const router = useRouter();

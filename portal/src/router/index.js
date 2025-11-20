@@ -35,17 +35,17 @@ const router = createRouter({
     name: "Mantenimiento",
     component: () => import("../views/Mantenimiento.vue")
     },
-
-    // --- Ruta deshabilitada temporalmente ---
-    // {
-    //   path: '/mis-resenas',
-    //   name: 'mis-resenas',
-    //   component: () => import('../views/ResenasView.vue')
-    // }
+    {
+    path: '/mis-resenas',
+    name: 'mis-resenas',
+    component: () => import('../views/ResenasView.vue')
+    }
 
     // ... otras rutas (About, Login, etc.)
   ]
+  
 })
+
 
 router.beforeEach(async (to, from, next) => {
   if (to.name === "Mantenimiento") {
