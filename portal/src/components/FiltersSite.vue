@@ -1,79 +1,100 @@
 <template>
   <div class="filtros-container">
-      <input
-        v-model="searchTerm"
-        @input="updateFilters"
-        type="text"
-        placeholder="Buscar sitio..."
-        class="input-filtro"
-      />
+    <input
+      v-model="searchTerm"
+      @input="updateFilters"
+      type="text"
+      placeholder="Buscar sitio..."
+      class="input-filtro"
+    />
 
-      <input
-        v-model="city"
-        @input="updateFilters"
-        type="text"
-        placeholder="Ciudad (ej: Epecuén)"
-        class="input-filtro"
-      />
+    <input
+      v-model="city"
+      @input="updateFilters"
+      type="text"
+      placeholder="Ciudad (ej: Epecuén)"
+      class="input-filtro"
+    />
 
-      <select v-model="province" @change="updateFilters" class="select-filtro">
-        <option value="">Todas las provincias</option>
-        <option
-          v-for="prov in provinces"
-          :key="prov"
-          :value="prov"
-        >
-          {{ prov }}
-        </option>
-      </select>
+    <select v-model="province" @change="updateFilters" class="select-filtro">
+      <option value="">Todas las provincias</option>
+      <option
+        v-for="prov in provinces"
+        :key="prov"
+        :value="prov"
+      >
+        {{ prov }}
+      </option>
+    </select>
 
-      <select v-model="state" @change="updateFilters" class="select-filtro">
-        <option value="">Estado de conservación</option>
-        <option value="EXCELENTE">Excelente</option>
-        <option value="BUENO">Bueno</option>
-        <option value="REGULAR">Regular</option>
-        <option value="MALO">Malo</option>
-      </select>
+    <select v-model="state" @change="updateFilters" class="select-filtro">
+      <option value="">Estado de conservación</option>
+      <option value="EXCELENTE">Excelente</option>
+      <option value="BUENO">Bueno</option>
+      <option value="REGULAR">Regular</option>
+      <option value="MALO">Malo</option>
+    </select>
 
-      <select v-model="orderByCombined" @change="handleCombinedOrderChange" class="select-filtro">
-        <option value="">Ordenar por...</option>
-        <option value="registrado_desc">Más recientes</option>
-        <option value="registrado_asc">Más antiguos</option>
-        <option value="nombre_asc">Nombre (A-Z)</option>
-        <option value="nombre_desc">Nombre (Z-A)</option>
-        <option value="calificacion_desc">Mejor calificados</option>
-        <option value="calificacion_asc">Peor calificados</option>
-      </select>
+    <select v-model="orderByCombined" @change="handleCombinedOrderChange" class="select-filtro">
+      <option value="">Ordenar por...</option>
+      <option value="registrado_desc">Más recientes</option>
+      <option value="registrado_asc">Más antiguos</option>
+      <option value="nombre_asc">Nombre (A-Z)</option>
+      <option value="nombre_desc">Nombre (Z-A)</option>
+      <option value="calificacion_desc">Mejor calificados</option>
+      <option value="calificacion_asc">Peor calificados</option>
+    </select>
 
-      <div class="tag-filter-group">
-        <label>Tags:</label>
-        <div class="tags-list">
-            <label v-for="tag in availableTags" :key="tag.id" class="tag-checkbox">
-                <input
-                    type="checkbox"
-                    :value="tag.id"
-                    v-model="selectedTags"
-                    @change="updateFilters"
-                />
-                <span>{{ tag.name }}</span>
-            </label>
-        </div>
+    <!-- NUEVO: Filtro por Favoritos (visible solo si hay token) -->
+    <div v-if="token" class="favorites-filter-group">
+        <label class="favorite-checkbox">
+            <input
+                type="checkbox"
+                v-model="onlyFavorites"
+                @change="updateFilters"
+            />
+            <span>❤️ Solo mis Favoritos</span>
+        </label>
+    </div>
+    <!-- FIN NUEVO -->
+
+    <div class="tag-filter-group">
+      <label>Tags:</label>
+      <div class="tags-list">
+        <label v-for="tag in availableTags" :key="tag.id" class="tag-checkbox">
+          <input
+            type="checkbox"
+            :value="tag.id"
+            v-model="selectedTags"
+            @change="updateFilters"
+          />
+          <span>{{ tag.name }}</span>
+        </label>
       </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth' // Importado
+import { storeToRefs } from 'pinia' // Importado
 
 const router = useRouter()
 const route = useRoute()
+
+// Inicialización de Auth Store para obtener el token
+const authStore = useAuthStore()
+const { token } = storeToRefs(authStore) // Obteniendo el token
 
 // Inicialización de filtros desde los Query Params
 const searchTerm = ref(route.query.search || '')
 const province = ref(route.query.province || '')
 const city = ref(route.query.city || '')
 const state = ref(route.query.state || '')
+// NUEVO: Inicialización del filtro de favoritos
+const onlyFavorites = ref(route.query.favorites === 'true')
 
 // Variables que se envían al router
 const orderBy = ref(route.query.order_by || 'registrado')
@@ -117,7 +138,10 @@ const fetchTags = async () => {
 // Inicializa los tags seleccionados desde los query params
 const initSelectedTags = () => {
     if (route.query.tags) {
-        selectedTags.value = route.query.tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      // Se asegura de que la URL maneje números (aunque la API podría aceptar strings)
+        selectedTags.value = Array.isArray(route.query.tags)
+            ? route.query.tags.map(id => parseInt(id)).filter(id => !isNaN(id))
+            : route.query.tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
     } else {
         selectedTags.value = [];
     }
@@ -143,6 +167,8 @@ const handleCombinedOrderChange = () => {
 // Actualizar filtros y push a router
 const updateFilters = () => {
   const tagsParam = selectedTags.value.length > 0 ? selectedTags.value.join(',') : undefined;
+  // NUEVO: Determinar si se envía el filtro de favoritos
+  const favoritesParam = onlyFavorites.value ? 'true' : undefined;
 
   const query = {
     search: searchTerm.value || undefined,
@@ -150,6 +176,7 @@ const updateFilters = () => {
     city: city.value || undefined,
     state: state.value || undefined,
     tags: tagsParam,
+    favorites: favoritesParam, // Incluyendo el nuevo parámetro
     order_by: orderBy.value || 'registrado',
     order: orderDirection.value || 'desc',
     page: 1
@@ -169,6 +196,7 @@ const resetForm = () => {
     province.value = '';
     city.value = '';
     state.value = '';
+    onlyFavorites.value = false; // Reset de favoritos
     selectedTags.value = [];
     orderBy.value = 'registrado';
     orderDirection.value = 'desc';
@@ -197,6 +225,15 @@ watch(
     }
 );
 
+// Sincronizar UI de favoritos si cambia URL externa
+watch(
+    () => route.query.favorites,
+    (newFavorites) => {
+        onlyFavorites.value = newFavorites === 'true';
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
     fetchProvinces();
     fetchTags();
@@ -219,6 +256,32 @@ onMounted(() => {
   border-radius: 6px;
   font-size: 1em;
 }
+
+/* NUEVOS ESTILOS PARA FAVORITOS */
+.favorites-filter-group {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid #e6e3e3;
+    border-radius: 6px;
+    background-color: #fff8f8; /* Fondo suave para destacar */
+}
+
+.favorite-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    color: #cc0000; /* Rojo suave para el texto */
+}
+
+.favorite-checkbox input[type="checkbox"] {
+    transform: scale(1.2);
+    margin-right: 8px;
+    accent-color: #cc0000;
+}
+/* FIN NUEVOS ESTILOS */
+
 
 /* estilos de tags */
 .tag-filter-group {
