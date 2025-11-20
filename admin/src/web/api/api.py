@@ -1,6 +1,6 @@
 from sqlalchemy import func, or_, desc, asc, distinct, and_
 from flask import Blueprint, jsonify, request, g, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, current_user
 from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
 from math import ceil
 from marshmallow import ValidationError
@@ -212,6 +212,7 @@ def get_sites(validated_params):
 
 
 @api_bp.get("/sites/<int:site_id>")
+@jwt_required(optional=True)
 def get_site_detail(site_id):
     sitio = db.session.query(Sitio).filter_by(id=site_id, visible=True).first()
     if not sitio:
@@ -225,6 +226,18 @@ def get_site_detail(site_id):
     promedio = round(promedio, 2) if promedio else 0
 
     cover_url, cover_title, imagenes_data = get_site_images(sitio)
+
+    is_favorite_for_user = False
+    user_id = get_jwt_identity()
+
+    if user_id:
+        user_id_int = int(user_id)
+        existing_fav = db.session.query(Favorite).filter_by(
+            user_id=user_id_int,
+            sitio_id=sitio.id
+        ).first()
+        if existing_fav:
+            is_favorite_for_user = True
 
     data = {
         "id": sitio.id,
@@ -243,7 +256,8 @@ def get_site_detail(site_id):
             "url": cover_url,
             "title": cover_title
         },
-        "images": imagenes_data
+        "images": imagenes_data,
+        "is_favorite": is_favorite_for_user
     }
 
     return jsonify(data)

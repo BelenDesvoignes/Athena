@@ -9,9 +9,6 @@ from sqlalchemy import func, and_, asc, desc
 from geoalchemy2.functions import ST_Y, ST_X
 from src.core.api_validations import validate_api_params, SiteListParams
 
-# --- IMPORTACIÓN CRÍTICA ---
-# Si 'get_site_images' está definida en tu archivo api.py, necesitas cambiar esta línea
-# para que coincida con la ruta real (ej. from src.routes.api import get_site_images)
 from src.web.api.api import get_site_images
 
 
@@ -84,7 +81,7 @@ def list_user_favorites(validated_params):
     Lista paginada de sitios marcados como favoritos por el usuario autenticado.
     """
 
-    # 1. Autenticación y Parámetros
+    #  Autenticación y Parámetros
     user_id = get_jwt_identity()
     user_id_int = int(user_id)
 
@@ -93,7 +90,7 @@ def list_user_favorites(validated_params):
     order_by = validated_params.order_by
     order_direction = validated_params.order
 
-    # 2. Query Base con Promedio de Rating
+    #  Query Base con Promedio de Rating
     avg_rating = func.coalesce(
         func.avg(Review.rating).filter(Review.status == 'APROBADA'),
         0
@@ -107,14 +104,14 @@ def list_user_favorites(validated_params):
         .group_by(Sitio.id, Imagen.id)
     )
 
-    # 3. FILTRO CRÍTICO: Favoritos del usuario
+    #  FILTRO CRÍTICO: Favoritos del usuario
     query = query.join(
         Favorite, Sitio.id == Favorite.sitio_id
     ).filter(
         Favorite.user_id == user_id_int
     )
 
-    # 4. Ordenamiento
+    #  Ordenamiento
     sort_column = None
     if order_by == "nombre":
         sort_column = Sitio.nombre
