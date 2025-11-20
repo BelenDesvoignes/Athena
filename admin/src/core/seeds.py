@@ -150,6 +150,7 @@ def seed_tags():
     tags_nombres = [
         "Histórico",
         "Cultura",
+        "Museo",
         "Deporte",
         "Gastronomía",
         "Natural",
