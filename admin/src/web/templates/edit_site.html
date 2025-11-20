@@ -244,65 +244,70 @@
 
         // Renderizar imágenes nuevas
         nuevasImagenes.forEach((fileObj, idx) => {
-            const div = document.createElement('div');
-            div.className = 'imagen-item bg-dark p-3 rounded';
-            div.style.display = "inline-block";
-            div.style.margin = "10px";
-            div.style.textAlign = "center";
-            div.style.position = "relative";
-            div.style.verticalAlign = "top";
-            div.style.width = "220px";
+        const div = document.createElement('div');
+        div.className = 'imagen-item bg-dark p-3 rounded';
+        div.style.display = "inline-block";
+        div.style.margin = "10px";
+        div.style.textAlign = "center";
+        div.style.position = "relative";
+        div.style.verticalAlign = "top";
+        div.style.width = "220px";
 
-            const imgEl = document.createElement('img');
-            imgEl.src = URL.createObjectURL(fileObj.file);
-            imgEl.width = 200;
-            imgEl.height = 150;
-            imgEl.style.objectFit = "cover";
-            imgEl.style.borderRadius = "6px";
-            div.appendChild(imgEl);
+        const imgEl = document.createElement('img');
+        imgEl.src = URL.createObjectURL(fileObj.file);
+        imgEl.width = 200;
+        imgEl.height = 150;
+        imgEl.style.objectFit = "cover";
+        imgEl.style.borderRadius = "6px";
+        div.appendChild(imgEl);
 
-            if (!fileObj.portada) {
-                const boton = document.createElement('button');
-                boton.type = "button";
-                boton.textContent = "×";
-                boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
-                boton.addEventListener('click', () => eliminarNueva(idx));
-                div.appendChild(boton);
-            }
+        if (!fileObj.portada) {
+            const boton = document.createElement('button');
+            boton.type = "button";
+            boton.textContent = "×";
+            boton.className = "btn btn-danger btn-sm position-absolute top-0 end-0";
+            boton.addEventListener('click', () => eliminarNueva(idx));
+            div.appendChild(boton);
+        }
 
-            const label = document.createElement('label');
-            label.style.display = "block";
-            label.style.marginTop = "8px";
-            label.style.textAlign = "center";
-            label.style.color = "white";
-            label.innerText = "Portada ";
+        const label = document.createElement('label');
+        label.style.display = "block";
+        label.style.marginTop = "8px";
+        label.style.textAlign = "center";
+        label.style.color = "white";
+        label.innerText = "Portada ";
 
-            const radio = document.createElement('input');
-            radio.type = "radio";
-            radio.name = "portada_radio";
-            radio.value = "nueva-" + idx;
-            radio.checked = fileObj.portada;
-            radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
-            label.appendChild(radio);
-            div.appendChild(label);
+        const radio = document.createElement('input');
+        radio.type = "radio";
+        radio.name = "portada_radio";
+        radio.value = "nueva-" + idx;
+        radio.checked = fileObj.portada;
+        radio.addEventListener('change', () => marcarComoPortadaNueva(idx));
+        label.appendChild(radio);
+        div.appendChild(label);
 
-            const titulo = document.createElement("input");
-            titulo.type = "text";
-            titulo.className = "form-control form-control-sm mt-2";
-            titulo.placeholder = "Título...";
-            titulo.required = true;
-            titulo.addEventListener("input", e => fileObj.titulo = e.target.value);
+        const titulo = document.createElement("input");
+        titulo.type = "text";
+        titulo.className = "form-control form-control-sm mt-2 input-titulo-nueva";
+        titulo.placeholder = "Título...";
+        titulo.required = true;
+        titulo.value = fileObj.titulo || "";
 
-            const hiddenTitulo = document.createElement("input");
-            hiddenTitulo.type = "hidden";
-            hiddenTitulo.name = "titulos_nuevos[]";
-            titulo.addEventListener("input", () => hiddenTitulo.value = titulo.value);
+        const hiddenTitulo = document.createElement("input");
+        hiddenTitulo.type = "hidden";
+        hiddenTitulo.name = "titulos_nuevos[]";
+        hiddenTitulo.value = fileObj.titulo || "";
 
-            div.appendChild(titulo);
-            div.appendChild(hiddenTitulo);
-
-            contenedor.appendChild(div);
+        titulo.addEventListener("input", e => {
+            fileObj.titulo = e.target.value;
+            hiddenTitulo.value = fileObj.titulo;
         });
+
+        div.appendChild(titulo);
+        div.appendChild(hiddenTitulo);
+
+        contenedor.appendChild(div);
+    });
 
         actualizarContador();
         actualizarInputFiles();
