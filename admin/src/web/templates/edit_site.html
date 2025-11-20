@@ -94,13 +94,11 @@
                         <span id="file-count" class="ms-2 text-info"></span>
                     </div>
                 </div>
-
                 <div id="imagenes-todas" style="margin-top: 15px;">
                     {% for img in imagenes_info %}
                     <div class="imagen-item bg-dark p-2 rounded" 
                         data-id="{{ img.id }}" 
                         data-url="{{ img.url }}" 
-                        data-descripcion="{{ img.descripcion or '' }}"
                         data-titulo="{{ img.titulo }}"
                         data-portada="{{ 'true' if img.es_portada else 'false' }}"
                         data-nueva="false"
@@ -156,7 +154,6 @@
             id: div.dataset.id,
             url: div.dataset.url,
             titulo: div.dataset.titulo || "",
-            descripcion: div.dataset.descripcion || "",
             portada: div.dataset.portada === 'true',
             nueva: false
         });
@@ -241,25 +238,6 @@
 
             div.appendChild(titulo);
             div.appendChild(hiddenTitulo);
-
-            const descripcion = document.createElement('input');
-            descripcion.type = "text";
-            descripcion.className = "form-control form-control-sm mt-2";
-            descripcion.placeholder = "Descripción...";
-            descripcion.value = img.descripcion || "";
-            descripcion.style.backgroundColor = "#222";
-            descripcion.style.color = "#fff";
-            descripcion.style.border = "1px solid #555";
-            descripcion.addEventListener('input', e => img.descripcion = e.target.value);
-
-            const hiddenDesc = document.createElement('input');
-            hiddenDesc.type = "hidden";
-            hiddenDesc.name = `descripciones_existentes[${img.id}]`;
-            hiddenDesc.value = img.descripcion || "";
-            descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
-
-            div.appendChild(descripcion);
-            div.appendChild(hiddenDesc);
             
             contenedor.appendChild(div);
         });
@@ -323,31 +301,13 @@
             div.appendChild(titulo);
             div.appendChild(hiddenTitulo);
 
-            const descripcion = document.createElement('input');
-            descripcion.type = "text";
-            descripcion.className = "form-control form-control-sm mt-2";
-            descripcion.placeholder = "Descripción...";
-            descripcion.value = fileObj.descripcion || "";
-            descripcion.style.backgroundColor = "#222";
-            descripcion.style.color = "#fff";
-            descripcion.style.border = "1px solid #555";
-            descripcion.addEventListener('input', e => fileObj.descripcion = e.target.value);
-
-            const hiddenDesc = document.createElement('input');
-            hiddenDesc.type = "hidden";
-            hiddenDesc.name = "descripciones_nuevas[]";
-            hiddenDesc.value = fileObj.descripcion || "";
-            descripcion.addEventListener('input', () => hiddenDesc.value = descripcion.value);
-
-            div.appendChild(descripcion);
-            div.appendChild(hiddenDesc);
-
             contenedor.appendChild(div);
         });
 
         actualizarContador();
         actualizarInputFiles();
     }
+
 
     function eliminarNueva(idx) {
         if (nuevasImagenes[idx].portada) {
@@ -422,7 +382,6 @@
                 file,
                 portada: nuevasImagenes.length === 0 && imagenesExistentes.every(f => !f.portada),
                 titulo: "",
-                descripcion: ""
             });
         });
 

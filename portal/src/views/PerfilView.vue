@@ -9,6 +9,14 @@ const router = useRouter()
 if (!authStore.isLoggedIn) {
   router.push('/')
 }
+
+const logout = () => {
+  const confirmar = window.confirm("¿Estás seguro de que querés cerrar sesión?")
+  if (confirmar) {
+    authStore.logout()
+    router.push('/')
+  }
+}
 </script>
 
 <template>
@@ -29,12 +37,16 @@ if (!authStore.isLoggedIn) {
     <hr class="divider"/>
 
     <div class="profile-actions">
-      <button @click="router.push('/mis-resenas')" class="sidebar-link">
-        Mis Reseñas
+      <button @click="router.push('/mis-resenas')" class="profile-btn">
+        📝 Mis Reseñas
       </button>
 
-      <button @click="router.push('/mis-favoritos')" class="sidebar-link">
-        Sitios Favoritos
+      <button @click="router.push('/mis-favoritos')" class="profile-btn">
+        ❤️ Sitios Favoritos
+      </button>
+
+      <button @click="logout();" class="profile-btn logout-btn">
+        🚪 Cerrar Sesión
       </button>
     </div>
 
@@ -82,22 +94,39 @@ if (!authStore.isLoggedIn) {
 .profile-actions {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  align-items: center;
+  gap: 18px;
+  margin-top: 25px;
 }
 
 .profile-btn {
-  background-color: #0d055c;
+  width: 80%;
+  max-width: 280px;
+  background-color: #071a78;
   color: white;
-  padding: 14px 18px;
-  font-size: 1.1rem;
-  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 1.05rem;
+  border-radius: 12px;
   border: none;
-  text-align: center;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  text-align: center;
+  font-weight: 500;
+  transition: 0.25s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
 .profile-btn:hover {
-  opacity: 0.85;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  background-color: #0056b3;
+
+}
+
+.logout-btn {
+  background-color: #8f0303;
+}
+
+.logout-btn:hover {
+  background-color: #d40000;
 }
 </style>

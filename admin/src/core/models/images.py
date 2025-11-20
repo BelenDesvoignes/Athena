@@ -11,7 +11,6 @@ class Imagen(Base):
 
     ruta: Mapped[str] = mapped_column(String(500), nullable=False)
     titulo: Mapped[str] = mapped_column(String(150), nullable=False)
-    descripcion: Mapped[str] = mapped_column(String(300), nullable=True)
     orden: Mapped[int] = mapped_column(Integer, default=0)
     es_portada: Mapped[bool] = mapped_column(Boolean, default=False)
     creada: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nullable=False)

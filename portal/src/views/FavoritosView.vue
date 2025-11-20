@@ -2,7 +2,7 @@
   <div class="favoritos-page">
     <BackButton />
     <header class="page-header">
-      <h1>⭐ Mis Sitios Favoritos</h1>
+      <h1>❤️ Mis Sitios Favoritos</h1>
       <p class="subtitle">Aquí encontrarás todos los lugares que has marcado como preferidos.</p>
     </header>
 
@@ -16,12 +16,12 @@
           Por favor, <router-link to="/login">inicia sesión</router-link> para ver esta sección.
         </p>
       </div>
-      
+
       <div v-else-if="sites.length > 0" class="list-grid">
-        <SiteCard 
-          v-for="site in sites" 
-          :key="site.id" 
-          :site="site" 
+        <SiteCard
+          v-for="site in sites"
+          :key="site.id"
+          :site="site"
         />
       </div>
       <div v-else class="empty-message message-box">
@@ -61,8 +61,8 @@ const fetchFavorites = async () => {
     errorMessage.value = '';
     errorStatusCode.value = null;
 
-    const url = `${API_BASE_URL}/me/favorites`; 
-    
+    const url = `${API_BASE_URL}/me/favorites`;
+
     try {
         const response = await fetch(url, {
             headers: {
@@ -82,7 +82,7 @@ const fetchFavorites = async () => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         // Extraemos la lista de favoritos desde data.data
         sites.value = data.data || [];

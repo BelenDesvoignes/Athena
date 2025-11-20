@@ -33,12 +33,11 @@ def login_or_create_user():
     Retorna:
         JSON con los datos del usuario y mensaje correspondiente.
     """
-    
-    
+
     if request.method == "OPTIONS":
         return "", 200
 
-    
+
     data = request.get_json()
     print("💾 Datos recibidos:", data)
     email = data.get("email")
@@ -47,14 +46,13 @@ def login_or_create_user():
     if not email:
         return jsonify({"error": "Falta el campo 'email'"}), 400
 
-    
-   
+    # Construir la consulta de selección
     stmt = select(PublicUser).where(PublicUser.email == email)
-    
+
 
     user = db.session.execute(stmt).scalar_one_or_none()
 
-    
+
     if not user:
         user = PublicUser(email=email, name=name)
         db.session.add(user)

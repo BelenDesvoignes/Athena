@@ -31,19 +31,28 @@
           <h2>Descripción Breve</h2>
           <p>{{ site.short_description }}</p>
 
-          <div v-if="site.tags && site.tags.length" class="tags-section">
-            <span v-for="tag in site.tags" :key="tag.id" class="tag-badge">{{ tag.name }}</span>
-          </div>
+          <RouterLink
+            v-for="tag in site.tags"
+            :key="tag.id"
+            :to="{
+              path: '/sitios',
+              query: { tags: tag.id }
+            }"
+            class="tag-badge">
+            {{ tag.name }}
+          </RouterLink>
+
 
           <div class="action-buttons">
-            <!-- Botón de Favorito añadido aquí -->
-            <button v-if="token" @click="toggleFavorite" :class="['favorite-button', { 'is-favorite': isFavorite }]"
-              :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'">
+            <!-- Botón de Favorito: Ahora SIEMPRE visible, llama a handleFavoriteAction -->
+            <button
+              @click="handleFavoriteAction"
+              :class="['favorite-button', { 'is-favorite': isFavorite }]"
+              :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'"
+            >
               <span class="heart-icon">{{ isFavorite ? '❤️' : '🤍' }}</span>
               {{ isFavorite ? 'En Favoritos' : 'Añadir a Favoritos' }}
             </button>
-            <p v-else class="login-tip">Inicia sesión para usar Favoritos.</p>
-            <!-- Fin Botón de Favorito -->
           </div>
         </div>
       </div>
@@ -61,8 +70,17 @@
 
       <section class="full-description-section">
         <h2>Detalle del Sitio</h2>
-        <p>{{ site.description || site.short_description }}</p>
+
+        <p>
+          <!-- Mostrar corto o largo según estado -->
+          {{ showFull ? site.description : site.short_description }}
+        </p>
+
+        <button v-if="site.description" @click="toggleDescription" class="ver-mas-btn">
+          {{ showFull ? 'Ver menos' : 'Ver más' }}
+        </button>
       </section>
+
 
       <hr>
       <section class="map-section">
@@ -163,6 +181,7 @@
 
     </section>
 
+    <!-- Modal de Galería -->
     <div v-if="isModalOpen" class="image-modal" @click="closeModal">
       <button class="modal-close" @click.stop="closeModal" aria-label="Cerrar">✕</button>
 
@@ -174,6 +193,27 @@
       <button class="modal-nav right" @click.stop="nextImage" aria-label="Siguiente">▶</button>
     </div>
 
+    <!-- Modal de Aviso de Login/Redirección (AHORA SOLO AVISA) -->
+    <div v-if="showLoginPrompt" class="login-modal-overlay">
+        <div class="login-modal-content">
+            <h3 class="text-xl font-bold">Inicia Sesión Requerido</h3>
+            <p class="mt-2 text-gray-700 font-bold">
+                Para marcar este sitio como favorito, necesitas iniciar sesión.
+            </p>
+            <p class="mt-2 text-gray-700 text-sm">
+                Por favor, utiliza el botón "Iniciar Sesión con Google".
+            </p>
+            <div class="mt-4 flex justify-end gap-3">
+                <button @click="showLoginPrompt = false" class="btn-cancel">
+                    Cerrar
+                </button>
+                <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
+                <button @click="showLoginPrompt = false" class="btn-primary">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -187,14 +227,20 @@ import "leaflet/dist/leaflet.css";
 
 const authStore = useAuthStore();
 const route = useRoute();
-const router = useRouter();
+const router = useRouter(); // Se mantiene aunque no se use para redirección
+const authStore = useAuthStore();
 const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
+const showFull = ref(false);
+const toggleDescription = () => {
+  showFull.value = !showFull.value;
+};
 
 const site = ref(null);
 const isLoading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
 const isFavorite = ref(false); // Estado para el favorito
+const showLoginPrompt = ref(false); // Estado para mostrar el modal de login
 
 const siteId = route.params.id;
 
@@ -228,6 +274,20 @@ const nonCoverImages = computed(() => {
       alt_text: i.title || `Imagen del sitio ${site.value.name}`
     }));
 });
+
+// Nota: La función redirectToLogin ha sido eliminada. El modal ahora solo informa.
+
+// Función de control centralizada para el botón de favorito
+const handleFavoriteAction = () => {
+    if (!token.value) {
+        // Si no está autenticado, muestra el modal y pide iniciar sesión
+        showLoginPrompt.value = true;
+    } else {
+        // Si está autenticado, ejecuta la función de toggle (ya existente)
+        toggleFavorite();
+    }
+}
+
 
 function openByIndex(idx) {
   buildImagesListIfNeeded();
@@ -622,6 +682,64 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* -------------------------------------- */
+/* ESTILOS DEL MODAL DE LOGIN (NUEVO) */
+/* -------------------------------------- */
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9990; /* Detrás del modal de imágenes */
+}
+
+.login-modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.login-modal-content h3 {
+    color: #071a78;
+    margin-top: 0;
+}
+
+.btn-primary {
+  background-color: #071a78;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #0033aa;
+}
+
+.btn-cancel {
+  background-color: #e0e0e0;
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.btn-cancel:hover {
+    background-color: #ccc;
+}
+/* Fin Estilos Modal Login */
+
+
+/* Estilos existentes */
+
 .site-detail-page {
   padding: 15px;
   max-width: 1200px;
@@ -761,8 +879,8 @@ onBeforeUnmount(() => {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid #ccc;
-  background-color: white;
+  border: 2px solid rgb(107, 106, 106);
+  background-color: rgb(167, 165, 165);
   color: #333;
 }
 
@@ -773,8 +891,7 @@ onBeforeUnmount(() => {
 }
 
 .favorite-button.is-favorite {
-  background-color: #ff4d4d;
-  /* Rojo para favorito */
+  background-color: #af6868; /* Rojo para favorito */
   color: white;
   border-color: #ff4d4d;
 }
@@ -1200,4 +1317,20 @@ onBeforeUnmount(() => {
   }
 
 }
+
+.ver-mas-btn {
+  margin-top: 10px;
+  background: none;
+  color: #0077cc;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+}
+
+.ver-mas-btn:hover {
+  text-decoration: underline;
+}
+
 </style>
+
