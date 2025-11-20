@@ -19,7 +19,23 @@ favorites_bp = Blueprint("api_favorites", __name__, url_prefix="/api")
 @favorites_bp.post("/sites/<int:site_id>/favorite")
 @jwt_required()
 def add_favorite(site_id):
-    """Marca un sitio como favorito para el usuario autenticado."""
+    """
+    Marca un sitio específico como favorito para el usuario autenticado.
+
+    Requiere autenticación JWT. El ID del usuario se obtiene del token.
+    Si el sitio no existe o no es visible, devuelve un error 404.
+    Si ya es favorito, devuelve un estado 200 sin hacer cambios.
+
+    Args:
+        site_id (int): El ID del sitio a marcar como favorito, pasado en la URL.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP.
+               - 201 Created: Sitio marcado como favorito con éxito.
+               - 200 OK: El sitio ya era favorito.
+               - 404 Not Found: El sitio no existe o no es visible.
+               - 500 Internal Server Error: Error en la base de datos al intentar guardar.
+    """
     # Nota: El token JWT contiene el 'public_users.id'
     user_id = int(get_jwt_identity())
 
@@ -51,7 +67,21 @@ def add_favorite(site_id):
 @favorites_bp.delete("/sites/<int:site_id>/favorite")
 @jwt_required()
 def remove_favorite(site_id):
-    """Elimina un sitio de la lista de favoritos del usuario autenticado."""
+    """
+    Elimina un sitio específico de la lista de favoritos del usuario autenticado.
+
+    Requiere autenticación JWT. El ID del usuario se obtiene del token.
+    Si el sitio no existe en la lista de favoritos del usuario, la operación
+    simplemente devuelve un éxito (200 OK) ya que el objetivo (eliminarlo) se cumple.
+
+    Args:
+        site_id (int): El ID del sitio a remover de la lista de favoritos, pasado en la URL.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP.
+               - 200 OK: Sitio eliminado de favoritos con éxito (o no estaba en la lista).
+               - 500 Internal Server Error: Error en la base de datos al intentar eliminar.
+    """
     user_id = int(get_jwt_identity())
 
     #  Buscar y eliminar el favorito
@@ -75,10 +105,31 @@ def remove_favorite(site_id):
 @favorites_bp.get("/me/favorites")
 @favorites_bp.route("/me/favorites/", methods=["GET"])
 @validate_api_params(SiteListParams)
-@jwt_required() # <--- Autenticación OBLIGATORIA
+@jwt_required()
 def list_user_favorites(validated_params):
     """
     Lista paginada de sitios marcados como favoritos por el usuario autenticado.
+
+    Esta función requiere autenticación JWT. Filtra los sitios para incluir solo
+    aquellos que el usuario actual ha marcado como favoritos, aplicando paginación
+    y opciones de ordenamiento.
+
+    Args:
+        validated_params (SiteListParams): Objeto que contiene los parámetros
+            validados de la consulta (query parameters), incluyendo:
+            - page (int): Número de la página a mostrar.
+            - per_page (int): Cantidad de elementos por página.
+            - order_by (str): Campo por el cual ordenar ('nombre', 'registrado', 'calificacion').
+            - order (str): Dirección del ordenamiento ('asc' o 'desc').
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP (200 OK).
+            El JSON incluye:
+            - data (list): Lista de sitios serializados con información de promedio de rating y portada.
+            - total (int): Número total de favoritos del usuario.
+            - pages (int): Número total de páginas disponibles.
+            - page (int): Página actual.
+            - per_page (int): Elementos por página.
     """
 
     #  Autenticación y Parámetros
@@ -104,7 +155,7 @@ def list_user_favorites(validated_params):
         .group_by(Sitio.id, Imagen.id)
     )
 
-    #  FILTRO CRÍTICO: Favoritos del usuario
+    #  Favoritos del usuario
     query = query.join(
         Favorite, Sitio.id == Favorite.sitio_id
     ).filter(
@@ -129,7 +180,7 @@ def list_user_favorites(validated_params):
         query = query.order_by(desc(Sitio.id))
 
 
-    # 5. Paginación y Serialización
+    # Paginación y Serialización
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
     data = []

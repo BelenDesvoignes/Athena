@@ -40,18 +40,15 @@
           </div>
 
           <div class="action-buttons">
-            <!-- Botón de Favorito añadido aquí -->
+            <!-- Botón de Favorito: Ahora SIEMPRE visible, llama a handleFavoriteAction -->
             <button
-              v-if="token"
-              @click="toggleFavorite"
+              @click="handleFavoriteAction"
               :class="['favorite-button', { 'is-favorite': isFavorite }]"
               :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'"
             >
               <span class="heart-icon">{{ isFavorite ? '❤️' : '🤍' }}</span>
               {{ isFavorite ? 'En Favoritos' : 'Añadir a Favoritos' }}
             </button>
-            <p v-else class="login-tip">Inicia sesión para usar Favoritos.</p>
-            <!-- Fin Botón de Favorito -->
           </div>
         </div>
       </div>
@@ -134,6 +131,7 @@
 
     </section>
 
+    <!-- Modal de Galería -->
     <div v-if="isModalOpen" class="image-modal" @click="closeModal">
       <button class="modal-close" @click.stop="closeModal" aria-label="Cerrar">✕</button>
 
@@ -145,6 +143,27 @@
       <button class="modal-nav right" @click.stop="nextImage" aria-label="Siguiente">▶</button>
     </div>
 
+    <!-- Modal de Aviso de Login/Redirección (AHORA SOLO AVISA) -->
+    <div v-if="showLoginPrompt" class="login-modal-overlay">
+        <div class="login-modal-content">
+            <h3 class="text-xl font-bold">Inicia Sesión Requerido</h3>
+            <p class="mt-2 text-gray-700 font-bold">
+                Para marcar este sitio como favorito, necesitas iniciar sesión.
+            </p>
+            <p class="mt-2 text-gray-700 text-sm">
+                Por favor, utiliza el botón "Iniciar Sesión con Google".
+            </p>
+            <div class="mt-4 flex justify-end gap-3">
+                <button @click="showLoginPrompt = false" class="btn-cancel">
+                    Cerrar
+                </button>
+                <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
+                <button @click="showLoginPrompt = false" class="btn-primary">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -157,7 +176,7 @@ import BackButton from "@/components/BackButton.vue";
 
 
 const route = useRoute();
-const router = useRouter();
+const router = useRouter(); // Se mantiene aunque no se use para redirección
 const authStore = useAuthStore();
 const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
 
@@ -166,6 +185,7 @@ const isLoading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
 const isFavorite = ref(false); // Estado para el favorito
+const showLoginPrompt = ref(false); // Estado para mostrar el modal de login
 
 const siteId = route.params.id;
 
@@ -194,6 +214,20 @@ const nonCoverImages = computed(() => {
       alt_text: i.title || `Imagen del sitio ${site.value.name}`
     }));
 });
+
+// Nota: La función redirectToLogin ha sido eliminada. El modal ahora solo informa.
+
+// Función de control centralizada para el botón de favorito
+const handleFavoriteAction = () => {
+    if (!token.value) {
+        // Si no está autenticado, muestra el modal y pide iniciar sesión
+        showLoginPrompt.value = true;
+    } else {
+        // Si está autenticado, ejecuta la función de toggle (ya existente)
+        toggleFavorite();
+    }
+}
+
 
 function openByIndex(idx) {
   buildImagesListIfNeeded();
@@ -266,38 +300,31 @@ function onKeydown(e) {
 }
 
 const toggleFavorite = async () => {
-    if (!token.value) {
-        console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
-        return;
-    }
+    // Ya no es necesario el chequeo de token aquí, se hace en handleFavoriteAction
 
     const isAdding = !isFavorite.value;
     const action = isAdding ? 'POST' : 'DELETE';
     const previousFavoriteState = isFavorite.value;
 
-    // AHORA LA URL INCLUYE EL SITE_ID
     const url = `${API_BASE_URL}/sites/${siteId}/favorite`;
 
     try {
-        // 1. Actualización Optimista
-        isFavorite.value = isAdding;
+      // 1. Actualización Optimista
+      isFavorite.value = isAdding;
 
-        const response = await fetch(url, { // <-- URL corregida
-            method: action,
-            headers: {
-                'Authorization': `Bearer ${token.value}`,
-                // No se necesita Content-Type ni body para DELETE/POST en esta estructura
-            },
-            // REMOVER EL BODY: No es necesario enviar el site_id en el cuerpo si ya está en la URL
-            // body: JSON.stringify({ site_id: siteId })
-        });
+      const response = await fetch(url, {
+          method: action,
+          headers: {
+              'Authorization': `Bearer ${token.value}`,
+          },
+      });
 
-        if (!response.ok) {
-            // Revertir estado si la llamada API falla
-            isFavorite.value = previousFavoriteState;
-            const errorData = await response.json().catch(() => ({}));
-            console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
-        }
+      if (!response.ok) {
+          // Revertir estado si la llamada API falla
+          isFavorite.value = previousFavoriteState;
+          const errorData = await response.json().catch(() => ({}));
+          console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
+      }
 
     } catch (err) {
         isFavorite.value = previousFavoriteState;
@@ -423,6 +450,64 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* -------------------------------------- */
+/* ESTILOS DEL MODAL DE LOGIN (NUEVO) */
+/* -------------------------------------- */
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9990; /* Detrás del modal de imágenes */
+}
+
+.login-modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.login-modal-content h3 {
+    color: #071a78;
+    margin-top: 0;
+}
+
+.btn-primary {
+  background-color: #071a78;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.btn-primary:hover {
+    background-color: #0033aa;
+}
+
+.btn-cancel {
+  background-color: #e0e0e0;
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.btn-cancel:hover {
+    background-color: #ccc;
+}
+/* Fin Estilos Modal Login */
+
+
+/* Estilos existentes */
+
 .site-detail-page {
   padding: 15px;
   max-width: 1200px;

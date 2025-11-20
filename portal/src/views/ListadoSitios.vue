@@ -1,18 +1,13 @@
-
 <template>
   <div class="listado-sitios-page">
-    
+
     <header>
       <BackButton />
       <h1>Listado de Sitios Históricos</h1>
       <!-- FiltersSite maneja todos los filtros, incluyendo el de favoritos -->
       <FiltersSite ref="filtersSiteRef" />
-      
 
       <div class="controls-group">
-        <!-- ¡EL BOTÓN MANUAL DE FAVORITOS SE ELIMINÓ!
-             Ahora el checkbox en FiltersSite maneja el estado de favoritos. -->
-
         <div class="map-controls">
           <button
             @click="openMapModal"
@@ -169,29 +164,37 @@ const fetchSitesList = async () => {
   isLoading.value = true
   error.value = ''
 
+  // 🔑 CAMBIO 1: Priorizar ordenamiento de la URL, si no existe, usar valor por defecto.
+  const orderBy = route.query.order_by || "registrado";
+  const order = route.query.order || "desc";
+  const page = route.query.page || 1;
+  const perPage = route.query.per_page || 10;
+
+
   const params = new URLSearchParams({
-    order_by: route.query.order_by || "registrado",
-    order: route.query.order || "desc",
-    page: route.query.page || 1,
-    per_page: route.query.per_page || 10,
+    order_by: orderBy,
+    order: order,
+    page: page,
+    per_page: perPage,
   })
 
+  // Los parámetros dinámicos siguen siendo agregados
   const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius"]
   dynamic.forEach(p => route.query[p] && params.append(p, route.query[p]))
 
-  // 1. Verificar si se está pidiendo el filtro de favoritos
+  // 2. Verificar si se está pidiendo el filtro de favoritos (que viene como 'favorites=true' de FeaturedSection)
   const fetchingFavorites = isFavoriteFilterActive.value;
   let headers = {};
 
   if (fetchingFavorites) {
+    // 3. Adjuntar el parámetro que la API espera: is_favorite=true
     params.append('is_favorite', 'true');
 
-    // 2. Si se pide favoritos, DEBEMOS adjuntar el token
+    // 4. Si se pide favoritos, DEBEMOS adjuntar el token
     if (token.value) {
       headers['Authorization'] = `Bearer ${token.value}`;
-      // El parámetro 'favorites=true' ya está en la URL gracias a FiltersSite
     } else {
-      // 3. Caso de error: pide favoritos pero no está logueado
+      // 5. Caso de error: pide favoritos pero no está logueado
       isLoading.value = false;
       error.value = "Debes iniciar sesión para filtrar tus sitios favoritos.";
       sites.value = [];
@@ -219,6 +222,10 @@ const fetchSitesList = async () => {
       total: data.total,
       per_page: data.per_page,
     }
+
+    // ❌ ELIMINADO: La llamada manual a initializeFromQuery.
+    // FiltersSite.vue ya se sincroniza automáticamente gracias a su 'watch'.
+
   } catch (e) {
     console.error("Error al obtener sitios:", e);
     error.value = e.message || 'Ocurrió un error inesperado al cargar los sitios.';
@@ -232,7 +239,7 @@ onMounted(fetchSitesList)
 </script>
 
 <style scoped>
-/* Las clases y estilos originales se mantienen, excepto la de 'favorite-toggle-button' que ya no se usa. */
+/* Estilos sin cambios */
 .controls-group {
     display: flex;
     flex-wrap: wrap;

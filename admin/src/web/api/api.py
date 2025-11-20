@@ -74,6 +74,40 @@ def get_site_images(sitio, only_cover=False):
 @validate_api_params(SiteListParams)
 @jwt_required(optional=True)
 def get_sites(validated_params):
+    """
+    Recupera una lista paginada y filtrada de sitios turísticos visibles.
+
+    Este endpoint soporta múltiples criterios de filtrado (búsqueda por texto, ubicación, tags)
+    y permite la autenticación opcional. Si se solicita filtrar por favoritos ('is_favorite=true'),
+    la autenticación se vuelve requerida.
+
+    Args:
+        validated_params (SiteListParams): Objeto que contiene los parámetros
+            validados de la consulta (query parameters), incluyendo:
+            - page (int): Número de página.
+            - per_page (int): Elementos por página.
+            - order_by (str): Campo de ordenamiento ('nombre', 'registrado', 'calificacion', 'distancia').
+            - order (str): Dirección del ordenamiento ('asc' o 'desc').
+            - search (str, optional): Término de búsqueda en nombre o descripción.
+            - city (str, optional): Filtro por ciudad.
+            - province (str, optional): Filtro por provincia.
+            - state (str, optional): Filtro por estado de conservación.
+            - tags (list[int], optional): Lista de IDs de tags (AND lógico).
+            - lat (float, optional): Latitud del centro de búsqueda.
+            - lon (float, optional): Longitud del centro de búsqueda.
+            - radius_km (int, optional): Radio de búsqueda en kilómetros (requiere lat/lon).
+            - is_favorite (bool, optional): Si es True, filtra solo los favoritos del usuario autenticado.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP.
+               - 200 OK: Lista de sitios paginada.
+               - 401 Unauthorized: Si se solicita 'is_favorite=true' sin autenticación JWT.
+
+            El JSON devuelto incluye:
+            - data (list): Lista de objetos Sitio con promedio de rating, imagen de portada, y distancia (si se usó geolocalización).
+            - total (int): Total de sitios que coinciden con los filtros.
+            - pages (int): Total de páginas disponibles.
+    """
 
     page = validated_params.page
     per_page = validated_params.per_page
@@ -94,8 +128,6 @@ def get_sites(validated_params):
 
     if is_favorite and user_id is None:
         # Si pide filtrar favoritos pero NO hay identidad de usuario (token ausente o inválido)
-        # Esto debería haber sido manejado en el frontend, pero lo forzamos aquí por seguridad.
-        # Un 401 es más correcto que un 422 para falta de autorización.
         return jsonify({"error": "Se requiere autenticación para acceder a los sitios favoritos."}), 401
 
     if user_id is not None:
@@ -214,6 +246,33 @@ def get_sites(validated_params):
 @api_bp.get("/sites/<int:site_id>")
 @jwt_required(optional=True)
 def get_site_detail(site_id):
+    """
+    Obtiene los detalles completos de un sitio turístico específico.
+
+    Incluye información general, promedio de rating de las reviews aprobadas,
+    y verifica si el sitio está marcado como favorito por el usuario actual (si está autenticado).
+
+    Args:
+        site_id (int): El ID del sitio cuyos detalles se desean obtener, pasado en la URL.
+
+    Requires:
+        @jwt_required(optional=True): La autenticación JWT es opcional.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP.
+               - 200 OK: Retorna los datos detallados del sitio.
+               - 404 Not Found: Si el sitio no existe o no está marcado como visible.
+
+            El JSON devuelto incluye campos detallados como:
+            - id, name, description, city, province, state_of_conservation, etc.
+            - average_rating (float): Promedio de calificación basado en reviews aprobadas.
+            - latitude (float) y longitude (float): Coordenadas geográficas.
+            - tags (list): Lista de tags asociados al sitio.
+            - cover_image (dict): URL y título de la imagen de portada.
+            - images (list): Lista de todas las imágenes del sitio.
+            - is_favorite (bool): Indica si el usuario autenticado tiene el sitio como favorito.
+    """
+
     sitio = db.session.query(Sitio).filter_by(id=site_id, visible=True).first()
     if not sitio:
         return jsonify({"error": "Sitio no encontrado"}), 404
@@ -265,6 +324,16 @@ def get_site_detail(site_id):
 
 @api_bp.get("/provinces")
 def get_provinces():
+    """
+    Obtiene una lista única y ordenada alfabéticamente de todas las provincias
+    asociadas a sitios turísticos visibles.
+
+    Este endpoint se utiliza generalmente para poblar filtros en la interfaz de usuario.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP (200 OK).
+               El JSON devuelto es una lista simple de strings.
+    """
     provinces = (
         db.session.query(distinct(Sitio.provincia))
         .filter(Sitio.visible == True)
@@ -277,6 +346,16 @@ def get_provinces():
 
 @api_bp.get("/tags")
 def get_all_tags():
+    """
+    Obtiene la lista completa de todos los tags disponibles en el sistema.
+
+    La lista de tags se ordena alfabéticamente por nombre y se devuelve
+    en un formato de ID y nombre, útil para poblar filtros o selectores.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP (200 OK).
+               El JSON devuelto es una lista de diccionarios.
+    """
     tags = db.session.query(Tag).order_by(Tag.nombre).all()
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
@@ -284,6 +363,29 @@ def get_all_tags():
 
 @api_bp.post("/auth", endpoint="login")
 def login():
+    """
+    Gestiona la autenticación de un usuario mediante email y contraseña.
+
+    Verifica las credenciales proporcionadas. Si son válidas, genera un token
+    de acceso JWT (JSON Web Token) para el usuario autenticado.
+
+    Args:
+        None: La función espera recibir los datos de autenticación a través
+              del cuerpo de la solicitud JSON (request body).
+
+    Request JSON Body:
+        email (str): El correo electrónico del usuario.
+        password (str): La contraseña en texto plano.
+
+    Returns:
+        tuple: Una tupla que contiene el objeto JSON de respuesta y el código de estado HTTP.
+               - 200 OK: Autenticación exitosa. Retorna el token de acceso y su tiempo de expiración.
+               - 401 Unauthorized: Usuario o contraseña incorrectos.
+
+        JSON on 200 OK:
+            token (str): El token de acceso JWT.
+            expires_in (int): Tiempo de vida del token en segundos (ej: 3600 segundos = 1 hora).
+    """
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
