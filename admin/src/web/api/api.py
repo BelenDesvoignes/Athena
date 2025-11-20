@@ -13,6 +13,7 @@ from datetime import timedelta
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
+from src.core.models.public_user import PublicUser
 from src.core.models.review import Review, ReviewStatus
 from src.core.models.schema.Reviews import Review_Create_Schema
 from src.core.models.favorites import Favorite
@@ -412,7 +413,7 @@ def get_site_reviews(site_id):
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
 
-    query = db.session.query(Review).filter_by(site_id=site_id)
+    query = db.session.query(Review).filter_by(site_id=site_id).filter(Review.status == ReviewStatus.APROBADA).order_by(Review.created_at.desc())
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -461,7 +462,7 @@ def create_site_review(site_id):
         user_id=user_id,
         rating=data["rating"],
         content=data.get("comment", ""),
-        status=ReviewStatus.APROBADA,
+        status=ReviewStatus.PENDIENTE,
     )
 
     db.session.add(new_review)
@@ -506,13 +507,13 @@ def get_site_review(site_id, review_id):
 @jwt_required()
 def delete_review(site_id, review_id):
     user_id = get_jwt_identity()
-
+    user = db.session.query(PublicUser).filter_by(id=user_id).first()
     review = db.session.query(Review).filter_by(id=review_id, site_id=site_id).first()
 
     if not review:
         return jsonify({"msg": "Review no encontrada"}), 404
 
-    if int(review.user_id) != int(user_id):
+    if ((int(review.user_id) != int(user.id))):
         return jsonify({"msg": "No tenés permiso para eliminar esta reseña"}), 403
 
     db.session.delete(review)
@@ -536,15 +537,15 @@ def portal_status():
 @api_bp.get("/internal/users/<int:user_id>")
 def get_user_info(user_id):
     print(f'Consulta recibida para el usuario con ID: {user_id}')
-    user = db.session.query(User).filter_by(id=user_id).first()
+    user = db.session.query(PublicUser).filter_by(id=user_id).first()
 
     if not user:
         print(f'Usuario no encontrado para el ID: {user_id}')
         return jsonify({"error": "Usuario no encontrado"}), 404
 
     data = {
-        "nombre": user.nombre,
-        "apellido": user.apellido,
+        "nombre": user.name,
+        "id": user.id,
     }
 
     print(f'Datos devueltos: {data}')
