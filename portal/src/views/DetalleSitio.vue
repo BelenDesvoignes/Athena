@@ -37,12 +37,8 @@
 
           <div class="action-buttons">
             <!-- Botón de Favorito añadido aquí -->
-            <button
-              v-if="token"
-              @click="toggleFavorite"
-              :class="['favorite-button', { 'is-favorite': isFavorite }]"
-              :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'"
-            >
+            <button v-if="token" @click="toggleFavorite" :class="['favorite-button', { 'is-favorite': isFavorite }]"
+              :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'">
               <span class="heart-icon">{{ isFavorite ? '❤️' : '🤍' }}</span>
               {{ isFavorite ? 'En Favoritos' : 'Añadir a Favoritos' }}
             </button>
@@ -73,32 +69,38 @@
 
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
+        <button class="write-review-btn" @click="handleWriteReview">
+          ✍️ Escribir reseña
+        </button>
 
-        <div v-if="authStore.isLoggedIn" class="review-form-section">
-          <form class="review-form">
-            <h3>Deja tu reseña</h3>
-            <div class="form-group">
-              <label for="rating">Calificación:</label>
-              <select v-model="newReview.rating" id="rating" required>
-                <option disabled value="">Selecciona una calificación</option>
-                <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+        <div v-if="showReviewModal" class="review-modal-overlay" @click="closeReviewModal">
+          <div class="review-modal" @click.stop>
+
+            <div class="review-modal-header">
+              <h3>✍️ Escribir reseña</h3>
+              <button class="close-btn" @click="closeReviewModal">✕</button>
+            </div>
+
+            <div class="review-modal-body">
+              <label class="input-label">Calificación</label>
+              <select v-model="newReview.rating" class="input-select">
+                <option disabled value="">Selecciona…</option>
+                <option v-for="n in 5" :key="n" :value="n">{{ n }} ⭐</option>
               </select>
+
+              <label class="input-label">Comentario</label>
+              <textarea v-model="newReview.content" class="input-textarea" rows="4"
+                placeholder="Escribe tu experiencia..."></textarea>
             </div>
-            <div class="form-group">
-              <label for="content">Comentario:</label>
-              <textarea v-model="newReview.content" id="content" rows="4" required></textarea>
+
+            <div class="review-modal-footer">
+              <button class="primary-btn" @click="submitReviewModal">Enviar reseña</button>
+              <button class="secondary-btn" @click="closeReviewModal">Cancelar</button>
             </div>
-            <button type="button" @click="createReview()">Enviar Reseña</button>
-          </form>
+
+          </div>
         </div>
 
-        <div v-else>
-          <p>Debes iniciar sesión para dejar una reseña.</p>
-          <button @click="$router.push('/login')">Iniciar sesión</button>
-        </div>
-
-
-        <!-- Cargando -->
         <div v-if="isLoadingReviews" class="status-message">
           Cargando reseñas...
         </div>
@@ -112,8 +114,16 @@
         <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
           <div class="review-header">
             <strong>
-              {{ review.user_info?.nombre || 'Usuario' }}
-              {{ review.user_info?.apellido || 'Anónimo' }}
+              <section>
+                {{ review.user_info?.nombre || 'Usuario Anónimo' }}
+
+                <button v-if="authStore.isLoggedIn &&
+                  parseInt(review.user_id) === parseInt(authStore.userId)" class="modal-delete"
+                  @click.stop="deleteReview(review.id)" aria-label="Eliminar">
+                  🗑️
+                </button>
+
+              </section>
             </strong>
             <span>⭐ {{ review.rating }}/5</span>
             <section>Comentario: {{ review.comment }}</section>
@@ -121,10 +131,10 @@
           <p class="review-text">{{ review.content }}</p>
           <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
         </div>
-          <div class="pagination" v-if="totalPages > 1">
-            <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
-              Anterior
-            </button>
+        <div class="pagination" v-if="totalPages > 1">
+          <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
+            Anterior
+          </button>
 
           <span>Página {{ currentPage }} de {{ totalPages }}</span>
 
@@ -134,7 +144,7 @@
         </div>
 
         <!-- Sin reseñas -->
-        <p v-if="reviews.length < 1" class="empty-message">
+        <p v-if="totalReviews.length < 1" class="empty-message">
           Este sitio aún no tiene reseñas.
         </p>
       </section>
@@ -164,12 +174,12 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const authStore = useAuthStore();
 const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
 
 const site = ref(null);
@@ -183,8 +193,8 @@ const siteId = route.params.id;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const newReview = ref({
-    rating: "",
-    content: ""
+  rating: "",
+  content: ""
 });
 const reviews = ref([]);
 const totalReviews = ref(0);
@@ -194,6 +204,7 @@ const reviewsErrorMessage = ref('');
 const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = 25;
+const showReviewModal = ref(false);
 
 const isModalOpen = ref(false);
 const currentIndex = ref(0);
@@ -280,48 +291,79 @@ function onKeydown(e) {
   if (e.key === 'ArrowLeft') prevImage();
 }
 
+function handleWriteReview() {
+  if (!authStore.isLoggedIn) {
+    router.push("/login");
+    return;
+  }
+  showReviewModal.value = true;
+}
+
+function closeReviewModal() {
+  showReviewModal.value = false;
+}
+
+async function submitReviewModal() {
+  if (!newReview.value.rating || !newReview.value.content) {
+    alert("Completa todos los campos.");
+    return;
+  }
+
+  await createReview(); // ya existe en tu componente
+
+  showReviewModal.value = false;
+
+  newReview.value.rating = "";
+  newReview.value.content = "";
+}
+function cancelReview() {
+  showReviewModal.value = false;
+  newReview.value.rating = "";
+  newReview.value.content = "";
+}
+
 /**
  * Función para alternar el estado de favorito del sitio.
  * Realiza una actualización optimista y revierte en caso de fallo.
  */
 const toggleFavorite = async () => {
-    if (!token.value) {
-        // En un entorno real, se mostraría un modal pidiendo iniciar sesión.
-        console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
-        return;
+  if (!token.value) {
+    // En un entorno real, se mostraría un modal pidiendo iniciar sesión.
+    console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
+    return;
+  }
+
+  const isAdding = !isFavorite.value;
+  const action = isAdding ? 'POST' : 'DELETE';
+  const previousFavoriteState = isFavorite.value;
+
+  try {
+    // 1. Actualización Optimista: Cambiar el estado inmediatamente en la UI
+    isFavorite.value = isAdding;
+
+    const response = await fetch(`${API_BASE_URL}/favorites`, {
+      method: action,
+      headers: {
+        'Authorization': `Bearer ${token.value}`,
+        'Content-Type': 'application/json'
+      },
+      // Se asume que el endpoint acepta el site_id en el cuerpo para ambas acciones.
+      body: JSON.stringify({ site_id: siteId })
+    });
+
+    if (!response.ok) {
+      // Revertir estado si la llamada API falla
+      isFavorite.value = previousFavoriteState;
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
+      // Mostrar un mensaje de error al usuario si fuese necesario.
     }
 
-    const isAdding = !isFavorite.value;
-    const action = isAdding ? 'POST' : 'DELETE';
-    const previousFavoriteState = isFavorite.value;
-
-    try {
-        // 1. Actualización Optimista: Cambiar el estado inmediatamente en la UI
-        isFavorite.value = isAdding;
-
-        const response = await fetch(`${API_BASE_URL}/favorites`, {
-            method: action,
-            headers: {
-                'Authorization': `Bearer ${token.value}`,
-                'Content-Type': 'application/json'
-            },
-            // Se asume que el endpoint acepta el site_id en el cuerpo para ambas acciones.
-            body: JSON.stringify({ site_id: siteId })
-        });
-
-        if (!response.ok) {
-            // Revertir estado si la llamada API falla
-            isFavorite.value = previousFavoriteState;
-            const errorData = await response.json().catch(() => ({}));
-            console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
-            // Mostrar un mensaje de error al usuario si fuese necesario.
-        }
-
-    } catch (err) {
-        // Revertir estado en caso de error de red
-        isFavorite.value = previousFavoriteState;
-        console.error('Error de red al actualizar favoritos:', err);
-    }
+  } catch (err) {
+    // Revertir estado en caso de error de red
+    isFavorite.value = previousFavoriteState;
+    console.error('Error de red al actualizar favoritos:', err);
+  }
 };
 
 const fetchSiteDetail = async () => {
@@ -335,7 +377,7 @@ const fetchSiteDetail = async () => {
 
     // Incluir el token en el encabezado si está disponible para obtener el estado de 'is_favorite'
     if (token.value) {
-        headers['Authorization'] = `Bearer ${token.value}`;
+      headers['Authorization'] = `Bearer ${token.value}`;
     }
 
     const response = await fetch(url, { headers });
@@ -368,6 +410,8 @@ const fetchSiteDetail = async () => {
   }
 };
 
+
+
 const fetchUserInfo = async (userId) => {
   const url = `${API_BASE_URL}/internal/users/${userId}`;
 
@@ -387,20 +431,61 @@ const fetchUserInfo = async (userId) => {
   }
 };
 
-
-const createReview = async() => {
+const deleteReview = async (reviewId) => {
   try {
     const authStore = useAuthStore();
-    
+
+    if (!authStore.isLoggedIn) {
+      alert("Debes iniciar sesión para eliminar una reseña.");
+      return;
+    }
+
+    const authorizationToken = authStore.authHeader.Authorization;
+    if (!authorizationToken) {
+      alert("Error: No se encontró el token de autenticación.");
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/sites/${siteId}/reviews/${reviewId}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": authorizationToken,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("❌ Error eliminando reseña:", data);
+      alert(data.msg || data.error || JSON.stringify(data));
+      return;
+    }
+
+    alert("Reseña eliminada con éxito ✔️");
+
+    // Recargar las reseñas después de eliminar
+    currentPage.value = 1;
+    await fetchReviews();
+
+  } catch (error) {
+    console.error("❌ Error en deleteReview:", error);
+    alert("Error de conexión o inesperado al eliminar la reseña.");
+  }
+}
+
+const createReview = async () => {
+  try {
+    const authStore = useAuthStore();
+
     if (!authStore.isLoggedIn) {
       alert("Debes iniciar sesión para enviar una reseña.");
       return;
     }
 
     // 1. Obtener el valor del encabezado: "Bearer [token]"
-    const authorizationValue = authStore.apiToken.Authorization; 
-    console.log("🔐 Authorization Header Value:", authorizationValue);
-    if (!authorizationValue) {
+    const authorizationToken = authStore.authHeader.Authorization;
+    console.log("🔐 Authorization Header Value:", authorizationToken);
+    if (!authorizationToken) {
       alert("Error: No se encontró el token de autenticación.");
       return;
     }
@@ -410,7 +495,7 @@ const createReview = async() => {
       headers: {
         "Content-Type": "application/json",
         // 2. Usar solo la cadena de texto como valor del encabezado.
-        "Authorization": authorizationValue, 
+        "Authorization": authorizationToken,
       },
       body: JSON.stringify({
         rating: parseInt(newReview.value.rating), // Usar .value para refs
@@ -428,11 +513,11 @@ const createReview = async() => {
     }
 
     alert("Reseña creada con éxito ✔️");
-    
+
     // Limpiar el formulario
     newReview.value.content = "";
     newReview.value.rating = "";
-    
+
     // Recargar las reseñas para mostrar la nueva
     currentPage.value = 1;
     await fetchReviews();
@@ -552,11 +637,48 @@ onBeforeUnmount(() => {
   background-color: gray;
   color: white;
 }
-.page-button:disabled
-  {
-  Cursor:text !important; Text-Decoration: None !important;
-  }
 
+.page-button:disabled {
+  Cursor: text !important;
+  Text-Decoration: None !important;
+}
+
+.login-warning {
+  text-align: center;
+  padding: 20px;
+  margin: 25px auto;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  max-width: 450px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.login-text {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.login-btn {
+  background: #2563eb;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.login-btn:hover {
+  background: #1e4fc9;
+}
+
+.login-btn:active {
+  transform: scale(0.97);
+}
 
 .description-section {
   padding: 0;
@@ -605,7 +727,8 @@ onBeforeUnmount(() => {
 }
 
 .favorite-button.is-favorite {
-  background-color: #ff4d4d; /* Rojo para favorito */
+  background-color: #ff4d4d;
+  /* Rojo para favorito */
   color: white;
   border-color: #ff4d4d;
 }
@@ -620,15 +743,23 @@ onBeforeUnmount(() => {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .login-tip {
-    font-style: italic;
-    color: #666;
-    font-size: 0.9em;
+  font-style: italic;
+  color: #666;
+  font-size: 0.9em;
 }
 
 
@@ -647,59 +778,155 @@ onBeforeUnmount(() => {
   font-weight: 600;
   color: #333;
 }
-
-.form-group {
-  margin-bottom: 18px;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  margin-bottom: 6px;
-  font-size: 14px;
-  color: #555;
-}
-
-.review-form select,
-.review-form textarea {
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  background: #f9f9f9;
-}
-
-.review-form select:focus,
-.review-form textarea:focus {
-  border-color: #888;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
-  outline: none;
-  background: #fff;
-}
-
-.review-form button {
-  margin-top: 10px;
-  width: fit-content;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  background: #4a6cff;
+/* ---- Botón principal ---- */
+.write-review-btn {
+  background: linear-gradient(135deg, #4e8cff, #1f62ff);
   color: white;
+  padding: 12px 18px;
+  font-size: 15px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: 0.25s ease;
+  box-shadow: 0 3px 10px rgba(0, 76, 255, 0.25);
 }
 
-.review-form button:hover {
-  background: #3e5ae0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.write-review-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0, 76, 255, 0.4);
 }
 
-.review-form button:active {
-  background: #364fcc;
+/* ---- Overlay oscuro ---- */
+.review-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9998;
+  animation: fadeIn 0.3s ease;
 }
+
+/* ---- Caja del modal ---- */
+.review-modal {
+  width: 380px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  animation: popIn 0.25s ease;
+}
+
+/* ---- Header del modal ---- */
+.review-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  transition: 0.2s;
+}
+
+.close-btn:hover {
+  color: #000;
+  transform: scale(1.15);
+}
+
+/* ---- Cuerpo ---- */
+.review-modal-body {
+  margin-top: 15px;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #444;
+}
+
+.input-select,
+.input-textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: 0.2s;
+  margin-bottom: 15px;
+}
+
+.input-select:focus,
+.input-textarea:focus {
+  border-color: #4e8cff;
+  box-shadow: 0 0 0 3px rgba(78, 140, 255, 0.2);
+  outline: none;
+}
+
+/* ---- Footer ---- */
+.review-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Botones del modal */
+.primary-btn {
+  background: #1f62ff;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.primary-btn:hover {
+  background: #174ecc;
+}
+
+.secondary-btn {
+  background: #e0e0e0;
+  color: #333;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #c9c9c9;
+}
+
+/* ---- Animaciones ---- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 
 
 
@@ -789,6 +1016,25 @@ onBeforeUnmount(() => {
   max-height: 95%;
 }
 
+.modal-delete {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  font-size: 18px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.modal-delete:hover {
+  background: rgba(255, 0, 0, 0.3);
+  transform: scale(1.1);
+}
+
+.modal-delete:active {
+  transform: scale(0.9);
+}
+
 .modal-image {
   max-width: 100%;
   max-height: 100%;
@@ -846,5 +1092,56 @@ onBeforeUnmount(() => {
   padding: 6px 8px;
   border-radius: 8px;
   font-size: 0.9rem;
+
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .modal-content {
+    background: white;
+    padding: 20px;
+    width: 350px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal-actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .cancel-btn {
+    background: #ccc;
+  }
+
+  .write-review-btn {
+    margin-top: 15px;
+    background: #2a73ff;
+    color: white;
+    border-radius: 6px;
+    padding: 10px 16px;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
 }
 </style>
