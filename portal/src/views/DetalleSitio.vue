@@ -210,7 +210,42 @@
             </div>
         </div>
     </div>
+
+
+     <div v-if="showLoginPrompt" class="login-modal-overlay">
+        <div class="login-modal-content">
+            <h3 class="text-xl font-bold">Inicia Sesión Requerido</h3>
+            <p class="mt-2 text-gray-700 font-bold">
+                Para marcar este sitio como favorito, necesitas iniciar sesión.
+            </p>
+            <p class="mt-2 text-gray-700 text-sm">
+                Por favor, utiliza el botón "Iniciar Sesión con Google".
+            </p>
+            <div class="mt-4 flex justify-end gap-3">  <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
+                <button @click="showLoginPrompt = false" class="btn-primary">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
   </div>
+
+   <div v-if="showLoginPromptReseña" class="login-modal-overlay">
+        <div class="login-modal-content">
+            <h3 class="text-xl font-bold">Inicia Sesión Requerido</h3>
+            <p class="mt-2 text-gray-700 font-bold">
+                Para escribir una reseña, necesitas iniciar sesión.
+            </p>
+            <p class="mt-2 text-gray-700 text-sm">
+                Por favor, utiliza el botón "Iniciar Sesión con Google".
+            </p>
+            <div class="mt-4 flex justify-end gap-3">  <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
+                <button @click="showLoginPromptReseña = false" class="btn-primary">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -254,7 +289,7 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = 25;
 const showReviewModal = ref(false);
-
+const showLoginPromptReseña = ref(false); // Modal para reseñas
 const isModalOpen = ref(false);
 const currentIndex = ref(0);
 const imagesList = ref([]);
@@ -282,6 +317,8 @@ const handleFavoriteAction = () => {
         toggleFavorite();
     }
 }
+
+
 
 
 function openByIndex(idx) {
@@ -355,13 +392,17 @@ function onKeydown(e) {
 }
 
 function handleWriteReview() {
-  if (!authStore.isLoggedIn) {
-    router.push("/login");
-    return;
-  }
-  showReviewModal.value = true;
+  if (!token.value) {
+        // Si no está autenticado, muestra el modal y pide iniciar sesión
+        showLoginPromptReseña.value = true;
+    } else {
+        // Si esta autenticado , muestra el modal de reseña
+        showReviewModal.value = true;
+      } 
 }
-
+function closeLoginPromptReseña() {
+  showLoginPrompt.value = false;
+}
 function closeReviewModal() {
   showReviewModal.value = false;
 }
