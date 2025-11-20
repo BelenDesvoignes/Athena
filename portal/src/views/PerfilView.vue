@@ -9,6 +9,14 @@ const router = useRouter()
 if (!authStore.isLoggedIn) {
   router.push('/')
 }
+
+const logout = () => {
+  const confirmar = window.confirm("¿Estás seguro de que querés cerrar sesión?")
+  if (confirmar) {
+    authStore.logout()
+    router.push('/')
+  }
+}
 </script>
 
 <template>
@@ -37,7 +45,7 @@ if (!authStore.isLoggedIn) {
         ❤️ Sitios Favoritos
       </button>
 
-      <button @click="logout(); toggleMenu();" class="profile-btn logout-btn">
+      <button @click="logout();" class="profile-btn logout-btn">
         🚪 Cerrar Sesión
       </button>
     </div>
