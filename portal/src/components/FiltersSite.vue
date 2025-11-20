@@ -1,99 +1,120 @@
 <template>
-  <div class="filtros-container">
-    <input
-      v-model="searchTerm"
-      @input="updateFilters"
-      type="text"
-      placeholder="Buscar sitio..."
-      class="input-filtro"
-    />
-
-    <input
-      v-model="city"
-      @input="updateFilters"
-      type="text"
-      placeholder="Ciudad (ej: Epecuén)"
-      class="input-filtro"
-    />
-
-    <select v-model="province" @change="updateFilters" class="select-filtro">
-      <option value="">Todas las provincias</option>
-      <option
-        v-for="prov in provinces"
-        :key="prov"
-        :value="prov"
-      >
-        {{ prov }}
-      </option>
-    </select>
-
-    <select v-model="state" @change="updateFilters" class="select-filtro">
-      <option value="">Estado de conservación</option>
-      <option value="EXCELENTE">Excelente</option>
-      <option value="BUENO">Bueno</option>
-      <option value="REGULAR">Regular</option>
-      <option value="MALO">Malo</option>
-    </select>
-
-    <select v-model="orderByCombined" @change="handleCombinedOrderChange" class="select-filtro">
-      <option value="">Ordenar por...</option>
-      <option value="registrado_desc">Más recientes</option>
-      <option value="registrado_asc">Más antiguos</option>
-      <option value="nombre_asc">Nombre (A-Z)</option>
-      <option value="nombre_desc">Nombre (Z-A)</option>
-      <option value="calificacion_desc">Mejor calificados</option>
-      <option value="calificacion_asc">Peor calificados</option>
-    </select>
-
-    <!-- NUEVO: Filtro por Favoritos (visible solo si hay token) -->
-    <div v-if="token" class="favorites-filter-group">
-        <label class="favorite-checkbox">
-            <input
-                type="checkbox"
-                v-model="onlyFavorites"
-                @change="updateFilters"
-            />
-            <span>Mis Favoritos</span>
-        </label>
+  <div class="filter-controls-wrapper">
+    <!-- Header/Botón de Colapso (visible solo en móvil) -->
+    <div class="filter-header" @click="isFiltersOpen = !isFiltersOpen">
+      <h3>
+        Filtros de Búsqueda
+      </h3>
+      <span class="toggle-icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          :class="{ 'rotate-up': isFiltersOpen }"
+        >
+          <path d="M11.9997 10.8284L7.04996 15.7782L5.63574 14.364L11.9997 8L18.3637 14.364L16.9495 15.7782L11.9997 10.8284Z" />
+        </svg>
+      </span>
     </div>
-    <!-- FIN NUEVO -->
 
-    <div class="tag-filter-group">
-      <label>Tags:</label>
-      <div class="tags-list">
-        <label v-for="tag in availableTags" :key="tag.id" class="tag-checkbox">
-          <input
-            type="checkbox"
-            :value="tag.id"
-            v-model="selectedTags"
-            @change="updateFilters"
-          />
-          <span>{{ tag.name }}</span>
-        </label>
+    <!-- Contenido colapsable (filtros) -->
+    <div :class="['filtros-container', { 'is-open': isFiltersOpen }]">
+      <input
+        v-model="searchTerm"
+        @input="updateFilters"
+        type="text"
+        placeholder="Buscar sitio..."
+        class="input-filtro"
+      />
+
+      <input
+        v-model="city"
+        @input="updateFilters"
+        type="text"
+        placeholder="Ciudad (ej: Epecuén)"
+        class="input-filtro"
+      />
+
+      <select v-model="province" @change="updateFilters" class="select-filtro">
+        <option value="">Todas las provincias</option>
+        <option
+          v-for="prov in provinces"
+          :key="prov"
+          :value="prov"
+        >
+          {{ prov }}
+        </option>
+      </select>
+
+      <select v-model="state" @change="updateFilters" class="select-filtro">
+        <option value="">Estado de conservación</option>
+        <option value="EXCELENTE">Excelente</option>
+        <option value="BUENO">Bueno</option>
+        <option value="REGULAR">Regular</option>
+        <option value="MALO">Malo</option>
+      </select>
+
+      <select v-model="orderByCombined" @change="handleCombinedOrderChange" class="select-filtro">
+        <option value="">Ordenar por...</option>
+        <option value="registrado_desc">Más recientes</option>
+        <option value="registrado_asc">Más antiguos</option>
+        <option value="nombre_asc">Nombre (A-Z)</option>
+        <option value="nombre_desc">Nombre (Z-A)</option>
+        <option value="calificacion_desc">Mejor calificados</option>
+        <option value="calificacion_asc">Peor calificados</option>
+      </select>
+
+      <!-- FILTRO FAVORITOS: Botón de filtro con estilos unificados -->
+      <label v-if="token" class="tag-checkbox favorite-filter-button">
+        <input
+          type="checkbox"
+          :value="true"
+          v-model="onlyFavorites"
+          @change="updateFilters"
+        />
+        <span>Mis Favoritos</span>
+      </label>
+
+      <div class="tag-filter-group">
+        <label>Tags:</label>
+        <div class="tags-list">
+          <label v-for="tag in availableTags" :key="tag.id" class="tag-checkbox">
+            <input
+              type="checkbox"
+              :value="tag.id"
+              v-model="selectedTags"
+              @change="updateFilters"
+            />
+            <span>{{ tag.name }}</span>
+          </label>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth' // Importado
-import { storeToRefs } from 'pinia' // Importado
+import { useAuthStore } from '@/stores/auth'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const route = useRoute()
 
 // Inicialización de Auth Store para obtener el token
 const authStore = useAuthStore()
-const { token } = storeToRefs(authStore) // Obteniendo el token
+const { token } = storeToRefs(authStore)
+
+// Controla si los filtros están abiertos o colapsados.
+const isFiltersOpen = ref(true);
 
 // Inicialización de filtros desde los Query Params
 const searchTerm = ref(route.query.search || '')
 const province = ref(route.query.province || '')
 const city = ref(route.query.city || '')
 const state = ref(route.query.state || '')
-// NUEVO: Inicialización del filtro de favoritos
+// Inicialización del filtro de favoritos
 const onlyFavorites = ref(route.query.favorites === 'true')
 
 // Variables que se envían al router
@@ -167,7 +188,7 @@ const handleCombinedOrderChange = () => {
 // Actualizar filtros y push a router
 const updateFilters = () => {
   const tagsParam = selectedTags.value.length > 0 ? selectedTags.value.join(',') : undefined;
-  // NUEVO: Determinar si se envía el filtro de favoritos
+  // Determinar si se envía el filtro de favoritos
   const favoritesParam = onlyFavorites.value ? 'true' : undefined;
 
   const query = {
@@ -176,7 +197,7 @@ const updateFilters = () => {
     city: city.value || undefined,
     state: state.value || undefined,
     tags: tagsParam,
-    favorites: favoritesParam, // Incluyendo el nuevo parámetro
+    favorites: favoritesParam,
     order_by: orderBy.value || 'registrado',
     order: orderDirection.value || 'desc',
     page: 1
@@ -201,6 +222,10 @@ const resetForm = () => {
     orderBy.value = 'registrado';
     orderDirection.value = 'desc';
     orderByCombined.value = 'registrado_desc';
+    // Opcional: Colapsar los filtros al resetear si estamos en móvil
+    if (window.innerWidth < 768) {
+        isFiltersOpen.value = false;
+    }
 }
 
 // Exponer función resetForm al padre
@@ -208,7 +233,7 @@ defineExpose({
     resetForm
 })
 
-// Observa cambios en query params externos
+// Observa cambios en query params externos para los tags
 watch(
     () => route.query.tags,
     initSelectedTags,
@@ -230,6 +255,10 @@ watch(
     () => route.query.favorites,
     (newFavorites) => {
         onlyFavorites.value = newFavorites === 'true';
+        // Si llegamos con un filtro activo, asegurar que los filtros se vean
+        if (newFavorites === 'true') {
+             isFiltersOpen.value = true;
+        }
     },
     { immediate: true }
 );
@@ -238,14 +267,88 @@ onMounted(() => {
     fetchProvinces();
     fetchTags();
     initSelectedTags();
+    // Ocultar filtros al cargar en móvil
+    if (window.innerWidth < 768) {
+        isFiltersOpen.value = false;
+    }
 });
 </script>
 
 <style scoped>
-.filtros-container {
+/* ESTILOS PARA COLAPSAR/EXPANDIR (Responsivos) */
+.filter-controls-wrapper {
+  margin-bottom: 20px;
+}
+
+.filter-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #ddd;
+  color: #071a78;
+  transition: background-color 0.2s;
+}
+
+.filter-header:hover {
+    background-color: #f7f7f7;
+}
+
+.filter-header h3 {
+  font-size: 1.2em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    transform: rotate(180deg);
+}
+
+.toggle-icon .rotate-up {
+  transform: rotate(0deg);
+}
+
+.filtros-container {
+    display: none;
+    overflow: hidden;
+    padding: 0;
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.filtros-container.is-open {
+    display: flex;
+    opacity: 1;
+    padding: 10px 0 0;
+}
+
+/* MEDI QUERY: Desktop (pantallas medianas y grandes) */
+@media (min-width: 768px) {
+    .filter-header {
+        display: none;
+    }
+    .filtros-container {
+        display: flex !important;
+        opacity: 1 !important;
+        padding: 20px 0 0;
+        margin: 0;
+    }
+}
+
+/* ESTILOS DE FILTROS BASE */
+.filtros-container {
   gap: 10px;
-  margin: 20px 0;
   flex-wrap: wrap;
   align-items: flex-start;
 }
@@ -255,33 +358,43 @@ onMounted(() => {
   border: 1px solid #d7d6d6;
   border-radius: 6px;
   font-size: 1em;
+  flex-grow: 1;
+  min-width: 150px;
 }
 
-/*  ESTILOS PARA FAVORITOS */
-.favorites-filter-group {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    border: 1px solid #e6e3e3;
-    border-radius: 6px;
-    background-color: #ffffff;
+
+/* ESTILOS PARA MIS FAVORITOS (tamaño corregido V2) */
+
+.favorite-filter-button {
+
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 1em !important;
+    flex-grow: 1;
+    min-width: 150px;
+
+    font-weight: normal !important;
+    color: #141414 !important;
+    border-color: #d7d6d6 !important;
+    background-color: white !important;
 }
 
-.favorite-checkbox {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-weight: bold;
-    color: #0f0e0e;
+.favorite-filter-button span {
+    padding: 0 !important;
 }
 
-.favorite-checkbox input[type="checkbox"] {
-    transform: scale(1.2);
-    margin-right: 8px;
-    accent-color: #0f0f0f;
+.favorite-filter-button input:checked + span {
+    background-color: #071a78;
+    color: white;
+
+    border-radius: 4px;
+    padding: 0;
+    display: inline-block;
+    width: 100%;
 }
 
-/* estilos de tags */
+
+
 .tag-filter-group {
     padding: 8px 12px;
     border: 1px solid #e6e3e3;
@@ -303,32 +416,33 @@ onMounted(() => {
 }
 
 .tag-checkbox input[type="checkbox"] {
-  display: none;
+    display: none;
 }
 
 .tag-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9em;
-  cursor: pointer;
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
-  transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border: 1px solid #dbdada;
+    border-radius: 4px;
+    background-color: white;
+    transition: background-color 0.2s;
 }
 
 .tag-checkbox:hover {
-  background-color: #f0f0f0;
+    background-color: #f0f0f0;
 }
 
 /* Tag seleccionado*/
 .tag-checkbox input:checked + span {
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  padding: 0;
-  display: inline-block;
-  width: 100%;
+    background-color: #d0d0d0;
+    color: rgb(14, 13, 13);
+    border-radius: 4px;
+    padding: 0;
+    display: inline-block;
+    width: 100%;
 }
 </style>
