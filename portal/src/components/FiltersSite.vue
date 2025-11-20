@@ -53,7 +53,7 @@
                 v-model="onlyFavorites"
                 @change="updateFilters"
             />
-            <span>❤️ Solo mis Favoritos</span>
+            <span>Mis Favoritos</span>
         </label>
     </div>
     <!-- FIN NUEVO -->
@@ -257,14 +257,14 @@ onMounted(() => {
   font-size: 1em;
 }
 
-/* NUEVOS ESTILOS PARA FAVORITOS */
+/*  ESTILOS PARA FAVORITOS */
 .favorites-filter-group {
     display: flex;
     align-items: center;
     padding: 8px 12px;
     border: 1px solid #e6e3e3;
     border-radius: 6px;
-    background-color: #fff8f8; /* Fondo suave para destacar */
+    background-color: #ffffff;
 }
 
 .favorite-checkbox {
@@ -272,16 +272,14 @@ onMounted(() => {
     align-items: center;
     cursor: pointer;
     font-weight: bold;
-    color: #cc0000; /* Rojo suave para el texto */
+    color: #0f0e0e;
 }
 
 .favorite-checkbox input[type="checkbox"] {
     transform: scale(1.2);
     margin-right: 8px;
-    accent-color: #cc0000;
+    accent-color: #0f0f0f;
 }
-/* FIN NUEVOS ESTILOS */
-
 
 /* estilos de tags */
 .tag-filter-group {

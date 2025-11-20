@@ -240,7 +240,7 @@ onMounted(fetchSitesList)
 h1 { margin-bottom: 10px; }
 .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0; }
 .status-message, .error-message, .empty-message { text-align: center; margin-top: 40px; color: #666; }
-.error-message { color: #d63031; font-weight: bold; background-color: #ffeaea; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; }
+.error-message { color: #0f0f0f; font-weight: bold; background-color: #ffeaea; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; }
 
 
 .map-toggle-button, .proximity-filter-button, .clear-filters-button {
