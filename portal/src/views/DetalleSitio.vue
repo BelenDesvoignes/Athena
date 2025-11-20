@@ -22,12 +22,8 @@
       <div class="main-info-grid">
         <div class="image-container">
           <div class="cover-wrapper">
-            <img
-              :src="site.cover_image?.url || site.cover_image || '/default-cover.jpg'"
-              :alt="site.cover_image?.title || site.name"
-              class="site-cover-image"
-              @click="openByIndex(0)"
-            >
+            <img :src="site.cover_image?.url || site.cover_image || '/default-cover.jpg'"
+              :alt="site.cover_image?.title || site.name" class="site-cover-image" @click="openByIndex(0)">
             <button class="expand-button cover" @click.stop="openByIndex(0)">🔍</button>
           </div>
         </div>
@@ -46,17 +42,8 @@
 
       <div v-if="site.images && site.images.length > 1" class="gallery-section">
         <div class="gallery-scroll">
-          <div
-            class="image-wrapper"
-            v-for="(img, idx) in nonCoverImages"
-            :key="img.id"
-          >
-            <img
-              :src="img.url"
-              class="gallery-image"
-              :alt="img.alt_text"
-              @click="openByIndex(idx + 1)"
-            >
+          <div class="image-wrapper" v-for="(img, idx) in nonCoverImages" :key="img.id">
+            <img :src="img.url" class="gallery-image" :alt="img.alt_text" @click="openByIndex(idx + 1)">
             <button class="expand-btn" @click.stop="openByIndex(idx + 1)">🔍</button>
           </div>
         </div>
@@ -74,6 +61,30 @@
 
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
+
+        <div v-if="authStore.isLoggedIn" class="review-form-section">
+          <form class="review-form">
+            <h3>Deja tu reseña</h3>
+            <div class="form-group">
+              <label for="rating">Calificación:</label>
+              <select v-model="newReview.rating" id="rating" required>
+                <option disabled value="">Selecciona una calificación</option>
+                <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="content">Comentario:</label>
+              <textarea v-model="newReview.content" id="content" rows="4" required></textarea>
+            </div>
+            <button type="button" @click="createReview()">Enviar Reseña</button>
+          </form>
+        </div>
+
+        <div v-else>
+          <p>Debes iniciar sesión para dejar una reseña.</p>
+          <button @click="$router.push('/login')">Iniciar sesión</button>
+        </div>
+
 
         <!-- Cargando -->
         <div v-if="isLoadingReviews" class="status-message">
@@ -93,24 +104,25 @@
               {{ review.user_info?.apellido || 'Anónimo' }}
             </strong>
             <span>⭐ {{ review.rating }}/5</span>
+            <section>Comentario: {{ review.comment }}</section>
           </div>
           <p class="review-text">{{ review.content }}</p>
           <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
         </div>
-         <div class="pagination" v-if="totalPages > 1">
-            <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
-              Anterior
-            </button>
+        <div class="pagination" v-if="totalPages > 1">
+          <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
+            Anterior
+          </button>
 
-            <span>Página {{ currentPage }} de {{ totalPages }}</span>
+          <span>Página {{ currentPage }} de {{ totalPages }}</span>
 
-            <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
-              Siguiente
-            </button>
-          </div>
+          <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
+            Siguiente
+          </button>
+        </div>
 
         <!-- Sin reseñas -->
-        <p v-else class="empty-message">
+        <p v-if="reviews.length < 1" class="empty-message">
           Este sitio aún no tiene reseñas.
         </p>
       </section>
@@ -141,9 +153,9 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const authStore = useAuthStore();
 
 const site = ref(null);
 const isLoading = ref(true);
@@ -155,6 +167,10 @@ const siteId = route.params.id;
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const newReview = ref({
+    rating: "",
+    content: ""
+});
 const reviews = ref([]);
 const totalReviews = ref(0);
 const isLoadingReviews = ref(true);
@@ -304,6 +320,63 @@ const fetchUserInfo = async (userId) => {
   }
 };
 
+
+const createReview = async() => {
+  try {
+    const authStore = useAuthStore();
+    
+    if (!authStore.isLoggedIn) {
+      alert("Debes iniciar sesión para enviar una reseña.");
+      return;
+    }
+
+    // 1. Obtener el valor del encabezado: "Bearer [token]"
+    const authorizationValue = authStore.apiToken.Authorization; 
+    console.log("🔐 Authorization Header Value:", authorizationValue);
+    if (!authorizationValue) {
+      alert("Error: No se encontró el token de autenticación.");
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/sites/${siteId}/reviews`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // 2. Usar solo la cadena de texto como valor del encabezado.
+        "Authorization": authorizationValue, 
+      },
+      body: JSON.stringify({
+        rating: parseInt(newReview.value.rating), // Usar .value para refs
+        site_id: parseInt(siteId), // Asegurar que sea número si es necesario
+        comment: newReview.value.content,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("❌ Error creando reseña:", data);
+      alert(data.msg || data.error || JSON.stringify(data));
+      return;
+    }
+
+    alert("Reseña creada con éxito ✔️");
+    
+    // Limpiar el formulario
+    newReview.value.content = "";
+    newReview.value.rating = "";
+    
+    // Recargar las reseñas para mostrar la nueva
+    currentPage.value = 1;
+    await fetchReviews();
+
+  } catch (error) {
+    console.error("❌ Error en createReview:", error);
+    alert("Error de conexión o inesperado al enviar la reseña.");
+  }
+}
+
+
 const fetchReviews = async () => {
   isLoadingReviews.value = true;
   reviewsError.value = false;
@@ -327,7 +400,7 @@ const fetchReviews = async () => {
         review.user_info = null;
       }
     }
-      totalReviews.value = data.total || 0;
+    totalReviews.value = data.total || 0;
     reviews.value = reviewsData;
 
     console.log("✨ Reviews finales con user info:", reviews.value);
@@ -412,10 +485,11 @@ onBeforeUnmount(() => {
   background-color: gray;
   color: white;
 }
-.page-button:disabled
- {
- Cursor:text !important; Text-Decoration: None !important; 
- } 
+
+.page-button:disabled {
+  Cursor: text !important;
+  Text-Decoration: None !important;
+}
 
 
 .description-section {
@@ -440,6 +514,77 @@ onBeforeUnmount(() => {
   font-size: 0.9em;
   margin-right: 5px;
 }
+
+.review-form-section {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.review-form h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #555;
+}
+
+.review-form select,
+.review-form textarea {
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #f9f9f9;
+}
+
+.review-form select:focus,
+.review-form textarea:focus {
+  border-color: #888;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+  background: #fff;
+}
+
+.review-form button {
+  margin-top: 10px;
+  width: fit-content;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #4a6cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.review-form button:hover {
+  background: #3e5ae0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.review-form button:active {
+  background: #364fcc;
+}
+
+
 
 @media (min-width: 768px) {
   .site-content>.detail-header {
