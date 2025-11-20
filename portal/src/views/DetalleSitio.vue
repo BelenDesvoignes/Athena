@@ -203,11 +203,7 @@
             <p class="mt-2 text-gray-700 text-sm">
                 Por favor, utiliza el botón "Iniciar Sesión con Google".
             </p>
-            <div class="mt-4 flex justify-end gap-3">
-                <button @click="showLoginPrompt = false" class="btn-cancel">
-                    Cerrar
-                </button>
-                <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
+            <div class="mt-4 flex justify-end gap-3">  <!-- Este botón ahora solo cierra el modal, sin intentar redireccionar -->
                 <button @click="showLoginPrompt = false" class="btn-primary">
                     Entendido
                 </button>
