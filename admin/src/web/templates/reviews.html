@@ -47,6 +47,11 @@
       </div>
 
       <div class="col-auto">
+        <input type="text" name="site_name" class="form-control" placeholder="Buscar por sitio"
+           value="{{ request.args.get('site_name','') }}">
+      </div>
+
+      <div class="col-auto">
         <button type="submit" class="btn btn-primary">Filtrar</button>
       </div>
     </form>
