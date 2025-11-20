@@ -1,9 +1,13 @@
+
 <template>
   <div class="listado-sitios-page">
+    
     <header>
+      <BackButton />
       <h1>Listado de Sitios Históricos</h1>
       <!-- FiltersSite maneja todos los filtros, incluyendo el de favoritos -->
       <FiltersSite ref="filtersSiteRef" />
+      
 
       <div class="controls-group">
         <!-- ¡EL BOTÓN MANUAL DE FAVORITOS SE ELIMINÓ!
@@ -95,6 +99,7 @@ import { storeToRefs } from 'pinia'
 import FiltersSite from '@/components/FiltersSite.vue'
 import SiteCard from '@/components/SiteCard.vue'
 import SiteMap from '@/components/SiteMap.vue'
+import BackButton from '@/components/BackButton.vue'
 
 const route = useRoute()
 const router = useRouter()

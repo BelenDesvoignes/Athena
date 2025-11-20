@@ -35,17 +35,33 @@ const router = createRouter({
     name: "Mantenimiento",
     component: () => import("../views/Mantenimiento.vue")
     },
-
-    // --- Ruta deshabilitada temporalmente ---
-    // {
-    //   path: '/mis-resenas',
-    //   name: 'mis-resenas',
-    //   component: () => import('../views/ResenasView.vue')
-    // }
+    {
+    path: '/mis-resenas',
+    name: 'mis-resenas',
+    component: () => import('../views/ResenasView.vue')
+    },
+    {
+      path: "/403",
+      name: "403",
+      component: () => import('../views/Error403.vue')
+    },
+    {
+      path: "/500",
+      name: "500",
+      component: () => import('../views/Error500.vue')
+    },
+    // 404 (debe ir al final SIEMPRE)
+    {
+      path: "/:pathMatch(.*)*",
+      name: "404",
+      component: () => import('../views/Error404.vue')
+    }
 
     // ... otras rutas (About, Login, etc.)
   ]
+  
 })
+
 
 router.beforeEach(async (to, from, next) => {
   if (to.name === "Mantenimiento") {

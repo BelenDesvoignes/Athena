@@ -1,11 +1,26 @@
 <script setup>
 import { RouterView, useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { GoogleLogin } from 'vue3-google-login'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
+
+const useIconButton = ref(false);
+
+const checkScreenSize = () => {
+  useIconButton.value = window.innerWidth <= 500;
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkScreenSize);
+});
 
 const isMenuOpen = ref(false)
 
@@ -57,7 +72,27 @@ const logout = () => {
           />
         </div>
         <div v-else class="google-login-btn-wrapper">
-          <GoogleLogin :callback="callback" />
+            <!-- Botón grande -->
+            <GoogleLogin
+              v-if="!useIconButton"
+              :callback="callback"
+              :buttonConfig="{
+                type: 'standard',
+                theme: 'filled_blue',
+                size: 'medium'
+              }"
+            />
+
+            <!-- Botón solo con la G -->
+            <GoogleLogin
+              v-else
+              :callback="callback"
+              :buttonConfig="{
+                type: 'icon',
+                shape: 'circle',
+                size: 'medium'
+              }"
+            />
         </div>
       </div>
 
@@ -240,4 +275,6 @@ const logout = () => {
   background: rgba(0,0,0,0.5);
   z-index: 1005;
 }
+
+
 </style>

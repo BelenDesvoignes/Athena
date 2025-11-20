@@ -1,6 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import BackButton from '@/components/BackButton.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -12,7 +13,7 @@ if (!authStore.isLoggedIn) {
 
 <template>
   <div class="profile-container">
-
+    <BackButton />
     <div class="profile-header">
       <img
         :src="authStore.user.imageUrl"

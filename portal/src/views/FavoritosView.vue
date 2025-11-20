@@ -1,5 +1,6 @@
 <template>
   <div class="favoritos-page">
+    <BackButton />
     <header class="page-header">
       <h1>⭐ Mis Sitios Favoritos</h1>
       <p class="subtitle">Aquí encontrarás todos los lugares que has marcado como preferidos.</p>
@@ -36,6 +37,7 @@ import { ref, onMounted } from 'vue';
 import SiteCard from '@/components/SiteCard.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import BackButton from '@/components/BackButton.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
