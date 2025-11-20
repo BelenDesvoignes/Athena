@@ -39,7 +39,20 @@
             <span v-for="tag in site.tags" :key="tag.id" class="tag-badge">{{ tag.name }}</span>
           </div>
 
-          <div class="action-buttons"></div>
+          <div class="action-buttons">
+            <!-- Botón de Favorito añadido aquí -->
+            <button
+              v-if="token"
+              @click="toggleFavorite"
+              :class="['favorite-button', { 'is-favorite': isFavorite }]"
+              :title="isFavorite ? 'Remover de Favoritos' : 'Marcar como Favorito'"
+            >
+              <span class="heart-icon">{{ isFavorite ? '❤️' : '🤍' }}</span>
+              {{ isFavorite ? 'En Favoritos' : 'Añadir a Favoritos' }}
+            </button>
+            <p v-else class="login-tip">Inicia sesión para usar Favoritos.</p>
+            <!-- Fin Botón de Favorito -->
+          </div>
         </div>
       </div>
 
@@ -96,7 +109,7 @@
           <p class="review-text">{{ review.content }}</p>
           <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
         </div>
-         <div class="pagination" v-if="totalPages > 1">
+          <div class="pagination" v-if="totalPages > 1">
             <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
               Anterior
             </button>
@@ -139,17 +152,20 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
+
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
 
 const site = ref(null);
 const isLoading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
-const isFavorite = ref(false);
+const isFavorite = ref(false); // Estado para el favorito
 
 const siteId = route.params.id;
 
@@ -249,6 +265,46 @@ function onKeydown(e) {
   if (e.key === 'ArrowLeft') prevImage();
 }
 
+const toggleFavorite = async () => {
+    if (!token.value) {
+        console.warn('Acción bloqueada: El usuario debe iniciar sesión para marcar favoritos.');
+        return;
+    }
+
+    const isAdding = !isFavorite.value;
+    const action = isAdding ? 'POST' : 'DELETE';
+    const previousFavoriteState = isFavorite.value;
+
+    // AHORA LA URL INCLUYE EL SITE_ID
+    const url = `${API_BASE_URL}/sites/${siteId}/favorite`;
+
+    try {
+        // 1. Actualización Optimista
+        isFavorite.value = isAdding;
+
+        const response = await fetch(url, { // <-- URL corregida
+            method: action,
+            headers: {
+                'Authorization': `Bearer ${token.value}`,
+                // No se necesita Content-Type ni body para DELETE/POST en esta estructura
+            },
+            // REMOVER EL BODY: No es necesario enviar el site_id en el cuerpo si ya está en la URL
+            // body: JSON.stringify({ site_id: siteId })
+        });
+
+        if (!response.ok) {
+            // Revertir estado si la llamada API falla
+            isFavorite.value = previousFavoriteState;
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
+        }
+
+    } catch (err) {
+        isFavorite.value = previousFavoriteState;
+        console.error('Error de red al actualizar favoritos:', err);
+    }
+};
+
 const fetchSiteDetail = async () => {
   isLoading.value = true;
   error.value = false;
@@ -256,7 +312,14 @@ const fetchSiteDetail = async () => {
 
   try {
     const url = `${API_BASE_URL}/sites/${siteId}`;
-    const response = await fetch(url);
+    const headers = {};
+
+    // Incluir el token en el encabezado si está disponible para obtener el estado de 'is_favorite'
+    if (token.value) {
+        headers['Authorization'] = `Bearer ${token.value}`;
+    }
+
+    const response = await fetch(url, { headers });
 
     if (response.status === 404) {
       errorMessage.value = `Sitio con ID ${siteId} no encontrado.`;
@@ -273,6 +336,7 @@ const fetchSiteDetail = async () => {
     imagesList.value = [];
     buildImagesListIfNeeded();
 
+    // Sincroniza el estado de favorito desde la respuesta de la API
     if (site.value.is_favorite !== undefined) {
       isFavorite.value = site.value.is_favorite;
     }
@@ -413,9 +477,9 @@ onBeforeUnmount(() => {
   color: white;
 }
 .page-button:disabled
- {
- Cursor:text !important; Text-Decoration: None !important; 
- } 
+  {
+  Cursor:text !important; Text-Decoration: None !important;
+  }
 
 
 .description-section {
@@ -440,6 +504,57 @@ onBeforeUnmount(() => {
   font-size: 0.9em;
   margin-right: 5px;
 }
+
+/* Estilos para el botón de favorito */
+.action-buttons {
+  margin-top: 20px;
+}
+
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid #ccc;
+  background-color: white;
+  color: #333;
+}
+
+.favorite-button:hover {
+  opacity: 0.8;
+}
+
+.favorite-button.is-favorite {
+  background-color: #ff4d4d; /* Rojo para favorito */
+  color: white;
+  border-color: #ff4d4d;
+}
+
+.heart-icon {
+  font-size: 1.2em;
+  transition: transform 0.3s;
+}
+
+.favorite-button.is-favorite .heart-icon {
+  animation: pulse 0.5s ease-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.login-tip {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+}
+
 
 @media (min-width: 768px) {
   .site-content>.detail-header {

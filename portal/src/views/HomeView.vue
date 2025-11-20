@@ -1,9 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
 import FeaturedSection from '@/components/FeaturedSection.vue';
 
 const router = useRouter();
+const authStore = useAuthStore();
+const { isLoggedIn } = storeToRefs(authStore);
 
 const searchText = ref('');
 
@@ -15,43 +19,42 @@ const performSearch = () => {
     });
   }
 };
-
 </script>
 
 <template>
-  <div class="home-portal">
+<div class="home-portal">
+  <header class="hero-section">
+    <div class="search-bar">
+      <input
+        type="text"
+        v-model="searchText"
+        placeholder="Buscar sitios por nombre o descripción..."
+        @keyup.enter="performSearch"
+      >
+      <button @click="performSearch">🔍 Buscar</button>
+    </div>
+  </header>
 
+  <main class="main-content">
+    <FeaturedSection
+      v-if="isLoggedIn"
+      title="❤️ Tus Sitios Favoritos"
+      orderByParam="calificacion"
+      :isFavorite="true"
+    />
 
-    <header class="hero-section">
-      <div class="search-bar">
-        <input
-          type="text"
-          v-model="searchText"
-          placeholder="Buscar sitios por nombre o descripción..."
-          @keyup.enter="performSearch"
-        >
-        <button @click="performSearch">🔍 Buscar</button>
-      </div>
-    </header>
+    <FeaturedSection
+      title="🏆 Mejor Puntuados"
+      orderByParam="calificacion"
+    />
 
-    <main class="main-content">
-
-      <FeaturedSection
-        title="🏆 Mejor Puntuados"
-        orderByParam="calificacion"
-      />
-
-      <FeaturedSection
-        title="🆕 Recientemente Agregados"
-        orderByParam="registrado"
-      />
-
-
-
-    </main>
-  </div>
+    <FeaturedSection
+      title="🆕 Recientemente Agregados"
+      orderByParam="registrado"
+    />
+  </main>
+</div>
 </template>
-
 
 <style scoped>
 .home-portal {
@@ -84,10 +87,10 @@ const performSearch = () => {
 }
 
 .search-bar input {
-    flex-grow: 1;
-    max-width: 450px;
-    border: 2px solid #ddd;
-    margin-right: 10px;
+  flex-grow: 1;
+  max-width: 450px;
+  border: 2px solid #ddd;
+  margin-right: 10px;
 }
 
 .search-bar button {
@@ -103,14 +106,14 @@ const performSearch = () => {
 }
 
 @media (max-width: 600px) {
-    .search-bar {
-        flex-direction: column;
-    }
-    .search-bar input {
-      margin-right: 0;
-      margin-bottom: 10px;
-      max-width: none;
-    }
+  .search-bar {
+    flex-direction: column;
+  }
+  .search-bar input {
+    margin-right: 0;
+    margin-bottom: 10px;
+    max-width: none;
+  }
 }
 
 .main-content {

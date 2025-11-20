@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from src.core.models import PublicUser
 from src.core.database import db
 from sqlalchemy import select
-
+from flask_jwt_extended import create_access_token
 
 public_users_bp = Blueprint("public_users", __name__, url_prefix="/api/public_users")
 
@@ -33,12 +33,11 @@ def login_or_create_user():
     Retorna:
         JSON con los datos del usuario y mensaje correspondiente.
     """
-    
-    
+
     if request.method == "OPTIONS":
         return "", 200
 
-    
+
     data = request.get_json()
     print("💾 Datos recibidos:", data)
     email = data.get("email")
@@ -47,16 +46,15 @@ def login_or_create_user():
     if not email:
         return jsonify({"error": "Falta el campo 'email'"}), 400
 
-    
-   
+    # Construir la consulta de selección
     stmt = select(PublicUser).where(PublicUser.email == email)
-    
+
 
     user = db.session.execute(stmt).scalar_one_or_none()
 
-    
+
     if not user:
-        user = PublicUser(email=email, name=name) 
+        user = PublicUser(email=email, name=name)
         db.session.add(user)
         db.session.commit()
         status_code = 201
@@ -65,14 +63,18 @@ def login_or_create_user():
         status_code = 200
         message = "Usuario existente"
 
+    access_token = create_access_token(identity=str(user.id))
+
     return jsonify({
         "message": message,
         "user": {
             "id": user.id,
             "email": user.email,
             "name": user.name
-        }
+        },
+        "access_token": access_token
     }), status_code
+
 
 @public_users_bp.route("/", methods=["GET"])
 def list_public_users():

@@ -1,6 +1,6 @@
 from sqlalchemy import func, or_, desc, asc, distinct, and_
 from flask import Blueprint, jsonify, request, g, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, current_user
 from geoalchemy2.functions import ST_X, ST_Y, ST_GeomFromText, ST_DistanceSphere
 from math import ceil
 from marshmallow import ValidationError
@@ -15,10 +15,9 @@ from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
 from src.core.models.review import Review, ReviewStatus
 from src.core.models.schema.Reviews import Review_Create_Schema
-
+from src.core.models.favorites import Favorite
 
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
-
 
 def get_site_images(sitio, only_cover=False):
     """
@@ -26,7 +25,6 @@ def get_site_images(sitio, only_cover=False):
     Si only_cover=True, solo devuelve la portada.
     Retorna (cover_url, cover_title, lista_de_imagenes)
     """
-
     minio_client = Minio(
         endpoint=current_app.config["MINIO_SERVER"],
         access_key=current_app.config["MINIO_ACCESS_KEY"],
@@ -49,7 +47,7 @@ def get_site_images(sitio, only_cover=False):
             cover_url = default_url
             cover_title = ""
         return cover_url, cover_title, []
-    
+
     imagenes_data = []
     for img in sitio.imagenes:
         try:
@@ -74,6 +72,7 @@ def get_site_images(sitio, only_cover=False):
 @api_bp.get("/sites")
 @api_bp.route("/sites/", methods=["GET"])
 @validate_api_params(SiteListParams)
+@jwt_required(optional=True)
 def get_sites(validated_params):
 
     page = validated_params.page
@@ -88,6 +87,22 @@ def get_sites(validated_params):
     lat = validated_params.lat
     lon = validated_params.lon
     radius_km = validated_params.radius
+    is_favorite = validated_params.is_favorite
+
+    user_id = get_jwt_identity()
+    user_id_int = None
+
+    if is_favorite and user_id is None:
+        # Si pide filtrar favoritos pero NO hay identidad de usuario (token ausente o inválido)
+        # Esto debería haber sido manejado en el frontend, pero lo forzamos aquí por seguridad.
+        # Un 401 es más correcto que un 422 para falta de autorización.
+        return jsonify({"error": "Se requiere autenticación para acceder a los sitios favoritos."}), 401
+
+    if user_id is not None:
+        try:
+            user_id_int = int(user_id)
+        except ValueError:
+            user_id_int = None
 
     avg_rating = func.coalesce(
         func.avg(Review.rating).filter(Review.status == 'APROBADA'),
@@ -102,7 +117,6 @@ def get_sites(validated_params):
         .group_by(Sitio.id, Imagen.id)
     )
 
-    # búsqueda
     if search_term:
         like = f"%{search_term}%"
         query = query.filter(or_(
@@ -110,7 +124,6 @@ def get_sites(validated_params):
             Sitio.descripcion_breve.ilike(like)
         ))
 
-    # filtros
     if ciudad:
         query = query.filter(Sitio.ciudad.ilike(f"%{ciudad}%"))
     if provincia:
@@ -118,7 +131,6 @@ def get_sites(validated_params):
     if estado:
         query = query.filter(Sitio.estado_conservacion == estado)
 
-    # tags
     if tags_param:
         subquery = (
             db.session.query(sitios_tags.c.sitio_id)
@@ -129,7 +141,13 @@ def get_sites(validated_params):
         )
         query = query.filter(Sitio.id.in_(subquery))
 
-    # distancia
+    if is_favorite and user_id_int is not None:
+        query = query.join(
+            Favorite, Sitio.id == Favorite.sitio_id
+        ).filter(
+            Favorite.user_id == user_id_int
+        )
+
     distance_km = None
     if lat is not None and lon is not None and radius_km:
         center = ST_GeomFromText(f'POINT({lon} {lat})', 4326)
@@ -138,7 +156,6 @@ def get_sites(validated_params):
         query = query.filter(dist_meters <= radius_km * 1000)
         query = query.add_columns(distance_km)
 
-    # ordenamiento
     column_names = [c.get('name') for c in query.column_descriptions]
     sort_column = None
 
@@ -193,7 +210,9 @@ def get_sites(validated_params):
         "per_page": pagination.per_page
     })
 
+
 @api_bp.get("/sites/<int:site_id>")
+@jwt_required(optional=True)
 def get_site_detail(site_id):
     sitio = db.session.query(Sitio).filter_by(id=site_id, visible=True).first()
     if not sitio:
@@ -207,6 +226,18 @@ def get_site_detail(site_id):
     promedio = round(promedio, 2) if promedio else 0
 
     cover_url, cover_title, imagenes_data = get_site_images(sitio)
+
+    is_favorite_for_user = False
+    user_id = get_jwt_identity()
+
+    if user_id:
+        user_id_int = int(user_id)
+        existing_fav = db.session.query(Favorite).filter_by(
+            user_id=user_id_int,
+            sitio_id=sitio.id
+        ).first()
+        if existing_fav:
+            is_favorite_for_user = True
 
     data = {
         "id": sitio.id,
@@ -225,7 +256,8 @@ def get_site_detail(site_id):
             "url": cover_url,
             "title": cover_title
         },
-        "images": imagenes_data
+        "images": imagenes_data,
+        "is_favorite": is_favorite_for_user
     }
 
     return jsonify(data)
@@ -249,19 +281,19 @@ def get_all_tags():
     data = [{"id": t.id, "name": t.nombre} for t in tags]
     return jsonify(data)
 
-"""Api para identificarse en jwt"""
-
 
 @api_bp.post("/auth", endpoint="login")
 def login():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
+
     query = db.session.query(User).filter(User.email == email)
     user = query.first()
+
     if not user or not check_password(password, user.password):
         return jsonify({"msg": "Usuario o contraseña incorrectos"}), 401
-    
+
     access_token = create_access_token(identity=str(user.id))
 
     return jsonify({
@@ -270,40 +302,37 @@ def login():
     }), 200
 
 
-
-"""API para obtener reviews de un sitio específico"""
-
-
 @api_bp.get("/sites/<int:site_id>/reviews")
 def get_site_reviews(site_id):
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
-    """Validacion de parametros"""
+
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
+
     query = db.session.query(Review).filter_by(site_id=site_id)
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
+
     data = [
         {
             "id": review.id,
             "user_id": review.user_id,
             "rating": review.rating,
             "comment": review.content,
-            "created_at": review.created_at.isoformat(),
+            "created_at": review.created_at.isoformat()
         }
         for review in reviews
     ]
+
     response = {
         "page": page,
         "per_page": per_page,
         "total": total_reviews,
         "total_pages": ceil(total_reviews / per_page),
-        "reviews": data,
+        "reviews": data
     }
     return jsonify(response)
-
-"""Metodo para crear una nueva review para un sitio turistico"""
 
 
 @api_bp.post("/sites/<int:site_id>/reviews", endpoint="create_site_review")
@@ -311,19 +340,20 @@ def get_site_reviews(site_id):
 def create_site_review(site_id):
     review_schema = Review_Create_Schema()
     json_data = request.get_json()
+
     if not json_data:
         return jsonify({"error": "Debe enviar un cuerpo JSON"}), 400
+
     try:
         data = review_schema.load(json_data)
     except ValidationError as err:
         return jsonify(err.messages), 400
+
     if data["site_id"] != site_id:
-        return (
-            jsonify(
-                {"error": "El ID del sitio en el cuerpo no coincide con la URL"}),
-            400,
-        )
+        return jsonify({"error": "El ID del sitio en el cuerpo no coincide con la URL"}), 400
+
     user_id = int(get_jwt_identity())
+
     new_review = Review(
         site_id=site_id,
         user_id=user_id,
@@ -331,33 +361,31 @@ def create_site_review(site_id):
         content=data.get("comment", ""),
         status=ReviewStatus.APROBADA,
     )
+
     db.session.add(new_review)
     db.session.commit()
-    return (
-        jsonify(
-            {
-                "message": "Reseña creada exitosamente.",
-                "review": {
-                    "id": new_review.id,
-                    "site_id": new_review.site_id,
-                    "user_id": new_review.user_id,
-                    "rating": new_review.rating,
-                    "comment": new_review.content,
-                    "status": new_review.status.value,
-                },
-            }
-        ),
-        201,
-    )
+
+    return jsonify({
+        "message": "Reseña creada exitosamente.",
+        "review": {
+            "id": new_review.id,
+            "site_id": new_review.site_id,
+            "user_id": new_review.user_id,
+            "rating": new_review.rating,
+            "comment": new_review.content,
+            "status": new_review.status.value,
+        }
+    }), 201
 
 
 @api_bp.get("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="get_site_review")
 @jwt_required()
 def get_site_review(site_id, review_id):
-    review = db.session.query(Review).filter_by(
-        id=review_id, site_id=site_id).first()
+    review = db.session.query(Review).filter_by(id=review_id, site_id=site_id).first()
+
     if not review:
         return jsonify({"error": "Reseña no encontrada"}), 404
+
     review_data = {
         "id": review.id,
         "site_id": review.site_id,
@@ -368,17 +396,16 @@ def get_site_review(site_id, review_id):
         "created_at": review.created_at.isoformat(),
         "updated_at": review.updated_at.isoformat(),
     }
+
     return jsonify(review_data)
 
 
 @api_bp.delete("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="delete_site_review")
 @jwt_required()
 def delete_review(site_id, review_id):
-    user_id = get_jwt_identity()  
+    user_id = get_jwt_identity()
 
-    
-    review = db.session.query(Review).filter_by(
-        id=review_id, site_id=site_id).first()
+    review = db.session.query(Review).filter_by(id=review_id, site_id=site_id).first()
 
     if not review:
         return jsonify({"msg": "Review no encontrada"}), 404
@@ -390,11 +417,10 @@ def delete_review(site_id, review_id):
     db.session.commit()
 
     return jsonify({"msg": "Review eliminada con éxito"}), 200
+
+
 @api_bp.get("/flags/portal")
 def portal_status():
-    """
-    Devuelve el estado del portal (mantenimiento o activo).
-    """
     maintenance = g.feature_flags.get("portal_maintenance_mode", False)
     msg = g.feature_flags_msg.get("portal_maintenance_mode")
 
@@ -404,13 +430,12 @@ def portal_status():
         "flag": "portal_maintenance_mode"
     }), 209
 
+
 @api_bp.get("/internal/users/<int:user_id>")
 def get_user_info(user_id):
-    """
-    Devuelve información básica del usuario dado su ID.
-    """
     print(f'Consulta recibida para el usuario con ID: {user_id}')
     user = db.session.query(User).filter_by(id=user_id).first()
+
     if not user:
         print(f'Usuario no encontrado para el ID: {user_id}')
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -419,14 +444,13 @@ def get_user_info(user_id):
         "nombre": user.nombre,
         "apellido": user.apellido,
     }
+
     print(f'Datos devueltos: {data}')
     return jsonify(data), 200
 
+
 @api_bp.get("/flags/reviews")
 def reviews_status():
-    """
-    Devuelve si las reseñas del portal están habilitadas o deshabilitadas.
-    """
     reviews_enabled = g.feature_flags.get("reviews_enabled", True)
 
     return jsonify({
