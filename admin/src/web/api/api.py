@@ -413,7 +413,7 @@ def get_site_reviews(site_id):
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
 
-    query = db.session.query(Review).filter_by(site_id=site_id)
+    query = db.session.query(Review).filter_by(site_id=site_id, status=ReviewStatus.APROBADA)
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -570,7 +570,7 @@ def delete_review(site_id, review_id):
     return jsonify({"msg": "Review eliminada con éxito"}), 200
 
 
-@api_bp.get("/flags/portal")
+@api_bp.get("/flags/portal", endpoint="portal_status")
 def portal_status():
     maintenance = g.feature_flags.get("portal_maintenance_mode", False)
     msg = g.feature_flags_msg.get("portal_maintenance_mode")
@@ -600,6 +600,68 @@ def get_user_info(user_id):
     return jsonify(data), 200
 
 
+@api_bp.get("/sites/<int:site_id>/reviews/check", endpoint="check_site_review")
+@jwt_required()
+def check_site_review(site_id):
+    user_id = get_jwt_identity()
+    review = db.session.query(Review).filter_by(site_id=site_id, user_id=user_id).first()
+
+    if review:
+        review_data = {
+            "id": review.id,
+            "site_id": review.site_id,
+            "user_id": review.user_id,
+            "rating": review.rating,
+            "comment": review.content,
+            "status": review.status.value,
+            "created_at": review.created_at.isoformat(),
+            "updated_at": review.updated_at.isoformat(),
+        }
+        return jsonify({"has_reviewed": True, "review": review_data}), 200
+    else:
+        return jsonify({"has_reviewed": False}), 200
+
+
+
+
+
+@api_bp.get("/me/reviews", endpoint="get_review_details")
+@jwt_required()
+def get_review_details():
+    user_id = get_jwt_identity()
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=25, type=int)
+    if page < 1 or per_page < 1 or per_page > 100:
+        return jsonify({"error": "Parametros de paginacion invalidos"}), 400
+
+    query = db.session.query(Review).filter_by(user_id=user_id)
+    total_reviews = query.count()
+    reviews = query.offset((page - 1) * per_page).limit(per_page).all()
+
+
+    
+    data = [
+        {
+            "id": review.id,
+            "site_id": review.site_id,
+            "user_id": review.user_id,  
+            "rating": review.rating,
+            "comment": review.content,
+            "status": review.status.value,
+            "created_at": review.created_at.isoformat()
+        }
+        for review in reviews
+    ]
+
+    response = {
+    "page": page,
+        "per_page": per_page,
+        "total": total_reviews,
+        "total_pages": ceil(total_reviews / per_page),
+        "reviews": data
+    }
+    return jsonify(response),200
+    
 @api_bp.get("/flags/reviews")
 def reviews_status():
     reviews_enabled = g.feature_flags.get("reviews_enabled", True)
