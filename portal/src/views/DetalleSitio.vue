@@ -70,7 +70,7 @@
 
       <section class="full-description-section">
         <h2>Detalle del Sitio</h2>
-        
+
         <div>
           <p>
             {{ site.short_description }}
@@ -98,97 +98,96 @@
 
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
-        <button v-if="userReview==null" class="write-review-btn" @click="handleWriteReview">
-          ✍️ Escribir reseña
-        </button>
-        <button v-else class="write-review-btn" @click="handleWriteReview">
-          ✍️ Editar mi reseña
-        </button>
-
-        <div v-if="showReviewModal" class="review-modal-overlay" @click="closeReviewModal">
-          <div class="review-modal" @click.stop>
-
-            <div class="review-modal-header">
-              <h3 v-if="userReview==null">✍️ Escribir reseña</h3>
-              <h3 v-else>✍️ Editar reseña</h3>
-              <button class="close-btn" @click="closeReviewModal">✕</button>
-            </div>
-
-            <div class="review-modal-body">
-              <label class="input-label">Calificación</label>
-              <select  v-model="newReview.rating" class="input-select">
-                <option v-if="userReview==null" disabled value="">Selecciona…</option>
-                <option v-if="userReview!=null" :value="userReview.rating">{{ userReview.rating }} ⭐ (actual)</option>
-                <option v-for="n in 5" :key="n" :value="n">{{ n }} ⭐</option>
-              </select>
-           
-              <label class="input-label">Comentario</label>
-              <textarea v-if="userReview==null" v-model="newReview.content" class="input-textarea" rows="4"
-                placeholder="Escribe tu experiencia..."></textarea>
-                <textarea v-if="userReview!=null" v-model="newReview.content" class="input-textarea" rows="4">${{ userReview.comment }}</textarea>
-            </div>
-
-            <div class="review-modal-footer">
-              <button class="primary-btn" @click="submitReviewModal">Enviar reseña</button>
-              <button class="secondary-btn" @click="closeReviewModal">Cancelar</button>
-            </div>
-
-          </div>
+        <div v-if="reviewsFeatureDisabled" class="reviews-disabled-msg">
+          ✖️ Las reseñas están desactivadas temporalmente.
         </div>
-
-        <div v-if="isLoadingReviews" class="status-message">
-          Cargando reseñas...
-        </div>
-
-        <!-- Error -->
-        <div v-else-if="reviewsError" class="status-message error">
-          ❌ {{ reviewsErrorMessage }}
-        </div>
-
-        <!-- Lista de reseñas -->
-        <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
-          <div class="review-header">
-            <strong>
-              <section>
-                {{ review.user_info?.nombre || 'Usuario Anónimo' }}
-
-                <button v-if="authStore.isLoggedIn &&
-                  parseInt(review.user_id) === parseInt(authStore.userId)" class="modal-delete"
-                  @click.stop="deleteReview(review.id)" aria-label="Eliminar">
-                  🗑️
-                </button>
-              </section>
-            </strong>
-            <span>⭐ {{ review.rating }}/5</span>
-            <section>Comentario: {{ review.comment }}</section>
-            <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
-          </div>
-          <br></br>
-        </div>
-      
-        <div class="pagination" v-if="totalPages > 1">
-          <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
-            Anterior
+        <div v-else>
+          <button v-if="userReview==null" class="write-review-btn" @click="handleWriteReview">
+            ✍️ Escribir reseña
+          </button>
+          <button v-else class="write-review-btn" @click="handleWriteReview">
+            ✍️ Editar mi reseña
           </button>
 
-          <span>Página {{ currentPage }} de {{ totalPages }}</span>
+          <div v-if="showReviewModal" class="review-modal-overlay" @click="closeReviewModal">
+            <div class="review-modal" @click.stop>
 
-          <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
-            Siguiente
-          </button>
+              <div class="review-modal-header">
+                <h3 v-if="userReview==null">✍️ Escribir reseña</h3>
+                <h3 v-else>✍️ Editar reseña</h3>
+                <button class="close-btn" @click="closeReviewModal">✕</button>
+              </div>
+
+              <div class="review-modal-body">
+                <label class="input-label">Calificación</label>
+                <select  v-model="newReview.rating" class="input-select">
+                  <option v-if="userReview==null" disabled value="">Selecciona…</option>
+                  <option v-if="userReview!=null" :value="userReview.rating">{{ userReview.rating }} ⭐ (actual)</option>
+                  <option v-for="n in 5" :key="n" :value="n">{{ n }} ⭐</option>
+                </select>
+
+                <label class="input-label">Comentario</label>
+                <textarea v-if="userReview==null" v-model="newReview.content" class="input-textarea" rows="4"
+                  placeholder="Escribe tu experiencia..."></textarea>
+                  <textarea v-if="userReview!=null" v-model="newReview.content" class="input-textarea" rows="4">${{ userReview.comment }}</textarea>
+              </div>
+
+              <div class="review-modal-footer">
+                <button class="primary-btn" @click="submitReviewModal">Enviar reseña</button>
+                <button class="secondary-btn" @click="closeReviewModal">Cancelar</button>
+              </div>
+
+            </div>
+          </div>
+
+          <div v-if="isLoadingReviews" class="status-message">
+            Cargando reseñas...
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="reviewsError" class="status-message error">
+            ❌ {{ reviewsErrorMessage }}
+          </div>
+
+          <!-- Lista de reseñas -->
+          <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
+            <div class="review-header">
+              <strong>
+                <section>
+                  {{ review.user_info?.nombre || 'Usuario Anónimo' }}
+
+                  <button v-if="authStore.isLoggedIn &&
+                    parseInt(review.user_id) === parseInt(authStore.userId)" class="modal-delete"
+                    @click.stop="deleteReview(review.id)" aria-label="Eliminar">
+                    🗑️
+                  </button>
+                </section>
+              </strong>
+              <span>⭐ {{ review.rating }}/5</span>
+              <section>Comentario: {{ review.comment }}</section>
+              <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
+            </div>
+            <br></br>
+          </div>
+
+          <div class="pagination" v-if="totalPages > 1">
+            <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
+              Anterior
+            </button>
+
+            <span>Página {{ currentPage }} de {{ totalPages }}</span>
+
+            <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
+              Siguiente
+            </button>
+          </div>
+
+          <!-- Sin reseñas -->
+          <p v-if="totalReviews.length < 1" class="empty-message">
+            Este sitio aún no tiene reseñas.
+          </p>
         </div>
-
-        <!-- Sin reseñas -->
-        <p v-if="totalReviews.length < 1" class="empty-message">
-          Este sitio aún no tiene reseñas.
-        </p>
       </section>
-
-
-
-
-
-
     </section>
 
     <!-- Modal de Galería -->
@@ -266,6 +265,19 @@ import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
 import "leaflet/dist/leaflet.css";
 
+const reviewsFeatureDisabled = ref(false);
+
+async function fetchReviewsFlag() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/flags/reviews`);
+    const data = await response.json();
+    reviewsFeatureDisabled.value = data.disabled;
+  } catch (err) {
+    console.error("Error obteniendo flag de reseñas:", err);
+  }
+}
+
+
 const route = useRoute();
 const router = useRouter(); // Se mantiene aunque no se use para redirección
 const authStore = useAuthStore();
@@ -329,10 +341,7 @@ const handleFavoriteAction = () => {
         // Si está autenticado, ejecuta la función de toggle (ya existente)
         toggleFavorite();
     }
-}
-
-
-
+};
 
 function openByIndex(idx) {
   buildImagesListIfNeeded();
@@ -418,7 +427,7 @@ function handleWriteReview() {
   }
 
   showReviewModal.value = true;
-}} 
+}}
 
 function closeLoginPromptReseña() {
   showLoginPrompt.value = false;
@@ -699,7 +708,7 @@ const fetchCheckReview = async () => {
     showLoginPromptReseña.value = true;
     return;
   }
-  
+
   const url = `${API_BASE_URL}/sites/${siteId}/reviews/check`;
   const method = "GET";
   const response = fetch(url, {
@@ -711,8 +720,6 @@ const fetchCheckReview = async () => {
   })
   return response;
 };
-
-
 
 
 function aprobadas(reviewsList){
@@ -734,7 +741,7 @@ const fetchReviews = async () => {
     const data = await response.json();
     totalPages.value = data.total_pages || 1;
     const reviewsData = data.reviews || [];
-    
+
     for (const review of reviewsData) {
       if (review.user_id) {
         review.user_info = await fetchUserInfo(review.user_id);
@@ -757,7 +764,7 @@ const fetchReviews = async () => {
     reviews.value = reviewsData;
     reviews.value = aprobadas(reviews.value);
     totalReviews.value = reviews.value.length;
-    
+
 
   } catch (err) {
     console.error('🔥 Error al cargar reseñas:', err);
@@ -768,6 +775,8 @@ const fetchReviews = async () => {
   }
 };
 onMounted(() => {
+
+  fetchReviewsFlag();
   if (siteId) {
     fetchSiteDetail();
     fetchReviews();
@@ -783,6 +792,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
 });
+
+
 </script>
 
 <style scoped>
@@ -821,7 +832,7 @@ onBeforeUnmount(() => {
   color: white;
   padding: 8px 15px;
   border-radius: 6px;
-  font-weight: 600; 
+  font-weight: 600;
   transition: background-color 0.2s;
 }
 .btn-primary:hover {
@@ -1435,6 +1446,17 @@ onBeforeUnmount(() => {
 .ver-mas-btn:hover {
   text-decoration: underline;
 }
+
+.reviews-disabled-msg {
+  padding: 12px 16px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #8c6d1f;
+  margin-bottom: 16px;
+}
+
 
 </style>
 

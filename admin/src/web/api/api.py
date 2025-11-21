@@ -17,6 +17,7 @@ from src.core.models.public_user import PublicUser
 from src.core.models.review import Review, ReviewStatus
 from src.core.models.schema.Reviews import Review_Create_Schema
 from src.core.models.favorites import Favorite
+from src.web.handlers.maintenance import reviews_enabled_required
 
 api_bp = Blueprint("api_public", __name__, url_prefix="/api")
 
@@ -406,6 +407,7 @@ def login():
 
 
 @api_bp.get("/sites/<int:site_id>/reviews")
+@reviews_enabled_required
 def get_site_reviews(site_id):
     page = request.args.get("page", default=1, type=int)
     per_page = request.args.get("per_page", default=10, type=int)
@@ -441,6 +443,7 @@ def get_site_reviews(site_id):
 
 @api_bp.post("/sites/<int:site_id>/reviews", endpoint="create_site_review")
 @jwt_required()
+@reviews_enabled_required
 def create_site_review(site_id):
     review_schema = Review_Create_Schema()
     json_data = request.get_json()
@@ -486,6 +489,7 @@ def create_site_review(site_id):
 
 @api_bp.put("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="edite_site_review")
 @jwt_required()
+@reviews_enabled_required
 def edite_site_review(site_id,review_id):
     review_schema = Review_Create_Schema()
     json_data = request.get_json()
@@ -527,10 +531,9 @@ def edite_site_review(site_id,review_id):
     }), 201
 
 
-
-
 @api_bp.get("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="get_site_review")
 @jwt_required()
+@reviews_enabled_required
 def get_site_review(site_id, review_id):
     review = db.session.query(Review).filter_by(id=review_id, site_id=site_id).first()
 
@@ -553,6 +556,7 @@ def get_site_review(site_id, review_id):
 
 @api_bp.delete("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="delete_site_review")
 @jwt_required()
+@reviews_enabled_required
 def delete_review(site_id, review_id):
     user_id = get_jwt_identity()
     user = db.session.query(PublicUser).filter_by(id=user_id).first()
@@ -602,6 +606,7 @@ def get_user_info(user_id):
 
 @api_bp.get("/sites/<int:site_id>/reviews/check", endpoint="check_site_review")
 @jwt_required()
+@reviews_enabled_required
 def check_site_review(site_id):
     user_id = get_jwt_identity()
     review = db.session.query(Review).filter_by(site_id=site_id, user_id=user_id).first()
@@ -622,11 +627,9 @@ def check_site_review(site_id):
         return jsonify({"has_reviewed": False}), 200
 
 
-
-
-
 @api_bp.get("/me/reviews", endpoint="get_review_details")
 @jwt_required()
+@reviews_enabled_required
 def get_review_details():
     user_id = get_jwt_identity()
     page = request.args.get("page", default=1, type=int)
@@ -664,9 +667,9 @@ def get_review_details():
     
 @api_bp.get("/flags/reviews")
 def reviews_status():
-    reviews_enabled = g.feature_flags.get("reviews_enabled", True)
+    reviews_disabled = g.feature_flags.get("reviews_disabled", False)
 
     return jsonify({
-        "enabled": reviews_enabled,
-        "flag": "reviews_enabled"
+        "disabled": reviews_disabled,
+        "flag": "reviews_disabled"
     }), 200

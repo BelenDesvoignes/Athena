@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import g, redirect, request, session, url_for
+from flask import g, redirect, request, session, url_for, jsonify
 
 from src.core.database import db
 from src.core.models.feature_flags import FeatureFlag
@@ -49,3 +49,18 @@ def maintenance_protected(area: str):
             return f(*args, **kwargs)
         return wrapped
     return decorator
+
+
+def reviews_enabled_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        reviews_disabled = g.feature_flags.get("reviews_disabled", False)
+
+        if reviews_disabled:
+            return jsonify({
+                "error": "Las reseñas están deshabilitadas temporalmente.",
+                "flag": "reviews_disabled"
+            }), 403 
+
+        return f(*args, **kwargs)
+    return decorated_function

@@ -7,62 +7,63 @@
     </header>
 
     <main class="reviews-main">
-
-      <div v-if="isLoading" class="status-message loading-box">
-        Cargando tus reseñas...
+      <div v-if="reviewsFeatureDisabled" class="reviews-disabled-msg">
+          ✖️ Las reseñas están desactivadas temporalmente.
       </div>
+      <div v-else>
+        <div v-if="isLoading" class="status-message loading-box">
+          Cargando tus reseñas...
+        </div>
 
-      <div v-else-if="error" class="error-message message-box">
-        ❌ Error al cargar reseñas: **{{ errorMessage }}**
-        <p v-if="errorStatusCode === 401">
-          Por favor, inicia sesión nuevamente.
-        </p>
-      </div>
-
-      <div v-else-if="reviews.length > 0" class="list-grid">
-        <div v-for="review in reviews" :key="review.id" class="review-card">
-          <section>
-            <h3 class="review-title">Reseña del sitio #{{ review.site_id }}</h3> 
-      <button @click="openEditReviewModal(review)" class="edit-btn">
-        ✏️ Editar
-      </button>
-
-      <button @click="deleteReview(review)" class="modal-delete">
-        🗑️ Eliminar
-      </button>
-          </section>
-
-          <p class="review-rating">⭐ {{ review.rating }} / 5</p>
-          <p class="review-comment">Comentario: {{ review.comment }}</p>
-          <p class="review-status" :class="{
-            pendiente: review.status === 'PENDIENTE',
-            aprobada: review.status === 'APROBADA',
-            rechazada: review.status === 'RECHAZADA'
-          }">
-            Estado: {{ review.status }}
-          </p>
-
-          <p v-if="review.rejection_reason" class="review-rejection">
-            Motivo de rechazo: {{ review.rejection_reason }}
-          </p>
-
-          <p class="review-date">
-            Publicada el {{ formatDate(review.created_at) }}
-          </p>
-
-          <p class="review-content">
-            {{ review.content }}
+        <div v-else-if="error" class="error-message message-box">
+          ❌ Error al cargar reseñas: **{{ errorMessage }}**
+          <p v-if="errorStatusCode === 401">
+            Por favor, inicia sesión nuevamente.
           </p>
         </div>
+
+        <div v-else-if="reviews.length > 0" class="list-grid">
+          <div v-for="review in reviews" :key="review.id" class="review-card">
+            <section>
+              <h3 class="review-title">Reseña del sitio #{{ review.site_id }}</h3>
+        <button @click="openEditReviewModal(review)" class="edit-btn">
+          ✏️ Editar
+        </button>
+
+        <button @click="deleteReview(review)" class="modal-delete">
+          🗑️ Eliminar
+        </button>
+            </section>
+
+            <p class="review-rating">⭐ {{ review.rating }} / 5</p>
+            <p class="review-comment">Comentario: {{ review.comment }}</p>
+            <p class="review-status" :class="{
+              pendiente: review.status === 'PENDIENTE',
+              aprobada: review.status === 'APROBADA',
+              rechazada: review.status === 'RECHAZADA'
+            }">
+              Estado: {{ review.status }}
+            </p>
+
+            <p v-if="review.rejection_reason" class="review-rejection">
+              Motivo de rechazo: {{ review.rejection_reason }}
+            </p>
+
+            <p class="review-date">
+              Publicada el {{ formatDate(review.created_at) }}
+            </p>
+
+            <p class="review-content">
+              {{ review.content }}
+            </p>
+          </div>
+        </div>
+
+        <div v-else class="empty-message message-box">
+          Aún no escribiste reseñas.
+          <p>¡Explora sitios y comparte tu experiencia!</p>
+        </div>
       </div>
-
-      <div v-else class="empty-message message-box">
-        Aún no escribiste reseñas.
-        <p>Explora sitios y comparte tu experiencia.</p>
-      </div>
-
-
-      
 
 <div v-if="showReviewModal" class="review-modal-overlay" @click="closeReviewModal">
   <div class="review-modal" @click.stop>
@@ -97,7 +98,7 @@
             Siguiente
           </button>
         </div>
-        
+
     <!-- Footer -->
     <div class="review-modal-footer">
       <button class="primary-btn" @click="submitReview">
@@ -119,6 +120,17 @@ import { useAuthStore } from '@/stores/auth';
 import { useRouter } from "vue-router";
 import BackButton from '@/components/BackButton.vue';
 
+const reviewsFeatureDisabled = ref(false);
+
+async function fetchReviewsFlag() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/flags/reviews`);
+    const data = await response.json();
+    reviewsFeatureDisabled.value = data.disabled;
+  } catch (err) {
+    console.error("Error obteniendo flag de reseñas:", err);
+  }
+}
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -221,7 +233,7 @@ const submitReview = async () => {
       body: JSON.stringify({
         site_id: aEditar.site_id,
         rating: newReview.value.rating,
-        comment: newReview.value.comment,
+        comment: newReview.value.content,
       })
     });
 
@@ -277,10 +289,10 @@ const deleteReview = async (review) => {
 
 
 const openEditReviewModal = (review) => {
-  userReview.value = review;            
-  newReview.value.rating = review.rating; 
-  newReview.value.content = review.comment; 
-  showReviewModal.value = true;         
+  userReview.value = review;
+  newReview.value.rating = review.rating;
+  newReview.value.content = review.comment;
+  showReviewModal.value = true;
 };
 
 
@@ -290,10 +302,8 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString();
 };
 
-
-
-
 onMounted(() => {
+  fetchReviewsFlag();
   fetchReviews();
 });
 </script>
@@ -615,6 +625,12 @@ onMounted(() => {
   border: 1px solid #ddd;
 }
 
+.empty-message p {
+  margin-top: 10px;
+  font-style: italic;
+  color: #888;
+}
+
 /* -------- BUTTONS -------- */
 .btn-primary {
   background: #3f51b5;
@@ -654,5 +670,15 @@ onMounted(() => {
   width: 90%;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.reviews-disabled-msg {
+  text-align: center;
+  padding: 12px 16px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #8c6d1f;
+  margin-bottom: 16px;
 }
 </style>
