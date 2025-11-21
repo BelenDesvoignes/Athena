@@ -85,6 +85,19 @@
       <textarea v-model="newReview.content" class="input-textarea" rows="4"></textarea>
     </div>
 
+
+        <div class="pagination" v-if="totalPages > 1">
+          <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
+            Anterior
+          </button>
+
+          <span>Página {{ currentPage }} de {{ totalPages }}</span>
+
+          <button class="page-button" :disabled="currentPage >= totalPages" @click="nextPage()">
+            Siguiente
+          </button>
+        </div>
+        
     <!-- Footer -->
     <div class="review-modal-footer">
       <button class="primary-btn" @click="submitReview">
