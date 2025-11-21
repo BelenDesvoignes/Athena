@@ -124,8 +124,7 @@ def review_reject(review_id):
     Redirección:
         - Redirige a la lista con mensaje flash.
     """
-    data = request.json or {}
-    reason = data.get("reason", "")
+    reason = request.form.get("reason", "")
     try:
         review = reject_review(review_id, reason, current_user())
         flash(f"Reseña ID {review_id} rechazada con éxito.", "success")
