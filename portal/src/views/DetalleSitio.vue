@@ -98,28 +98,34 @@
 
       <section class="reviews-list">
         <h2>Últimas Reseñas</h2>
-        <button class="write-review-btn" @click="handleWriteReview">
+        <button v-if="userReview==null" class="write-review-btn" @click="handleWriteReview">
           ✍️ Escribir reseña
+        </button>
+        <button v-else class="write-review-btn" @click="handleWriteReview">
+          ✍️ Editar mi reseña
         </button>
 
         <div v-if="showReviewModal" class="review-modal-overlay" @click="closeReviewModal">
           <div class="review-modal" @click.stop>
 
             <div class="review-modal-header">
-              <h3>✍️ Escribir reseña</h3>
+              <h3 v-if="userReview==null">✍️ Escribir reseña</h3>
+              <h3 v-else>✍️ Editar reseña</h3>
               <button class="close-btn" @click="closeReviewModal">✕</button>
             </div>
 
             <div class="review-modal-body">
               <label class="input-label">Calificación</label>
-              <select v-model="newReview.rating" class="input-select">
-                <option disabled value="">Selecciona…</option>
+              <select  v-model="newReview.rating" class="input-select">
+                <option v-if="userReview==null" disabled value="">Selecciona…</option>
+                <option v-if="userReview!=null" :value="userReview.rating">{{ userReview.rating }} ⭐ (actual)</option>
                 <option v-for="n in 5" :key="n" :value="n">{{ n }} ⭐</option>
               </select>
-
+           
               <label class="input-label">Comentario</label>
-              <textarea v-model="newReview.content" class="input-textarea" rows="4"
+              <textarea v-if="userReview==null" v-model="newReview.content" class="input-textarea" rows="4"
                 placeholder="Escribe tu experiencia..."></textarea>
+                <textarea v-if="userReview!=null" v-model="newReview.content" class="input-textarea" rows="4">${{ userReview.comment }}</textarea>
             </div>
 
             <div class="review-modal-footer">
@@ -141,7 +147,7 @@
 
         <!-- Lista de reseñas -->
         <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
-          <div class="review-header">
+          <div v-if="review.status==='APROBADA'" class="review-header">
             <strong>
               <section>
                 {{ review.user_info?.nombre || 'Usuario Anónimo' }}
@@ -151,15 +157,15 @@
                   @click.stop="deleteReview(review.id)" aria-label="Eliminar">
                   🗑️
                 </button>
-
               </section>
             </strong>
             <span>⭐ {{ review.rating }}/5</span>
             <section>Comentario: {{ review.comment }}</section>
+            <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
           </div>
-          <p class="review-text">{{ review.content }}</p>
-          <small class="review-date">{{ new Date(review.created_at).toLocaleDateString() }}</small>
+          <br></br>
         </div>
+      
         <div class="pagination" v-if="totalPages > 1">
           <button class="page-button" :disabled="currentPage <= 1" @click="prevPage()">
             Anterior
@@ -254,7 +260,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick, onBeforeUnmount, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { parseQuery, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 import BackButton from "@/components/BackButton.vue";
@@ -280,9 +286,12 @@ const siteId = route.params.id;
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+const userReview = ref(null);
+const reviewRating = ref(5);
+const reviewContent = ref("");
 const newReview = ref({
-  rating: "",
-  content: ""
+  rating: reviewRating.value,
+  content: reviewContent.value
 });
 const reviews = ref([]);
 const totalReviews = ref(0);
@@ -400,10 +409,17 @@ function handleWriteReview() {
         // Si no está autenticado, muestra el modal y pide iniciar sesión
         showLoginPromptReseña.value = true;
     } else {
-        // Si esta autenticado , muestra el modal de reseña
-        showReviewModal.value = true;
-      } 
-}
+       if (userReview.value != null) {
+          newReview.value.rating = userReview.value.rating;
+          newReview.value.content = userReview.value.comment;
+        } else {
+          reviewRating.value = 5;
+          reviewContent.value = "";
+  }
+
+  showReviewModal.value = true;
+}} 
+
 function closeLoginPromptReseña() {
   showLoginPrompt.value = false;
 }
@@ -417,7 +433,7 @@ async function submitReviewModal() {
     return;
   }
 
-  await createReview(); // ya existe en tu componente
+  await submitReview()
 
   showReviewModal.value = false;
 
@@ -605,7 +621,7 @@ const deleteReview = async (reviewId) => {
   }
 }
 
-const createReview = async () => {
+const submitReview = async () => {
   try {
     const authStore = useAuthStore();
 
@@ -614,51 +630,66 @@ const createReview = async () => {
       return;
     }
 
-    // 1. Obtener el valor del encabezado: "Bearer [token]"
     const authorizationToken = authStore.authHeader.Authorization;
-    console.log("🔐 Authorization Header Value:", authorizationToken);
     if (!authorizationToken) {
       alert("Error: No se encontró el token de autenticación.");
       return;
     }
 
-    const response = await fetch(`${API_BASE_URL}/sites/${siteId}/reviews`, {
-      method: "POST",
+    const payload = {
+      rating: parseInt(newReview.value.rating),
+      site_id: parseInt(siteId),
+      comment: newReview.value.content,
+
+    };
+
+    let url, method;
+
+    if (userReview==null) {
+      // Crear reseña
+      url = `${API_BASE_URL}/sites/${siteId}/reviews`;
+      method = "POST";
+    } else if(userReview.value!=null) {
+      url = `${API_BASE_URL}/sites/${siteId}/reviews/${userReview.value.id}`;
+      method = "PUT";
+
+    }
+    const response = await fetch(url, {
+      method:method,
       headers: {
         "Content-Type": "application/json",
-        // 2. Usar solo la cadena de texto como valor del encabezado.
-        "Authorization": authorizationToken,
+        "Authorization": authorizationToken
       },
-      body: JSON.stringify({
-        rating: parseInt(newReview.value.rating), // Usar .value para refs
-        site_id: parseInt(siteId), // Asegurar que sea número si es necesario
-        comment: newReview.value.content,
-      }),
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("❌ Error creando reseña:", data);
+      console.error("❌ Error creando/editando reseña:", data);
       alert(data.msg || data.error || JSON.stringify(data));
       return;
     }
 
-    alert("Reseña creada con éxito ✔️");
+    alert(
+      !userReview.value
+        ? "Reseña creada con éxito ✔️"
+        : "Reseña editada con éxito ✨"
+    );
 
-    // Limpiar el formulario
-    newReview.value.content = "";
-    newReview.value.rating = "";
+    // Cerrar modal
+    showReviewModal.value = false;
 
-    // Recargar las reseñas para mostrar la nueva
-    currentPage.value = 1;
-    await fetchReviews();
 
   } catch (error) {
-    console.error("❌ Error en createReview:", error);
+    console.error("❌ Error en submitReview:", error);
     alert("Error de conexión o inesperado al enviar la reseña.");
   }
-}
+    currentPage.value = 1;
+    await fetchReviews();
+};
+
+
 
 
 const fetchReviews = async () => {
@@ -676,18 +707,22 @@ const fetchReviews = async () => {
     const data = await response.json();
     totalPages.value = data.total_pages || 1;
     const reviewsData = data.reviews || [];
-
+    
     for (const review of reviewsData) {
       if (review.user_id) {
         review.user_info = await fetchUserInfo(review.user_id);
       } else {
         review.user_info = null;
       }
+      if (userReview.value==null && parseInt(review.user_info.id) == parseInt(authStore.userId)) {
+        userReview.value = review;
+      }
     }
+    console.log(userReview.value);
     totalReviews.value = data.total || 0;
     reviews.value = reviewsData;
 
-    console.log("✨ Reviews finales con user info:", reviews.value);
+    
 
   } catch (err) {
     console.error('🔥 Error al cargar reseñas:', err);
