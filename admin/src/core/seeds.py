@@ -364,12 +364,12 @@ def seed_feature_flags():
         {
             "key": "portal_maintenance_mode",
             "display_name": "Modo mantenimiento del portal web",
-            "description": "Pone el portal en modo mantenimiento.",
+            "description": "Deshabilita temporalmente el portal web.",
             "is_enabled": False,
             "maintenance_message": None
         },
         {
-            "key": "reviews_enabled",
+            "key": "reviews_disabled",
             "display_name": "Deshabilitar nuevas reseñas",
             "description": "Deshabilita la creación y visualización de reseñas en el portal.",
             "is_enabled": False,
