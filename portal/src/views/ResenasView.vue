@@ -27,7 +27,7 @@
         ✏️ Editar
       </button>
 
-      <button @click="deleteReview(review)" class="delete-btn">
+      <button @click="deleteReview(review)" class="modal-delete">
         🗑️ Eliminar
       </button>
           </section>
