@@ -9,7 +9,7 @@ from src.core.database import db
 from src.core.models.images import Imagen
 from src.core.bcrypt import check_password
 from src.core.api_validations import validate_api_params, SiteListParams
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from src.core.models.site import Sitio
 from src.core.models.tag import Tag, sitios_tags
 from src.core.models.user import User
@@ -413,16 +413,17 @@ def get_site_reviews(site_id):
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
 
-    query = db.session.query(Review).filter_by(site_id=site_id).filter(Review.status == ReviewStatus.APROBADA).order_by(Review.created_at.desc())
+    query = db.session.query(Review).filter_by(site_id=site_id)
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
 
     data = [
         {
             "id": review.id,
-            "user_id": review.user_id,
+            "user_id": review.user_id,  
             "rating": review.rating,
             "comment": review.content,
+            "status": review.status.value,
             "created_at": review.created_at.isoformat()
         }
         for review in reviews
@@ -479,6 +480,53 @@ def create_site_review(site_id):
             "status": new_review.status.value,
         }
     }), 201
+
+
+
+
+@api_bp.put("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="edite_site_review")
+@jwt_required()
+def edite_site_review(site_id,review_id):
+    review_schema = Review_Create_Schema()
+    json_data = request.get_json()
+
+    if not json_data:
+        return jsonify({"error": "Debe enviar un cuerpo JSON"}), 400
+
+    try:
+        data = review_schema.load(json_data)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
+
+    if data["site_id"] != site_id:
+        return jsonify({"error": "El ID del sitio en el cuerpo no coincide con la URL"}), 400
+
+    user_id = int(get_jwt_identity())
+    review_editar = db.session.query(Review).filter_by(id=review_id,site_id=site_id).first()
+
+    if review_editar.user_id != user_id:
+        return jsonify({"error": "No tenés permiso para editar esta reseña"}), 403
+
+    review_editar.rating = data["rating"]
+    review_editar.content = data.get("comment", "")
+    review_editar.status = ReviewStatus.PENDIENTE
+    review_editar.updated_at = datetime.now(timezone.utc)
+    
+    db.session.commit()
+
+    return jsonify({
+        "message": "Reseña creada exitosamente.",
+        "review": {
+            "id": review_editar.id,
+            "site_id": review_editar.site_id,
+            "user_id": review_editar.user_id,
+            "rating": review_editar.rating,
+            "comment": review_editar.content,
+            "status": review_editar.status.value,
+        }
+    }), 201
+
+
 
 
 @api_bp.get("/sites/<int:site_id>/reviews/<int:review_id>", endpoint="get_site_review")
