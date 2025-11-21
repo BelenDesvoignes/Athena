@@ -637,7 +637,11 @@ def get_review_details():
     if page < 1 or per_page < 1 or per_page > 100:
         return jsonify({"error": "Parametros de paginacion invalidos"}), 400
 
-    query = db.session.query(Review).filter_by(user_id=user_id)
+    query = (
+        db.session.query(Review)
+        .join(Sitio, Review.site_id == Sitio.id)
+        .filter(Review.user_id == user_id)
+    )
     total_reviews = query.count()
     reviews = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -647,6 +651,7 @@ def get_review_details():
         {
             "id": review.id,
             "site_id": review.site_id,
+            "site_name": review.site.nombre,
             "user_id": review.user_id,  
             "rating": review.rating,
             "comment": review.content,

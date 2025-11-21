@@ -25,7 +25,7 @@
         <div v-else-if="reviews.length > 0" class="list-grid">
           <div v-for="review in reviews" :key="review.id" class="review-card">
             <section>
-              <h3 class="review-title">Reseña del sitio #{{ review.site_id }}</h3>
+              <h3 class="review-title">Reseña del sitio: {{ review.site_name }}</h3>
         <button @click="openEditReviewModal(review)" class="edit-btn">
           ✏️ Editar
         </button>
