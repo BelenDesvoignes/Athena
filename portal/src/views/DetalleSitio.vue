@@ -12,7 +12,7 @@
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
         <div v-if="site.average_rating" class="rating-badge">
-          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ totalReviews || 0 }} Reseñas)
+          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ reviews.length || 0 }} Reseñas)
         </div>
       </header>
 
@@ -143,7 +143,7 @@
 
         <!-- Lista de reseñas -->
         <div v-else-if="reviews.length > 0" class="review-item" v-for="review in reviews" :key="review.id">
-          <div v-if="review.status==='APROBADA'" class="review-header">
+          <div class="review-header">
             <strong>
               <section>
                 {{ review.user_info?.nombre || 'Usuario Anónimo' }}
@@ -255,7 +255,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted,defineExpose, nextTick, onBeforeUnmount, computed } from 'vue';
 import { parseQuery, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
@@ -617,6 +617,7 @@ const deleteReview = async (reviewId) => {
   }
 }
 
+
 const submitReview = async () => {
   try {
     const authStore = useAuthStore();
@@ -641,7 +642,7 @@ const submitReview = async () => {
 
     let url, method;
 
-    if (userReview==null) {
+    if (!userReview.value) {
       // Crear reseña
       url = `${API_BASE_URL}/sites/${siteId}/reviews`;
       method = "POST";
@@ -650,8 +651,9 @@ const submitReview = async () => {
       method = "PUT";
 
     }
+
     const response = await fetch(url, {
-      method:method,
+      method,
       headers: {
         "Content-Type": "application/json",
         "Authorization": authorizationToken
@@ -688,6 +690,31 @@ const submitReview = async () => {
 
 
 
+const fetchCheckReview = async () => {
+  if (!authStore.isLoggedIn) {
+    showLoginPromptReseña.value = true;
+    return;
+  }
+  
+  const url = `${API_BASE_URL}/sites/${siteId}/reviews/check`;
+  const method = "GET";
+  const response = fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: authStore.authHeader.Authorization,
+    }
+  })
+  return response;
+};
+
+
+
+
+function aprobadas(reviewsList){
+  return reviewsList.filter(review => review.status === 'APROBADA');
+}
+
 const fetchReviews = async () => {
   isLoadingReviews.value = true;
   reviewsError.value = false;
@@ -714,10 +741,18 @@ const fetchReviews = async () => {
         userReview.value = review;
       }
     }
-    console.log(userReview.value);
-    totalReviews.value = data.total || 0;
-    reviews.value = reviewsData;
+    const check = await fetchCheckReview();
+    if (check) {
+      const checkData = await check.json();
+      if (checkData.review) {
+        userReview.value = checkData.review;
+      }
+    }
 
+    console.log(userReview.value);
+    reviews.value = reviewsData;
+    reviews.value = aprobadas(reviews.value);
+    totalReviews.value = reviews.value.length;
     
 
   } catch (err) {
@@ -782,7 +817,7 @@ onBeforeUnmount(() => {
   color: white;
   padding: 8px 15px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 600; 
   transition: background-color 0.2s;
 }
 .btn-primary:hover {
