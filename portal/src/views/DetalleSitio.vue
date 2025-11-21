@@ -70,11 +70,15 @@
 
       <section class="full-description-section">
         <h2>Detalle del Sitio</h2>
-
-        <p>
-          <!-- Mostrar corto o largo según estado -->
-          {{ showFull ? site.description : site.short_description }}
-        </p>
+        
+        <div>
+          <p>
+            {{ site.short_description }}
+          </p>
+          <p>
+            {{ showFull ? site.description : None }}
+          </p>
+        </div>
 
         <button v-if="site.description" @click="toggleDescription" class="ver-mas-btn">
           {{ showFull ? 'Ver menos' : 'Ver más' }}
