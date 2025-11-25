@@ -147,6 +147,9 @@ def update_user(user_id, data):
     # Validación de email
     if data['email'] != user.email:
         check_email_unique(data['email'], current_user_id=user_id)
+    
+    if user.role.name in ["Administrador", "Admin"] and "rol" in data:
+        raise ValueError("No se puede modificar el rol de un Administrador o System Admin.")
 
     try:
         user.nombre = data['nombre']
@@ -168,6 +171,36 @@ def update_user(user_id, data):
     except Exception as e:
         db.session.rollback()
         raise ValueError(f"Error al actualizar usuario: {e}")
+
+
+
+
+def delete_user(user_id):
+    """
+    Marca un usuario como eliminado.
+
+    Args:
+        user_id (int): ID del usuario a eliminar.
+
+    Returns:
+        User: Usuario eliminado (marcado).
+
+    Raises:
+        ValueError: Si el usuario no existe o es administrador del sistema.
+    """
+    user = get_user_by_id(user_id)
+    if not user:
+        raise ValueError("Usuario no encontrado.")
+    
+    if getattr(user, "system_admin", False) or user.role.name in ["Administrador", "Admin"]:
+        raise ValueError("No se puede eliminar un usuario administrador del sistema.")
+
+    user.eliminado = True
+    print(f"Antes de commit: {user.id=} {user.eliminado=}")
+    db.session.commit()
+    print(f"Después de commit: {user.id=} {user.eliminado=}")
+    
+    return user
 
 
 

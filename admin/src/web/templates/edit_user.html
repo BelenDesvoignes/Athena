@@ -47,6 +47,11 @@
             <option value="Editor" {% if user.role == "Editor" %}selected{% endif %}>Editor</option>
             <option value="Usuario público" {% if user.role == "Usuario público" %}selected{% endif %}>Usuario público</option>
           </select>
+          {% if user.role in ["Administrador", "Admin"] %}
+            <div class="alert alert-warning">
+              El rol de este usuario no puede ser modificado por razones de seguridad.
+            </div>
+          {% endif %}
         </div>
         <input type="hidden" name="role_id" value="{{ user.role_id }}">
         <button type="submit" class="btn btn-success">Guardar cambios</button>
