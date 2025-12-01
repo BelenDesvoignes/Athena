@@ -23,10 +23,10 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
 
-    # ADICIONAL para proteger al admin principal
+   
     system_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # corresponde a SI NO y Bloqueado Desbloqueado)
+   
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
     fecha_creacion: Mapped[datetime] = mapped_column(

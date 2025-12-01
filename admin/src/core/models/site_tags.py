@@ -4,7 +4,6 @@ from src.core.database import Base
 
 
 
-"""Tabla de asosciacion muchos a muchos entre Sitio y Tag"""
 
 sitios_tags = Table(
     "sitios_tags",

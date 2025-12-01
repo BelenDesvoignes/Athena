@@ -11,7 +11,7 @@ class PublicUser(Base):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
 
-    # 👇 en lugar de importar directamente Favorite
+  
     favorites: Mapped[List["Favorite"]] = relationship(
         "Favorite",
         back_populates="user",

@@ -17,7 +17,7 @@ from sqlalchemy.exc import IntegrityError
 def seed_roles_permissions():
     print("--- 1. Inicializando Roles y Permisos ---")
 
-    # Roles
+   
     roles = ["Administrador", "Admin", "Editor", "Usuario público", "Moderador"]
     role_objs = []
     for r_name in roles:
@@ -43,7 +43,7 @@ def seed_roles_permissions():
 
     db.session.commit()
 
-    # Asignar permisos a roles
+
     role_perm_map = {
         "Administrador": permisos_nombres,
         "Admin": permisos_nombres,
@@ -221,7 +221,7 @@ def seed_sitios():
             visible=True,
             ubicacion=WKTElement('Point(-65.2226 -26.8241)', srid=4326),
         ),
-        # --- NUEVOS SITIOS AGREGADOS ---
+       
         Sitio(
             nombre="Quebrada de Humahuaca",
             descripcion_breve="Paisaje natural y cultural en el Noroeste argentino.",
@@ -229,7 +229,7 @@ def seed_sitios():
             ciudad="Humahuaca",
             provincia="Jujuy",
             estado_conservacion="Excelente",
-            inauguracion=1, # <--- CORREGIDO: Asignamos 1 para sitios naturales
+            inauguracion=1, 
             categoria="Patrimonio Natural",
             visible=True,
             ubicacion=WKTElement('Point(-65.35 -23.35)', srid=4326),
@@ -241,7 +241,7 @@ def seed_sitios():
             ciudad="El Calafate",
             provincia="Santa Cruz",
             estado_conservacion="Excelente",
-            inauguracion=1, # <--- CORREGIDO: Asignamos 1 para sitios naturales
+            inauguracion=1, 
             categoria="Patrimonio Natural",
             visible=True,
             ubicacion=WKTElement('Point(-73.04 -50.48)', srid=4326),
@@ -258,40 +258,40 @@ def seed_sitios():
             visible=True,
             ubicacion=WKTElement('Point(-64.1873 -31.4173)', srid=4326),
         ),
-        # 5 SITIOS CON FECHA EXPLÍCITA (PARA PROBAR ORDENAMIENTO) ---
+        
         Sitio(
             nombre="La Recoleta (Vieja)", descripcion_breve="Cementerio con arte funerario.",
             descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", 
             estado_conservacion="Excelente", inauguracion=1822, categoria="Cultural", 
-            visible=True, registrado=datetime(2022, 7, 1), # <-- Fecha antigua
+            visible=True, registrado=datetime(2022, 7, 1),
             ubicacion=WKTElement('Point(-58.3800 -34.5800)', srid=4326)
         ),
         Sitio(
             nombre="Sitio Arqueológico El Shincal (Viejo)", descripcion_breve="Ruinas incas en Catamarca.", 
             descripcion_completa="...", ciudad="Londres", provincia="Catamarca", 
             estado_conservacion="Regular", inauguracion=1400, categoria="Ruinas", 
-            visible=True, registrado=datetime(2022, 9, 10), # <-- Fecha antigua
+            visible=True, registrado=datetime(2022, 9, 10), 
             ubicacion=WKTElement('Point(-67.5000 -28.0000)', srid=4326)
         ),
         Sitio(
             nombre="Casa de Sarmiento (Vieja)", descripcion_breve="Casa natal del expresidente.", 
             descripcion_completa="...", ciudad="San Juan", provincia="San Juan", 
             estado_conservacion="Excelente", inauguracion=1811, categoria="Museo", 
-            visible=True, registrado=datetime(2022, 10, 1), # <-- Fecha antigua
+            visible=True, registrado=datetime(2022, 10, 1), 
             ubicacion=WKTElement('Point(-68.5200 -31.5300)', srid=4326)
         ),
         Sitio(
             nombre="Bosques Petrificados (Viejo)", descripcion_breve="Yacimientos con árboles petrificados.", 
             descripcion_completa="...", ciudad="Jaramillo", provincia="Santa Cruz", 
             estado_conservacion="Bueno", inauguracion=2012, categoria="Natural", 
-            visible=True, registrado=datetime(2022, 11, 15), # <-- Fecha antigua
+            visible=True, registrado=datetime(2022, 11, 15),
             ubicacion=WKTElement('Point(-69.1706 -47.7811)', srid=4326)
         ),
         Sitio(
             nombre="Mausoleo de San Martín (Viejo)", descripcion_breve="Lugar de descanso final del Libertador.", 
             descripcion_completa="...", ciudad="Buenos Aires", provincia="Buenos Aires", 
             estado_conservacion="Excelente", inauguracion=1880, categoria="Monumento", 
-            visible=True, registrado=datetime(2022, 12, 10), # <-- Fecha antigua
+            visible=True, registrado=datetime(2022, 12, 10), 
             ubicacion=WKTElement('Point(-58.3748 -34.6042)', srid=4326)
         ),
         Sitio(nombre="Monumento a la Bandera", descripcion_breve="Homenaje a la creación de la Bandera.", descripcion_completa="...", ciudad="Rosario", provincia="Santa Fe", estado_conservacion="Excelente", inauguracion=1957, categoria="Monumento", visible=True, ubicacion=WKTElement('Point(-60.6329 -32.9468)', srid=4326)),
@@ -414,7 +414,6 @@ def seed_reviews():
         print("Reseñas ya existentes. Omitiendo siembra.")
         return
 
-    # Obtener IDs de PublicUsers y Sitios
     user1 = db.session.query(PublicUser).filter_by(email="user1@portal.com").first()
     user2 = db.session.query(PublicUser).filter_by(email="user2@portal.com").first()
     user3 = db.session.query(PublicUser).filter_by(email="user3@portal.com").first()
@@ -444,14 +443,14 @@ def seed_reviews():
             status=ReviewStatus.PENDIENTE,
             created_at=datetime(2023, 1, 15, tzinfo=timezone.utc)
         ),
-        # Reseña para Ruinas de San Ignacio (sitio2) - Pendiente
+      
         Review(
             site_id=sitio2.id, user_id=user3.id, rating=5, 
             content="Las ruinas son impresionantes, el atardecer ahí es mágico.",
             status=ReviewStatus.PENDIENTE,
             created_at=datetime(2023, 2, 20, tzinfo=timezone.utc)
         ),
-        # Reseña para Casa Histórica de Tucumán (sitio3) - Rechazada
+        
         Review(
             site_id=sitio3.id, user_id=user1.id, rating=2, 
             content="Esperaba más del museo, la entrada es cara para lo que ofrece.",
@@ -459,14 +458,14 @@ def seed_reviews():
             rejection_reason="Contenido inapropiado o irrelevante.",
             created_at=datetime(2023, 3, 5, tzinfo=timezone.utc)
         ),
-        # Reseña para Glaciar Perito Moreno (sitio4)
+
         Review(
             site_id=sitio4.id, user_id=user2.id, rating=5, 
             content="¡La naturaleza en su máxima expresión! Increíble e inolvidable.",
             status=ReviewStatus.APROBADA,
             created_at=datetime(2023, 4, 1, tzinfo=timezone.utc)
         ),
-        # Reseña para Manzana Jesuítica (sitio5)
+ 
         Review(
             site_id=sitio5.id, user_id=user3.id, rating=4, 
             content="Hermosa arquitectura, el recorrido histórico es muy completo.",

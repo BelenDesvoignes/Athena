@@ -9,7 +9,7 @@ from sqlalchemy import func, and_, asc, desc
 from geoalchemy2.functions import ST_Y, ST_X
 from src.core.api_validations import validate_api_params, SiteListParams
 
-from src.web.api.api import get_site_images
+from src.web.api.minio import get_site_images
 
 
 # Creamos el Blueprint para las rutas de favoritos.
