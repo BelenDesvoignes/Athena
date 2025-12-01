@@ -102,29 +102,29 @@ import { storeToRefs } from 'pinia'
 const router = useRouter()
 const route = useRoute()
 
-// Inicialización de Auth Store para obtener el token
+
 const authStore = useAuthStore()
 const { token } = storeToRefs(authStore)
 
-// Controla si los filtros están abiertos o colapsados.
+
 const isFiltersOpen = ref(true);
 
-// Inicialización de filtros desde los Query Params
+
 const searchTerm = ref(route.query.search || '')
 const province = ref(route.query.province || '')
 const city = ref(route.query.city || '')
 const state = ref(route.query.state || '')
-// Inicialización del filtro de favoritos
+
 const onlyFavorites = ref(route.query.favorites === 'true')
 
-// Variables que se envían al router
+
 const orderBy = ref(route.query.order_by || 'registrado')
 const orderDirection = ref(route.query.order || 'desc')
 
 const orderByCombined = ref(
   (route.query.order_by && route.query.order)
   ? `${route.query.order_by}_${route.query.order}`
-  : 'registrado_desc' // Valor por defecto para la UI
+  : 'registrado_desc' 
 )
 
 const availableTags = ref([])
@@ -134,7 +134,7 @@ const provinces = ref([])
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Función para cargar provincias
+
 const fetchProvinces = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/provinces`)
@@ -145,7 +145,7 @@ const fetchProvinces = async () => {
   }
 }
 
-// Función para cargar tags
+
 const fetchTags = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/tags`)
@@ -156,10 +156,9 @@ const fetchTags = async () => {
   }
 }
 
-// Inicializa los tags seleccionados desde los query params
 const initSelectedTags = () => {
     if (route.query.tags) {
-      // Se asegura de que la URL maneje números (aunque la API podría aceptar strings)
+     
         selectedTags.value = Array.isArray(route.query.tags)
             ? route.query.tags.map(id => parseInt(id)).filter(id => !isNaN(id))
             : route.query.tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
@@ -168,7 +167,6 @@ const initSelectedTags = () => {
     }
 }
 
-// Maneja el valor combinado del select de orden
 const handleCombinedOrderChange = () => {
   const value = orderByCombined.value;
 
@@ -185,10 +183,10 @@ const handleCombinedOrderChange = () => {
   updateFilters();
 }
 
-// Actualizar filtros y push a router
+
 const updateFilters = () => {
   const tagsParam = selectedTags.value.length > 0 ? selectedTags.value.join(',') : undefined;
-  // Determinar si se envía el filtro de favoritos
+ 
   const favoritesParam = onlyFavorites.value ? 'true' : undefined;
 
   const query = {
@@ -211,36 +209,34 @@ const updateFilters = () => {
   });
 }
 
-// Resetear formulario completo
+
 const resetForm = () => {
     searchTerm.value = '';
     province.value = '';
     city.value = '';
     state.value = '';
-    onlyFavorites.value = false; // Reset de favoritos
+    onlyFavorites.value = false; 
     selectedTags.value = [];
     orderBy.value = 'registrado';
     orderDirection.value = 'desc';
     orderByCombined.value = 'registrado_desc';
-    // Opcional: Colapsar los filtros al resetear si estamos en móvil
+   
     if (window.innerWidth < 768) {
         isFiltersOpen.value = false;
     }
 }
 
-// Exponer función resetForm al padre
+
 defineExpose({
     resetForm
 })
 
-// Observa cambios en query params externos para los tags
 watch(
     () => route.query.tags,
     initSelectedTags,
     { immediate: true }
 );
 
-// Sincronizar UI de ordenamiento si cambia URL externa
 watch(
     [() => route.query.order_by, () => route.query.order],
     ([newOrderBy, newOrder]) => {
@@ -250,12 +246,11 @@ watch(
     }
 );
 
-// Sincronizar UI de favoritos si cambia URL externa
 watch(
     () => route.query.favorites,
     (newFavorites) => {
         onlyFavorites.value = newFavorites === 'true';
-        // Si llegamos con un filtro activo, asegurar que los filtros se vean
+       
         if (newFavorites === 'true') {
              isFiltersOpen.value = true;
         }
@@ -267,7 +262,7 @@ onMounted(() => {
     fetchProvinces();
     fetchTags();
     initSelectedTags();
-    // Ocultar filtros al cargar en móvil
+  
     if (window.innerWidth < 768) {
         isFiltersOpen.value = false;
     }
@@ -275,7 +270,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ESTILOS PARA COLAPSAR/EXPANDIR (Responsivos) */
+
 .filter-controls-wrapper {
   margin-bottom: 20px;
 }

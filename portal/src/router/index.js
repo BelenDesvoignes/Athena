@@ -11,12 +11,12 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/sitios', // Ruta para el listado (a donde navega el "Ver todos")
+      path: '/sitios', 
       name: 'listado-sitios',
       component: () => import('../views/ListadoSitios.vue')
     },
     {
-      path: '/sitios/:id', // Ruta para el detalle del sitio
+      path: '/sitios/:id', 
       name: 'detalle-sitio',
       component: () => import('../views/DetalleSitio.vue')
     },
@@ -56,7 +56,7 @@ const router = createRouter({
       component: () => import('../views/Error404.vue')
     }
 
-    // ... otras rutas (About, Login, etc.)
+    
   ]
 
 })

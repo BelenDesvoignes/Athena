@@ -146,7 +146,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 const showReviewModal = ref(false);
-const userReview = ref(null); // Aquí guardaremos la reseña que se está editando
+const userReview = ref(null); 
 const newReview = ref({
   rating: "",
   content: "",
@@ -219,7 +219,7 @@ const submitReview = async () => {
   if (!authStore.isLoggedIn) return;
 
   const aEditar = get_reseña(userReview.value.id)
-  const url = `${API_BASE_URL}/sites/${aEditar.site_id}/reviews/${userReview.value.id}` // editar
+  const url = `${API_BASE_URL}/sites/${aEditar.site_id}/reviews/${userReview.value.id}`  
 
   const method = "PUT";
 
@@ -277,7 +277,7 @@ const deleteReview = async (review) => {
 
     alert("Reseña eliminada con éxito ✔️");
 
-    // Recargar las reseñas después de eliminar
+    
     currentPage.value = 1;
     await fetchReviews();
 

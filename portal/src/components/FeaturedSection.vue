@@ -53,18 +53,17 @@ const errorMessage = ref('');
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const MAX_SITES = 4;
 
-// 🔑 PROPIEDAD COMPUTADA CLAVE: Genera el objeto de ruta con los parámetros de consulta (query)
 const fullListRoute = computed(() => {
     const query = {
-        // Enviar el criterio de ordenamiento (ej: 'calificacion', 'registrado')
+       
         order_by: props.orderByParam,
         order: 'desc', // Asumimos orden descendente para estos listados destacados
         page: 1, // Volver a la página 1 al aplicar un nuevo orden
     };
 
-    // Si es la sección de favoritos, agregamos el filtro 'favorites'
+   
     if (props.isFavorite) {
-        // Usamos 'favorites' aquí para que FiltersSite.vue pueda detectarlo y activar su checkbox
+      
         query.favorites = 'true';
     }
 
@@ -75,7 +74,7 @@ const fullListRoute = computed(() => {
 });
 
 const fetchSites = async () => {
-    // ... (El resto de la función fetchSites es idéntica y no necesita cambios)
+    
     isLoading.value = true;
     error.value = false;
     errorMessage.value = '';
@@ -121,7 +120,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Estilos sin cambios */
+
 .featured-section { margin-bottom: 40px; padding: 10px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
 .section-header h2 { font-size: 1.8em; color: #444; }

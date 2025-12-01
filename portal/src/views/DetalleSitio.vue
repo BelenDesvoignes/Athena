@@ -279,9 +279,9 @@ async function fetchReviewsFlag() {
 
 
 const route = useRoute();
-const router = useRouter(); // Se mantiene aunque no se use para redirección
+const router = useRouter();
 const authStore = useAuthStore();
-const { token } = storeToRefs(authStore); // Obteniendo el token de manera reactiva
+const { token } = storeToRefs(authStore);
 const showFull = ref(false);
 const toggleDescription = () => {
   showFull.value = !showFull.value;
@@ -291,8 +291,8 @@ const site = ref(null);
 const isLoading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
-const isFavorite = ref(false); // Estado para el favorito
-const showLoginPrompt = ref(false); // Estado para mostrar el modal de login
+const isFavorite = ref(false); 
+const showLoginPrompt = ref(false);
 
 const siteId = route.params.id;
 
@@ -314,7 +314,7 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = 25;
 const showReviewModal = ref(false);
-const showLoginPromptReseña = ref(false); // Modal para reseñas
+const showLoginPromptReseña = ref(false); 
 const isModalOpen = ref(false);
 const currentIndex = ref(0);
 const imagesList = ref([]);
@@ -330,15 +330,14 @@ const nonCoverImages = computed(() => {
     }));
 });
 
-// Nota: La función redirectToLogin ha sido eliminada. El modal ahora solo informa.
 
-// Función de control centralizada para el botón de favorito
+
 const handleFavoriteAction = () => {
     if (!token.value) {
-        // Si no está autenticado, muestra el modal y pide iniciar sesión
+        
         showLoginPrompt.value = true;
     } else {
-        // Si está autenticado, ejecuta la función de toggle (ya existente)
+        
         toggleFavorite();
     }
 };
@@ -490,25 +489,25 @@ const toggleFavorite = async () => {
     const action = isAdding ? 'POST' : 'DELETE';
     const previousFavoriteState = isFavorite.value;
 
-    // AHORA LA URL INCLUYE EL SITE_ID
+    
     const url = `${API_BASE_URL}/sites/${siteId}/favorite`;
 
     try {
-        // 1. Actualización Optimista
+       
         isFavorite.value = isAdding;
 
-        const response = await fetch(url, { // <-- URL corregida
+        const response = await fetch(url, { 
             method: action,
             headers: {
                 'Authorization': `Bearer ${token.value}`,
-                // No se necesita Content-Type ni body para DELETE/POST en esta estructura
+                
             },
-            // REMOVER EL BODY: No es necesario enviar el site_id en el cuerpo si ya está en la URL
+           
             // body: JSON.stringify({ site_id: siteId })
         });
 
         if (!response.ok) {
-            // Revertir estado si la llamada API falla
+            
             isFavorite.value = previousFavoriteState;
             const errorData = await response.json().catch(() => ({}));
             console.error(`Error al ${isAdding ? 'añadir' : 'remover'} favorito:`, errorData.message || response.statusText);
@@ -529,7 +528,7 @@ const fetchSiteDetail = async () => {
     const url = `${API_BASE_URL}/sites/${siteId}`;
     const headers = {};
 
-    // Incluir el token en el encabezado si está disponible para obtener el estado de 'is_favorite'
+  
     if (token.value) {
       headers['Authorization'] = `Bearer ${token.value}`;
     }
@@ -554,7 +553,7 @@ const fetchSiteDetail = async () => {
     await nextTick();
     setTimeout(loadMap, 50);
 
-    // Sincronizar el estado de favorito desde la respuesta de la API
+    
     if (site.value.is_favorite !== undefined) {
       isFavorite.value = site.value.is_favorite;
     }
@@ -620,7 +619,7 @@ const deleteReview = async (reviewId) => {
 
     alert("Reseña eliminada con éxito ✔️");
 
-    // Recargar las reseñas después de eliminar
+    
     currentPage.value = 1;
     await fetchReviews();
 
@@ -656,7 +655,7 @@ const submitReview = async () => {
     let url, method;
 
     if (!userReview.value) {
-      // Crear reseña
+      
       url = `${API_BASE_URL}/sites/${siteId}/reviews`;
       method = "POST";
     } else if(userReview.value!=null) {
@@ -688,7 +687,7 @@ const submitReview = async () => {
         : "Reseña editada con éxito ✨"
     );
 
-    // Cerrar modal
+    
     showReviewModal.value = false;
 
 
@@ -797,9 +796,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* -------------------------------------- */
-/* ESTILOS DEL MODAL DE LOGIN (NUEVO) */
-/* -------------------------------------- */
+
 .login-modal-overlay {
   position: fixed;
   top: 0;

@@ -99,37 +99,36 @@ import BackButton from '@/components/BackButton.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { token } = storeToRefs(authStore) // Obtenemos el token reactivo
+const { token } = storeToRefs(authStore) 
 
 const filtersSiteRef = ref(null)
 const siteMapRef = ref(null)
 
 const sites = ref([])
 const isLoading = ref(true)
-const error = ref('') // Cambiado a string para mensajes de error
+const error = ref('')
 const isModalOpen = ref(false)
 
-// Cómputo para verificar si el filtro de favoritos está activo en la URL (usa 'favorites' para coincidir con FiltersSite)
 const isFavoriteFilterActive = computed(() => route.query.favorites === 'true')
 
 const currentLat = computed(() => route.query.lat || null)
 const currentLon = computed(() => route.query.lon || null)
 const currentRadius = computed(() => route.query.radius || null)
 
-// CLEAN FILTERS
+
 const clearAllFilters = () => {
   filtersSiteRef.value?.resetForm?.()
   router.push({ query: {} })
 }
 
-// OPEN MAP
+
 const openMapModal = async () => {
   isModalOpen.value = true
   await nextTick()
   siteMapRef.value?.forceUpdate()
 }
 
-// Cuando el usuario clickea en el mapa
+
 const applyUserLocationFilter = ({ lat, lon, radius }) => {
   router.push({
     query: {
@@ -144,7 +143,7 @@ const applyUserLocationFilter = ({ lat, lon, radius }) => {
   })
 }
 
-// PAGINACIÓN
+
 const pagination = ref({
   page: 1,
   pages: 1,
@@ -157,14 +156,13 @@ const goToPage = (p) => {
   router.push({ query: { ...route.query, page: p } })
 }
 
-// API CALL (LÓGICA CRÍTICA MODIFICADA AQUÍ)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const fetchSitesList = async () => {
   isLoading.value = true
   error.value = ''
 
-  // 🔑 CAMBIO 1: Priorizar ordenamiento de la URL, si no existe, usar valor por defecto.
+  
   const orderBy = route.query.order_by || "registrado";
   const order = route.query.order || "desc";
   const page = route.query.page || 1;
@@ -178,27 +176,26 @@ const fetchSitesList = async () => {
     per_page: perPage,
   })
 
-  // Los parámetros dinámicos siguen siendo agregados
+  
   const dynamic = ["search", "province", "city", "state", "tags", "lat", "lon", "radius"]
   dynamic.forEach(p => route.query[p] && params.append(p, route.query[p]))
 
-  // 2. Verificar si se está pidiendo el filtro de favoritos (que viene como 'favorites=true' de FeaturedSection)
   const fetchingFavorites = isFavoriteFilterActive.value;
   let headers = {};
 
   if (fetchingFavorites) {
-    // 3. Adjuntar el parámetro que la API espera: is_favorite=true
+    
     params.append('is_favorite', 'true');
 
-    // 4. Si se pide favoritos, DEBEMOS adjuntar el token
+  
     if (token.value) {
       headers['Authorization'] = `Bearer ${token.value}`;
     } else {
-      // 5. Caso de error: pide favoritos pero no está logueado
+      
       isLoading.value = false;
       error.value = "Debes iniciar sesión para filtrar tus sitios favoritos.";
       sites.value = [];
-      // Quitamos el filtro de la URL para que el usuario no se quede atascado
+    
       const newQuery = { ...route.query };
       delete newQuery.favorites;
       router.replace({ query: newQuery });
@@ -223,8 +220,7 @@ const fetchSitesList = async () => {
       per_page: data.per_page,
     }
 
-    // ❌ ELIMINADO: La llamada manual a initializeFromQuery.
-    // FiltersSite.vue ya se sincroniza automáticamente gracias a su 'watch'.
+    
 
   } catch (e) {
     console.error("Error al obtener sitios:", e);

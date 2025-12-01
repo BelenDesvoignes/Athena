@@ -85,7 +85,7 @@ export default {
       selectedLat: null,
       selectedLon: null,
       circleLayer: null,
-      pointMarker: null, // marcador del usuario
+      pointMarker: null, 
       userClickedInThisModal: false,
     };
   },
