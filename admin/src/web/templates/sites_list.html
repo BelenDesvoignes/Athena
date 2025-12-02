@@ -12,14 +12,18 @@
     </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
-        role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
-    {% endif %}
+        {% for category, message in messages %}
+            <div class="flash-dark flash-{{
+                'success' if category == 'success' else
+                'danger'  if category in ['error', 'danger'] else
+                'warning' if category == 'warning' else
+                'info'    if category == 'message' else
+                'neutral'
+            }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
     <form id="addFilter" method="get" action="{{ url_for('sitios.list')}}" class="p-4 border rounded shadow-sm bg-dark">
@@ -263,6 +267,19 @@ document.addEventListener('DOMContentLoaded', () => {
         color: #ffff !important;
     }
 
+.flash-dark {
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-weight: 500;
+    color: #fff;
+}
+
+.flash-success { background: #1e7a46; }
+.flash-danger { background: #a82525; }
+.flash-warning { background: #c99a00; color: #000; }
+.flash-info { background: #0ea5e9; color: #000; }
+.flash-neutral { background: #444; }
 
 </style>
 {% endblock %}
