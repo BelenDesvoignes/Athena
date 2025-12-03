@@ -12,7 +12,7 @@
         <h1>{{ site.name }}</h1>
         <p class="location-info">📍 {{ site.city }}, {{ site.province }}</p>
         <div v-if="site.average_rating" class="rating-badge">
-          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ reviews.length || 0 }} Reseñas)
+          ⭐ {{ Number(site.average_rating || 0).toFixed(1) }} ({{ totalReviews || 0 }} Reseñas)
         </div>
       </header>
 
@@ -492,7 +492,7 @@ function loadMap() {
 
 const tooltipText = `
     <strong>${site.value.name}</strong><br>
-    ${site.value.description || ""}
+    ${site.value.short_description || ""}
   `;
 
   
@@ -751,6 +751,8 @@ function aprobadas(reviewsList){
   return reviewsList.filter(review => review.status === 'APROBADA');
 }
 
+
+
 const fetchReviews = async () => {
   isLoadingReviews.value = true;
   reviewsError.value = false;
@@ -765,6 +767,7 @@ const fetchReviews = async () => {
 
     const data = await response.json();
     totalPages.value = data.total_pages || 1;
+    totalReviews.value = data.total || 0;
     const reviewsData = data.reviews || [];
 
     for (const review of reviewsData) {
@@ -788,7 +791,6 @@ const fetchReviews = async () => {
     console.log(userReview.value);
     reviews.value = reviewsData;
     reviews.value = aprobadas(reviews.value);
-    totalReviews.value = reviews.value.length;
 
 
   } catch (err) {
@@ -927,20 +929,36 @@ onBeforeUnmount(() => {
 
 
 .page-button {
-  cursor: pointer;
-  background-color: lightgray;
-  color: black;
-  border-radius: 8px;
+    background-color: #f4f4f4;
+    border: 1px solid #cfcfcf;
+    border-radius: 6px;
+    color: #444;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
 }
 
+
 .page-button:hover {
-  background-color: gray;
-  color: white;
+    background-color: #e5e5e5;
+}
+
+.page-button.active {
+    background-color: #dcdcdc;
+    border-color: #b6b6b6;
+    font-weight: bold;
 }
 
 .page-button:disabled {
-  Cursor: text !important;
-  Text-Decoration: None !important;
+    background-color: #f0f0f0;
+    color: #999;
+    border-color: #ddd;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .login-warning {
