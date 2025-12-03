@@ -301,7 +301,7 @@ def new():
             else:
                 db.session.commit()
                 registrar_modificacion(sitio, current_user, "Creación")
-                flash("Sitio creado correctamente")
+                flash("Sitio creado correctamente", "success")
                 return redirect(url_for("sitios.list"))
 
         except Exception as e:
@@ -509,7 +509,7 @@ def edit(id):
             if not error:
                 db.session.commit()
                 registrar_modificacion(sitio, current_user, "Edición")
-                flash("Sitio actualizado correctamente")
+                flash("Sitio actualizado correctamente", "success")
                 return redirect(url_for("sitios.list"))
             else:
                 db.session.rollback()

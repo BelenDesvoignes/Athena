@@ -455,6 +455,20 @@ function cancelReview() {
 }
 
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
+  iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
+  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
+});
+
+
+
+
 const map = ref(null);
 const mapLoaded = ref(false);
 function loadMap() {
@@ -467,15 +481,27 @@ function loadMap() {
     return;
   }
 
+
+
   map.value = L.map("site-map").setView([lat, lng], 15);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "© OpenStreetMap contributors",
-  }).addTo(map.value);
+    }).addTo(map.value);
 
-  L.marker([lat, lng]).addTo(map.value);
+const tooltipText = `
+    <strong>${site.value.name}</strong><br>
+    ${site.value.description || ""}
+  `;
 
+  
+  L.marker([lat, lng])
+    .addTo(map.value)
+    .bindTooltip(tooltipText, {
+      permanent: false,  
+      direction: "top",
+    });
   mapLoaded.value = true;
 }
 
