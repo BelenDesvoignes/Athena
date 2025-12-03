@@ -767,7 +767,7 @@ const fetchReviews = async () => {
 
     const data = await response.json();
     totalPages.value = data.total_pages || 1;
-    totalReviews.value = data.total_reviews || 0;
+    totalReviews.value = data.total || 0;
     const reviewsData = data.reviews || [];
 
     for (const review of reviewsData) {
